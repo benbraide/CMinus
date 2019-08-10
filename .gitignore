@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+/CMinus/.vs/CMinus/v15
+/CMinus/CMinus/Debug/CMinus.tlog
+/CMinus/CMinus/Debug
+*.vcxproj
+*.filters
+*.user
+/CMinus/Debug
+*.sln
