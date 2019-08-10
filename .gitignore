@@ -38,3 +38,5 @@
 *.user
 /CMinus/Debug
 *.sln
+/CMinus/CMinus/x64/Debug
+/CMinus/x64/Debug
