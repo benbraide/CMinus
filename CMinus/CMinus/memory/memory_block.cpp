@@ -23,6 +23,10 @@ std::size_t cminus::memory::block::get_size() const{
 	return size_;
 }
 
+void cminus::memory::block::set_attributes(unsigned int value){
+	attributes_ = value;
+}
+
 unsigned int cminus::memory::block::get_attributes() const{
 	return attributes_;
 }

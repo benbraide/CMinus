@@ -1,6 +1,7 @@
 #include <sstream>
 
 #include "memory/memory_object.h"
+#include "memory/memory_reference.h"
 #include "io/io_stream_reader.h"
 
 int main(){

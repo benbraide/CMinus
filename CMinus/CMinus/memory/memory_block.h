@@ -22,6 +22,8 @@ namespace cminus::memory{
 		access_protected,
 		write_protected,
 		block_not_found,
+		incompatible_types,
+		uninitialized_memory,
 	};
 
 	class exception : public std::exception{
@@ -53,6 +55,8 @@ namespace cminus::memory{
 		virtual std::size_t get_size() const;
 
 		virtual std::byte *get_data(std::size_t offset = 0u) const = 0;
+
+		virtual void set_attributes(unsigned int value);
 
 		virtual unsigned int get_attributes() const;
 
