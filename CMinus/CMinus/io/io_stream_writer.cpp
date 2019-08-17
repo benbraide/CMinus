@@ -78,6 +78,14 @@ std::size_t cminus::io::stream_writer::write_scalar(const std::any &buffer){
 	return 0u;
 }
 
+std::size_t cminus::io::stream_writer::fill(char_type value, std::size_t count){
+	if (count == 0u)
+		return 0u;
+
+	std::string buffer(count, value);
+	return write_buffer(buffer.data(), buffer.size());
+}
+
 cminus::io::wide_stream_writer::wide_stream_writer(std::wostream &stream)
 	: stream_(stream){}
 
@@ -139,4 +147,12 @@ std::size_t cminus::io::wide_stream_writer::write_scalar(const std::any &buffer)
 		return write_buffer((*typed_buffer)->data(), (*typed_buffer)->size());
 
 	return 0u;
+}
+
+std::size_t cminus::io::wide_stream_writer::fill(char_type value, std::size_t count){
+	if (count == 0u)
+		return 0u;
+
+	std::wstring buffer(count, value);
+	return write_buffer(buffer.data(), buffer.size());
 }

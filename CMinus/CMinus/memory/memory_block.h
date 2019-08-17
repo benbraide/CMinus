@@ -22,6 +22,9 @@ namespace cminus::memory{
 		access_protected,
 		write_protected,
 		block_not_found,
+		block_misaligned,
+		block_not_resizable,
+		invalid_size,
 		incompatible_types,
 		uninitialized_memory,
 	};
@@ -30,8 +33,7 @@ namespace cminus::memory{
 	public:
 		using base_type = std::exception;
 
-		exception(error_code code, std::size_t address)
-			: base_type("Memory Exception"), code_(code), address_(address){}
+		exception(error_code code, std::size_t address);
 
 		error_code get_code() const;
 
@@ -40,6 +42,11 @@ namespace cminus::memory{
 	private:
 		error_code code_;
 		std::size_t address_;
+	};
+
+	class managed_object{
+	public:
+		virtual ~managed_object() = default;
 	};
 
 	class block{
@@ -88,6 +95,8 @@ namespace cminus::memory{
 
 		virtual std::size_t write(std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset = 0u) = 0;
 
+		virtual std::size_t write(managed_object &object) = 0;
+
 		virtual std::size_t set(std::size_t offset, std::byte value, std::size_t size) = 0;
 
 		template <typename target_type>
@@ -98,7 +107,9 @@ namespace cminus::memory{
 		template <typename target_type>
 		target_type read_scalar(std::size_t offset) const{
 			auto buffer = target_type();
-			return ((read(offset, reinterpret_cast<std::byte *>(&buffer), sizeof(target_type)) == sizeof(target_type)) ? buffer : target_type());
+			if (read(offset, reinterpret_cast<std::byte *>(&buffer), sizeof(target_type)) != sizeof(target_type))
+				throw exception(error_code::access_protected, (get_address() + offset));
+			return buffer;
 		}
 
 		template <typename target_type>
@@ -120,6 +131,8 @@ namespace cminus::memory{
 		static const unsigned int attribute_access_protected		= (1u << 0x0000u);
 		static const unsigned int attribute_write_protected			= (1u << 0x0001u);
 		static const unsigned int attribute_executable				= (1u << 0x0002u);
+		static const unsigned int attribute_has_managed_object		= (1u << 0x0003u);
+		static const unsigned int attribute_is_heap					= (1u << 0x0004u);
 
 	protected:
 		friend class object;
@@ -153,6 +166,8 @@ namespace cminus::memory{
 		virtual std::size_t write(std::size_t offset, const io::binary_reader &buffer, std::size_t size) override;
 
 		virtual std::size_t write(std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset = 0u) override;
+
+		virtual std::size_t write(managed_object &object) override;
 
 		virtual std::size_t set(std::size_t offset, std::byte value, std::size_t size) override;
 
@@ -194,6 +209,8 @@ namespace cminus::memory{
 
 		virtual std::size_t write(std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset = 0u) override;
 
+		virtual std::size_t write(managed_object &object) override;
+
 		virtual std::size_t set(std::size_t offset, std::byte value, std::size_t size) override;
 
 		virtual std::shared_ptr<block> get_target() const;
@@ -229,6 +246,8 @@ namespace cminus::memory{
 
 		virtual std::size_t write(std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset = 0u) override;
 
+		virtual std::size_t write(managed_object &object) override;
+
 		virtual std::size_t set(std::size_t offset, std::byte value, std::size_t size) override;
 
 	private:
@@ -237,7 +256,7 @@ namespace cminus::memory{
 		std::unique_ptr<std::byte[]> data_;
 	};
 
-	class inclusive_block : public block{
+	/*class inclusive_block : public block{
 	public:
 		inclusive_block();
 
@@ -305,5 +324,5 @@ namespace cminus::memory{
 		std::unique_ptr<std::byte[]> data_;
 		std::vector<std::shared_ptr<block>> blocks_;
 		std::size_t next_block_offset_ = 0u;
-	};
+	};*/
 }

@@ -1,6 +1,6 @@
 #include "naming.h"
 
-cminus::logic::naming::single::single(const std::string &value, parent *parent)
+cminus::logic::naming::single::single(const std::string &value, naming::parent *parent)
 	: parent_(parent), value_(value){}
 
 cminus::logic::naming::single::~single() = default;
@@ -34,7 +34,7 @@ bool cminus::logic::naming::single::is_same(const object &target) const{
 	return (parent_ == nullptr || parent_->is_same(*target.get_naming_parent()));
 }
 
-cminus::logic::naming::parent::parent(const std::string &value, parent *parent)
+cminus::logic::naming::parent::parent(const std::string &value, naming::parent *parent)
 	: single(value, parent){}
 
 cminus::logic::naming::parent::~parent() = default;

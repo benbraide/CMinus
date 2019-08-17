@@ -13,10 +13,6 @@ void cminus::node::object::substitute(const std::string &key, std::shared_ptr<ob
 
 void cminus::node::object::substitute(const object &target, std::shared_ptr<object> value){}
 
-std::shared_ptr<cminus::node::object> cminus::node::object::get_type() const{
-	return nullptr;
-}
-
 void cminus::node::object::set_parent_(std::shared_ptr<object> target){
 	target->parent_ = this;
 }

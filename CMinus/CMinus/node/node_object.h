@@ -26,9 +26,7 @@ namespace cminus::node{
 
 		virtual void print(io::writer &writer, bool is_qualified) const = 0;
 
-		virtual std::shared_ptr<memory::reference> evaluate(memory::object &memory_object) const = 0;
-
-		virtual std::shared_ptr<object> get_type() const;
+		virtual std::shared_ptr<memory::reference> evaluate(logic::runtime &runtime) const = 0;
 
 	protected:
 		virtual void set_parent_(std::shared_ptr<object> target);

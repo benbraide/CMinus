@@ -8,7 +8,7 @@ int main(){
 	std::stringstream ss("ben1080");
 	std::wstringstream wss(L"ben1080");
 
-	cminus::memory::composite_block cb;
+	cminus::memory::exclusive_block eb;
 	cminus::memory::object mo;
 
 	cminus::io::stream_reader isr(std::cin);

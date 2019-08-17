@@ -7,6 +7,10 @@ namespace cminus::memory{
 	class reference;
 }
 
+namespace cminus::logic{
+	struct runtime;
+}
+
 namespace cminus::logic::type{
 	class object{
 	public:
@@ -28,6 +32,8 @@ namespace cminus::logic::type{
 
 		virtual score_result_type get_score(const object &target) const = 0;
 
-		virtual std::shared_ptr<memory::reference> convert_value(memory::object &memory_object, std::size_t address, std::shared_ptr<object> target_type) const = 0;
+		virtual std::shared_ptr<memory::reference> convert_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<object> target_type) const = 0;
+
+		virtual std::shared_ptr<memory::reference> convert_value(logic::runtime &runtime, const std::byte *data, std::shared_ptr<object> target_type) const = 0;
 	};
 }

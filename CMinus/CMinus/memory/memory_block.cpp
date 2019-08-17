@@ -1,5 +1,8 @@
 #include "memory_block.h"
 
+cminus::memory::exception::exception(error_code code, std::size_t address)
+	: base_type("Memory Exception"), code_(code), address_(address){}
+
 cminus::memory::error_code cminus::memory::exception::get_code() const{
 	return code_;
 }
@@ -112,6 +115,11 @@ std::size_t cminus::memory::protected_block::write(std::size_t offset, const blo
 	return 0u;
 }
 
+std::size_t cminus::memory::protected_block::write(managed_object &object){
+	throw exception(error_code::write_protected, address_);
+	return 0u;
+}
+
 std::size_t cminus::memory::protected_block::set(std::size_t offset, std::byte value, std::size_t size){
 	if (size != 0u)
 		throw exception(error_code::write_protected, (address_ + offset));
@@ -162,6 +170,11 @@ std::size_t cminus::memory::offset_block::write(std::size_t offset, const block 
 	return target_->write((offset_ + offset), buffer, size, buffer_offset);
 }
 
+std::size_t cminus::memory::offset_block::write(managed_object &object){
+	throw exception(error_code::block_misaligned, address_);
+	return 0u;
+}
+
 std::size_t cminus::memory::offset_block::set(std::size_t offset, std::byte value, std::size_t size){
 	return target_->set((offset_ + offset), value, size);
 }
@@ -182,7 +195,12 @@ cminus::memory::exclusive_block::exclusive_block(std::size_t address, std::size_
 		data_ = std::make_unique<std::byte[]>(size_);
 }
 
-cminus::memory::exclusive_block::~exclusive_block() = default;
+cminus::memory::exclusive_block::~exclusive_block(){
+	if (has_attributes(attribute_has_managed_object)){
+		delete read_scalar<managed_object *>(0u);
+		attributes_ &= ~attribute_has_managed_object;
+	}
+}
 
 std::byte *cminus::memory::exclusive_block::get_data(std::size_t offset) const{
 	return ((data_.get() == nullptr || size_ <= offset) ? nullptr : (data_.get() + offset));
@@ -252,8 +270,13 @@ std::size_t cminus::memory::exclusive_block::write(std::size_t offset, const std
 	if ((size_ - offset) < size)//Restrict size
 		size = (size_ - offset);
 
-	if (0u < size && size <= size_)
+	if (0u < size && size <= size_){
+		if (has_attributes(attribute_has_managed_object)){
+			delete read_scalar<managed_object *>(0u);
+			attributes_ &= ~attribute_has_managed_object;
+		}
 		memcpy((data_.get() + offset), buffer, size);
+	}
 
 	return ((size <= size_) ? size : 0u);
 }
@@ -268,8 +291,13 @@ std::size_t cminus::memory::exclusive_block::write(std::size_t offset, const io:
 	if ((size_ - offset) < size)//Restrict size
 		size = (size_ - offset);
 
-	if (0u < size && size <= size_)
+	if (0u < size && size <= size_){
+		if (has_attributes(attribute_has_managed_object)){
+			delete read_scalar<managed_object *>(0u);
+			attributes_ &= ~attribute_has_managed_object;
+		}
 		size = buffer.read((data_.get() + offset), size);
+	}
 
 	return ((size <= size_) ? size : 0u);
 }
@@ -284,10 +312,23 @@ std::size_t cminus::memory::exclusive_block::write(std::size_t offset, const blo
 	if ((size_ - offset) < size)//Restrict size
 		size = (size_ - offset);
 
-	if (0u < size && size <= size_)
+	if (0u < size && size <= size_){
+		if (has_attributes(attribute_has_managed_object)){
+			delete read_scalar<managed_object *>(0u);
+			attributes_ &= ~attribute_has_managed_object;
+		}
 		buffer.read(buffer_offset, (data_.get() + offset), size);
+	}
 
 	return ((size <= size_) ? size : 0u);
+}
+
+std::size_t cminus::memory::exclusive_block::write(managed_object &object){
+	if (size_ != sizeof(std::size_t) || !write_scalar(0u, &object))
+		throw exception(error_code::block_misaligned, address_);
+
+	attributes_ |= attribute_has_managed_object;
+	return sizeof(std::size_t);
 }
 
 std::size_t cminus::memory::exclusive_block::set(std::size_t offset, std::byte value, std::size_t size){
@@ -300,11 +341,17 @@ std::size_t cminus::memory::exclusive_block::set(std::size_t offset, std::byte v
 	if ((size_ - offset) < size)//Restrict size
 		size = (size_ - offset);
 
-	if (0u < size && size <= size_)
+	if (0u < size && size <= size_){
+		if (has_attributes(attribute_has_managed_object)){
+			delete reinterpret_cast<managed_object *>(read_scalar<std::size_t>(0u));
+			attributes_ &= ~attribute_has_managed_object;
+		}
 		memset((data_.get() + offset), static_cast<int>(value), size);
+	}
 
 	return ((size <= size_) ? size : 0u);
 }
+/*
 
 cminus::memory::inclusive_block::inclusive_block() = default;
 
@@ -608,3 +655,4 @@ cminus::memory::block *cminus::memory::composite_block::get_block_(std::size_t o
 
 	return nullptr;
 }
+*/

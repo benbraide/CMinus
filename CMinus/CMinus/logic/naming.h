@@ -26,7 +26,7 @@ namespace cminus::logic::naming{
 
 	class single : public object{
 	public:
-		explicit single(const std::string &value, parent *parent = nullptr);
+		explicit single(const std::string &value, naming::parent *parent = nullptr);
 
 		virtual ~single();
 
@@ -49,7 +49,7 @@ namespace cminus::logic::naming{
 
 	class parent : public single{
 	public:
-		explicit parent(const std::string &value, parent *parent = nullptr);
+		explicit parent(const std::string &value, naming::parent *parent = nullptr);
 
 		virtual ~parent();
 
