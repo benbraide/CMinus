@@ -6,6 +6,10 @@
 
 #include "../io/io_writer.h"
 
+namespace cminus::logic{
+	struct runtime;
+}
+
 namespace cminus::logic::naming{
 	class parent;
 
@@ -19,7 +23,7 @@ namespace cminus::logic::naming{
 
 		virtual std::string get_qualified_naming_value() const = 0;
 
-		virtual void print(io::writer &writer, bool is_qualified) const = 0;
+		virtual void print(logic::runtime &runtime, bool is_qualified) const = 0;
 
 		virtual bool is_same(const object &target) const = 0;
 	};
@@ -36,7 +40,7 @@ namespace cminus::logic::naming{
 
 		virtual std::string get_qualified_naming_value() const override;
 
-		virtual void print(io::writer &writer, bool is_qualified) const override;
+		virtual void print(logic::runtime &runtime, bool is_qualified) const override;
 
 		virtual bool is_same(const object &target) const override;
 

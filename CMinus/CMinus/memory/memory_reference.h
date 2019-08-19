@@ -19,6 +19,8 @@ namespace cminus::memory{
 
 		virtual std::shared_ptr<logic::type::object> get_type() const;
 
+		virtual void set_attributes(unsigned int value);
+
 		virtual unsigned int get_attributes() const;
 
 		virtual std::size_t get_address() const;
@@ -26,10 +28,9 @@ namespace cminus::memory{
 		virtual const std::byte *get_data() const = 0;
 
 		static const unsigned int attribute_none				= (0u << 0x0000u);
-		static const unsigned int attribute_constant			= (1u << 0x0000u);
-		static const unsigned int attribute_lvalue				= (1u << 0x0001u);
-		static const unsigned int attribute_uninitialized		= (1u << 0x0002u);
-		static const unsigned int attribute_nan					= (1u << 0x0003u);
+		static const unsigned int attribute_lvalue				= (1u << 0x0000u);
+		static const unsigned int attribute_uninitialized		= (1u << 0x0001u);
+		static const unsigned int attribute_nan					= (1u << 0x0002u);
 
 	protected:
 		std::shared_ptr<logic::type::object> type_;
@@ -62,8 +63,7 @@ namespace cminus::memory{
 
 		reference_with_value(std::shared_ptr<logic::type::object> type, unsigned int attributes, const m_value_type &value)
 			: reference(type, attributes), value_(value){
-			attributes_ &= ~attribute_uninitialized;
-			attributes_ |= attribute_constant;
+			attributes_ &= ~(attribute_uninitialized | attribute_lvalue);
 		}
 
 		virtual ~reference_with_value() = default;
@@ -93,20 +93,17 @@ namespace cminus::memory{
 		reference_with_list(std::shared_ptr<logic::type::object> type, unsigned int attributes)
 			: reference(type, attributes){
 			attributes_ &= ~attribute_uninitialized;
-			attributes_ |= attribute_constant;
 		}
 
 		reference_with_list(std::shared_ptr<logic::type::object> type, unsigned int attributes, const m_value_type &item)
 			: reference(type, attributes){
 			attributes_ &= ~attribute_uninitialized;
-			attributes_ |= attribute_constant;
 			list_.push_back(item);
 		}
 
 		reference_with_list(std::shared_ptr<logic::type::object> type, unsigned int attributes, const m_list_type &list)
 			: reference(type, attributes), list_(list){
 			attributes_ &= ~attribute_uninitialized;
-			attributes_ |= attribute_constant;
 		}
 
 		virtual ~reference_with_list() = default;

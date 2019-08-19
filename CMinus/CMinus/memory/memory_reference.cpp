@@ -17,6 +17,10 @@ std::shared_ptr<cminus::logic::type::object> cminus::memory::reference::get_type
 	return type_;
 }
 
+void cminus::memory::reference::set_attributes(unsigned int value){
+	attributes_ = value;
+}
+
 unsigned int cminus::memory::reference::get_attributes() const{
 	return attributes_;
 }
@@ -28,7 +32,8 @@ std::size_t cminus::memory::reference::get_address() const{
 cminus::memory::hard_reference::hard_reference(logic::runtime &runtime, std::shared_ptr<logic::type::object> type, unsigned int attributes)
 	: reference(type, attributes), object_(runtime.memory_object){
 	try{
-		address_ = object_.allocate_block(type->get_size(), memory::block::attribute_none)->get_address();
+		if (auto block = object_.allocate_block(type->get_size(), memory::block::attribute_none); block != nullptr)
+			address_ = block->get_address();
 	}
 	catch (...){
 		address_ = 0u;
@@ -37,7 +42,8 @@ cminus::memory::hard_reference::hard_reference(logic::runtime &runtime, std::sha
 
 cminus::memory::hard_reference::~hard_reference(){
 	try{
-		object_.deallocate_block(address_);
+		if (address_ != 0u)
+			object_.deallocate_block(address_);
 	}
 	catch (...){}
 }
@@ -49,9 +55,6 @@ void cminus::memory::hard_reference::write(logic::runtime &runtime, std::shared_
 	auto score_result = type_->get_score(*source->get_type());
 	if (score_result == logic::type::object::score_result_type::nil)
 		throw exception(error_code::incompatible_types, 0u);
-
-	if ((attributes_ & (attribute_constant | attribute_uninitialized)) == attribute_constant)
-		throw exception(error_code::write_protected, address_);
 
 	std::shared_ptr<reference> temp_ref;
 	if (score_result != logic::type::object::score_result_type::exact && (source = source->get_type()->convert_value(runtime, source, type_)) == nullptr)
@@ -68,9 +71,6 @@ void cminus::memory::hard_reference::write(logic::runtime &runtime, const std::b
 	auto score_result = type_->get_score(*type);
 	if (score_result == logic::type::object::score_result_type::nil)
 		throw exception(error_code::incompatible_types, 0u);
-
-	if ((attributes_ & (attribute_constant | attribute_uninitialized)) == attribute_constant)
-		throw exception(error_code::write_protected, address_);
 
 	std::shared_ptr<reference> temp_ref;
 	if (score_result != logic::type::object::score_result_type::exact && (temp_ref = type->convert_value(runtime, source, type_)) == nullptr)

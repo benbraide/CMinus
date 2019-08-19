@@ -23,7 +23,7 @@ namespace cminus::node{
 
 		virtual std::shared_ptr<object> clone() const override;
 
-		virtual void print(io::writer &writer, bool is_qualified) const override;
+		virtual void print(logic::runtime &runtime) const override;
 
 		virtual std::shared_ptr<memory::reference> evaluate(logic::runtime &runtime) const override;
 

@@ -143,7 +143,7 @@ std::byte *cminus::memory::offset_block::get_data(std::size_t offset) const{
 }
 
 unsigned int cminus::memory::offset_block::get_attributes() const{
-	return target_->get_attributes();
+	return (target_->get_attributes() & ~attribute_has_managed_object);
 }
 
 std::size_t cminus::memory::offset_block::read(std::size_t offset, std::byte *buffer, std::size_t size) const{
@@ -305,6 +305,20 @@ std::size_t cminus::memory::exclusive_block::write(std::size_t offset, const io:
 std::size_t cminus::memory::exclusive_block::write(std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset){
 	if (size == 0u || size_ <= offset)
 		return 0u;//Out of bounds
+
+	if (offset == 0u && buffer_offset == 0u && size == sizeof(std::size_t) && size <= size_ && size <= buffer.get_size() && buffer.has_attributes(attribute_has_managed_object)){//Copy managed
+		auto object = buffer.read_scalar<managed_object *>(0u);
+		if (auto object_clone = object->clone(); object_clone != nullptr){
+			try{
+				if (object_clone != object)
+					return write(*object_clone);
+			}
+			catch (...){
+				delete object_clone;
+				throw;//Forward exception
+			}
+		}
+	}
 
 	if (is_write_protected())//Write protected
 		throw exception(error_code::write_protected, (address_ + offset));

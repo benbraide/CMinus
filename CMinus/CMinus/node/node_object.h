@@ -24,7 +24,7 @@ namespace cminus::node{
 
 		virtual void substitute(const object &target, std::shared_ptr<object> value);
 
-		virtual void print(io::writer &writer, bool is_qualified) const = 0;
+		virtual void print(logic::runtime &runtime) const = 0;
 
 		virtual std::shared_ptr<memory::reference> evaluate(logic::runtime &runtime) const = 0;
 

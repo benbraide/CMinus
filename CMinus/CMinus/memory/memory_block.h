@@ -47,6 +47,42 @@ namespace cminus::memory{
 	class managed_object{
 	public:
 		virtual ~managed_object() = default;
+
+		virtual managed_object *clone() const = 0;
+	};
+
+	template <class value_type>
+	class wrapped_managed_object : public managed_object{
+	public:
+		using m_value_type = value_type;
+
+		explicit wrapped_managed_object(const m_value_type &value)
+			: value_(value){}
+
+		virtual ~wrapped_managed_object() = default;
+
+		virtual managed_object *clone() const override{
+			return new wrapped_managed_object(value_);
+		}
+
+		virtual const m_value_type &get_value() const{
+			return value_;
+		}
+
+	protected:
+		m_value_type value_;
+	};
+
+	template <class value_type>
+	class wrapped_shared_managed_object : public wrapped_managed_object<std::shared_ptr<value_type>>{
+	public:
+		using base_type = wrapped_managed_object<std::shared_ptr<value_type>>;
+		using m_value_type = typename base_type::value_type;
+
+		explicit wrapped_shared_managed_object(const m_value_type &value)
+			: base_type(value){}
+
+		virtual ~wrapped_shared_managed_object() = default;
 	};
 
 	class block{

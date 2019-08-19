@@ -7,16 +7,14 @@ namespace cminus::memory{
 	class reference;
 }
 
-namespace cminus::logic{
-	struct runtime;
-}
-
 namespace cminus::logic::type{
-	class object{
+	class object : public naming::single{
 	public:
 		enum class score_result_type{
 			nil					= 0,
 			exact				= 100,
+			gains_const			= 90,
+			drops_ref			= 90,
 			ancestor			= 60,
 			compatible			= 20,
 			class_compatible	= 10,
@@ -26,7 +24,9 @@ namespace cminus::logic::type{
 			too_shortened		= 30,
 		};
 
-		virtual ~object() = default;
+		object(const std::string &value, naming::parent *parent);
+
+		virtual ~object();
 
 		virtual std::size_t get_size() const = 0;
 

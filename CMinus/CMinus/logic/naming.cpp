@@ -1,4 +1,4 @@
-#include "naming.h"
+#include "runtime.h"
 
 cminus::logic::naming::single::single(const std::string &value, naming::parent *parent)
 	: parent_(parent), value_(value){}
@@ -17,11 +17,11 @@ std::string cminus::logic::naming::single::get_qualified_naming_value() const{
 	return (((parent_ == nullptr) ? "" : parent_->get_qualified_naming_value()) + "::" + value_);
 }
 
-void cminus::logic::naming::single::print(io::writer &writer, bool is_qualified) const{
+void cminus::logic::naming::single::print(logic::runtime &runtime, bool is_qualified) const{
 	if (is_qualified)
-		writer.write_scalar(get_qualified_naming_value());
+		runtime.writer.write_scalar(get_qualified_naming_value());
 	else
-		writer.write_buffer(value_.data(), value_.size());
+		runtime.writer.write_buffer(value_.data(), value_.size());
 }
 
 bool cminus::logic::naming::single::is_same(const object &target) const{

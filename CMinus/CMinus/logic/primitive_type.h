@@ -3,11 +3,8 @@
 #include "runtime.h"
 
 namespace cminus::logic::type{
-	class primitive : public type::object, public naming::single{
+	class primitive : public object{
 	public:
-		using type_base_type = type::object;
-		using naming_base_type = naming::single;
-
 		enum class id_type : char{
 			nil,
 			nullptr_,
@@ -45,7 +42,7 @@ namespace cminus::logic::type{
 
 		virtual std::string get_qualified_naming_value() const override;
 
-		virtual void print(io::writer &writer, bool is_qualified) const override;
+		virtual void print(logic::runtime &runtime, bool is_qualified) const override;
 
 		virtual bool is_same(const naming::object &target) const override;
 

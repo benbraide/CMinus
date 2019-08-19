@@ -1,7 +1,7 @@
 #include "primitive_type.h"
 
 cminus::logic::type::primitive::primitive(id_type id)
-	: naming_base_type(convert_id_to_string(id)), id_(id){}
+	: object(convert_id_to_string(id), nullptr), id_(id){}
 
 cminus::logic::type::primitive::~primitive() = default;
 
@@ -158,8 +158,8 @@ std::string cminus::logic::type::primitive::get_qualified_naming_value() const{
 	return value_;
 }
 
-void cminus::logic::type::primitive::print(io::writer &writer, bool is_qualified) const{
-	writer.write_buffer(value_.data(), value_.size());
+void cminus::logic::type::primitive::print(logic::runtime &runtime, bool is_qualified) const{
+	runtime.writer.write_buffer(value_.data(), value_.size());
 }
 
 bool cminus::logic::type::primitive::is_same(const naming::object &target) const{
