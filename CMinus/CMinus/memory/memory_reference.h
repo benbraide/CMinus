@@ -1,7 +1,10 @@
 #pragma once
 
 #include <list>
+#include <vector>
+#include <functional>
 
+#include "../logic/attributes.h"
 #include "../logic/type_object.h"
 
 #include "memory_object.h"
@@ -9,66 +12,171 @@
 namespace cminus::memory{
 	class reference{
 	public:
-		reference(std::shared_ptr<logic::type::object> type, unsigned int attributes);
+		using attribute_list_type = std::vector<std::shared_ptr<logic::attributes::object>>;
+
+		reference(std::shared_ptr<logic::type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
 
 		virtual ~reference();
 
-		virtual void write(logic::runtime &runtime, std::shared_ptr<reference> source);
-
-		virtual void write(logic::runtime &runtime, const std::byte *source, std::shared_ptr<logic::type::object> type);
+		virtual std::shared_ptr<reference> clone(const attribute_list_type &attributes, bool inherit_attributes) const;
 
 		virtual std::shared_ptr<logic::type::object> get_type() const;
 
-		virtual void set_attributes(unsigned int value);
+		virtual std::shared_ptr<reference> get_context() const;
 
-		virtual unsigned int get_attributes() const;
+		virtual void add_attribute(std::shared_ptr<logic::attributes::object> value);
+
+		virtual void remove_attribute(const std::string &name, bool global_only);
+
+		virtual void remove_attribute(std::shared_ptr<logic::naming::object> name);
+
+		virtual std::shared_ptr<logic::attributes::object> find_attribute(const std::string &name, bool global_only, bool include_context) const;
+
+		virtual std::shared_ptr<logic::attributes::object> find_attribute(std::shared_ptr<logic::naming::object> name, bool include_context) const;
+
+		virtual void traverse_attributes(const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage, bool include_context) const;
+
+		virtual bool is_lvalue() const;
 
 		virtual std::size_t get_address() const;
 
-		virtual const std::byte *get_data() const = 0;
+		virtual const std::byte *get_data(logic::runtime &runtime) const;
 
-		static const unsigned int attribute_none				= (0u << 0x0000u);
-		static const unsigned int attribute_lvalue				= (1u << 0x0000u);
-		static const unsigned int attribute_uninitialized		= (1u << 0x0001u);
-		static const unsigned int attribute_nan					= (1u << 0x0002u);
+		virtual std::size_t read(logic::runtime &runtime, std::byte *buffer, std::size_t size) const;
+
+		virtual std::size_t read(logic::runtime &runtime, io::binary_writer &buffer, std::size_t size) const;
+
+		virtual std::size_t read(logic::runtime &runtime, std::size_t buffer, std::size_t size) const;
+
+		virtual std::size_t read(logic::runtime &runtime, reference &buffer, std::size_t size) const;
+
+		virtual std::size_t write(logic::runtime &runtime, const std::byte *buffer, std::size_t size);
+
+		virtual std::size_t write(logic::runtime &runtime, const io::binary_reader &buffer, std::size_t size);
+
+		virtual std::size_t write(logic::runtime &runtime, std::size_t buffer, std::size_t size);
+
+		virtual std::size_t write(logic::runtime &runtime, const reference &buffer, std::size_t size);
+
+		virtual std::size_t write(logic::runtime &runtime, managed_object &object);
+
+		virtual std::size_t set(logic::runtime &runtime, std::byte value, std::size_t size);
+
+		template <typename target_type>
+		bool can_read_scalar() const{
+			return (sizeof(target_type) <= type_->get_size());
+		}
+
+		template <typename target_type>
+		target_type read_scalar(logic::runtime &runtime) const{
+			auto buffer = target_type();
+			if (read(runtime, reinterpret_cast<std::byte *>(&buffer), sizeof(target_type)) != sizeof(target_type))
+				throw exception(error_code::access_protected, get_address());
+			return buffer;
+		}
+
+		template <typename target_type>
+		std::size_t read_buffer(logic::runtime &runtime, target_type *buffer, std::size_t size) const{
+			return read(runtime, reinterpret_cast<std::byte *>(buffer), (sizeof(target_type) * size));
+		}
+
+		template <typename target_type>
+		bool write_scalar(logic::runtime &runtime, target_type buffer){
+			return (write(runtime, reinterpret_cast<const std::byte *>(&buffer), sizeof(target_type)) == sizeof(target_type));
+		}
+
+		template <typename target_type>
+		std::size_t write_buffer(logic::runtime &runtime, const target_type *buffer, std::size_t size){
+			return write(runtime, reinterpret_cast<const std::byte *>(buffer), (sizeof(target_type) * size));
+		}
 
 	protected:
+		virtual std::shared_ptr<reference> clone_(const attribute_list_type &attributes) const = 0;
+
 		std::shared_ptr<logic::type::object> type_;
-		unsigned int attributes_;
+		std::unordered_map<logic::attributes::object *, std::shared_ptr<logic::attributes::object>> attributes_;
+		std::shared_ptr<reference> context_;
 	};
 
 	class hard_reference : public reference{
 	public:
-		hard_reference(logic::runtime &runtime, std::shared_ptr<logic::type::object> type, unsigned int attributes);
+		hard_reference(logic::runtime &runtime, std::shared_ptr<logic::type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		hard_reference(logic::runtime &runtime, std::shared_ptr<logic::type::object> type, std::shared_ptr<reference> context);
+
+		hard_reference(std::size_t address, std::shared_ptr<logic::type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		hard_reference(std::size_t address, std::shared_ptr<logic::type::object> type, std::shared_ptr<reference> context);
 
 		virtual ~hard_reference();
+
+		virtual std::size_t get_address() const override;
+
+		virtual const std::byte *get_data(logic::runtime &runtime) const override;
+
+		virtual std::size_t read(logic::runtime &runtime, std::byte *buffer, std::size_t size) const override;
+
+		virtual std::size_t read(logic::runtime &runtime, io::binary_writer &buffer, std::size_t size) const override;
+
+		virtual std::size_t read(logic::runtime &runtime, std::size_t buffer, std::size_t size) const override;
+
+		virtual std::size_t read(logic::runtime &runtime, reference &buffer, std::size_t size) const override;
+
+		virtual std::size_t write(logic::runtime &runtime, const std::byte *buffer, std::size_t size) override;
+
+		virtual std::size_t write(logic::runtime &runtime, const io::binary_reader &buffer, std::size_t size) override;
+
+		virtual std::size_t write(logic::runtime &runtime, std::size_t buffer, std::size_t size) override;
+
+		virtual std::size_t write(logic::runtime &runtime, const reference &buffer, std::size_t size) override;
+
+		virtual std::size_t write(logic::runtime &runtime, managed_object &object) override;
+
+		virtual std::size_t set(logic::runtime &runtime, std::byte value, std::size_t size) override;
+
+	protected:
+		virtual std::shared_ptr<reference> clone_(const attribute_list_type &attributes) const override;
+
+		std::size_t address_ = 0u;
+		std::function<void()> deallocator_;
+	};
+
+	/*class proxy_reference : public reference{
+	public:
+		proxy_reference(std::shared_ptr<reference> target, unsigned int attributes);
+
+		virtual ~proxy_reference();
 
 		virtual void write(logic::runtime &runtime, std::shared_ptr<reference> source) override;
 
 		virtual void write(logic::runtime &runtime, const std::byte *source, std::shared_ptr<logic::type::object> type) override;
 
+		virtual unsigned int get_attributes() const override;
+
 		virtual std::size_t get_address() const override;
 
 		virtual const std::byte *get_data() const override;
 
+		virtual std::shared_ptr<reference> get_target() const;
+
 	protected:
-		memory::object &object_;
-		std::size_t address_ = 0u;
-	};
+		std::shared_ptr<reference> target_;
+	};*/
 
 	template <class value_type>
 	class reference_with_value : public reference{
 	public:
 		using m_value_type = value_type;
 
-		reference_with_value(std::shared_ptr<logic::type::object> type, unsigned int attributes, const m_value_type &value)
-			: reference(type, attributes), value_(value){
-			attributes_ &= ~(attribute_uninitialized | attribute_lvalue);
-		}
+		reference_with_value(std::shared_ptr<logic::type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context, const m_value_type &value)
+			: reference(type, attributes, context), value_(value){}
+
+		reference_with_value(std::shared_ptr<logic::type::object> type, std::shared_ptr<reference> context, const m_value_type &value)
+			: reference_with_value(type, attribute_list_type{}, context, value){}
 
 		virtual ~reference_with_value() = default;
 
-		virtual const std::byte *get_data() const override{
+		virtual const std::byte *get_data(logic::runtime &runtime) const override{
 			return reinterpret_cast<const std::byte *>(&value_);
 		}
 
@@ -81,10 +189,14 @@ namespace cminus::memory{
 		}
 
 	protected:
+		virtual std::shared_ptr<reference> clone_(const std::vector<std::shared_ptr<logic::attributes::object>> &attributes) const override{
+			return std::make_shared<reference_with_value>(type_, attributes, context_, value_);
+		}
+
 		m_value_type value_;
 	};
 
-	template <class value_type>
+	/*template <class value_type>
 	class reference_with_list : public reference{
 	public:
 		using m_value_type = value_type;
@@ -126,5 +238,5 @@ namespace cminus::memory{
 
 	protected:
 		m_list_type list_;
-	};
+	};*/
 }

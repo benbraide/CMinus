@@ -1,5 +1,16 @@
 #include "runtime.h"
 
+std::shared_ptr<cminus::logic::naming::object> cminus::logic::naming::object::build_name(const std::vector<std::string> &branches){
+	std::shared_ptr<cminus::logic::naming::object> value;
+	for (auto &branch : branches)
+		value = std::make_shared<cminus::logic::naming::parent>(branch, dynamic_cast<parent *>(value.get()));
+	return value;
+}
+
+std::shared_ptr<cminus::logic::naming::object> cminus::logic::naming::object::build_name(const std::string &value){
+	return std::make_shared<cminus::logic::naming::single>(value, nullptr);
+}
+
 cminus::logic::naming::single::single(const std::string &value, naming::parent *parent)
 	: parent_(parent), value_(value){}
 

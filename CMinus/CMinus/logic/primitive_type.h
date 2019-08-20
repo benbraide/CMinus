@@ -3,7 +3,7 @@
 #include "runtime.h"
 
 namespace cminus::logic::type{
-	class primitive : public object{
+	class primitive : public named_object{
 	public:
 		enum class id_type : char{
 			nil,
@@ -39,10 +39,6 @@ namespace cminus::logic::type{
 		virtual std::shared_ptr<memory::reference> convert_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<type::object> target_type) const override;
 
 		virtual std::shared_ptr<memory::reference> convert_value(logic::runtime &runtime, const std::byte *data, std::shared_ptr<type::object> target_type) const override;
-
-		virtual std::string get_qualified_naming_value() const override;
-
-		virtual void print(logic::runtime &runtime, bool is_qualified) const override;
 
 		virtual bool is_same(const naming::object &target) const override;
 

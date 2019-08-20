@@ -1,12 +1,17 @@
 #pragma once
 
-#include "runtime.h"
+#include "naming.h"
+
+namespace cminus::memory{
+	class reference;
+}
 
 namespace cminus::logic::attributes{
 	class object : public naming::single{
 	public:
 		enum class stage_type{
 			nil,
+			before_lookup,
 			after_lookup,
 			before_read,
 			after_read,
@@ -14,9 +19,11 @@ namespace cminus::logic::attributes{
 			after_write,
 			before_delete,
 			after_delete,
+			before_inheritance,
+			after_inheritance,
 		};
 
-		explicit object(const std::string &name);
+		explicit object(const std::string &name, naming::parent *parent);
 
 		virtual ~object();
 

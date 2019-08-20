@@ -14,7 +14,7 @@ cminus::logic::storage::object::~object() = default;
 
 void cminus::logic::storage::object::add(const std::string &name, std::shared_ptr<memory::reference> entry){
 	if (auto it = entries_.find(name); it != entries_.end()){
-		auto function_entry = dynamic_cast<function_type *>(entry.get());
+		/*auto function_entry = dynamic_cast<function_type *>(entry.get());
 		if (function_entry == nullptr)
 			throw exception(error_code::duplicate_entry);
 
@@ -22,11 +22,11 @@ void cminus::logic::storage::object::add(const std::string &name, std::shared_pt
 		if (existing_function_entry == nullptr)
 			throw exception(error_code::duplicate_entry);
 
-		if (/*IsDuplicateFunction()*/false)
+		if (/ *IsDuplicateFunction()* /false)
 			throw exception(error_code::duplicate_function);
 
 		for (auto node : function_entry->get_list())//Combine lists
-			existing_function_entry->add_item(node);
+			existing_function_entry->add_item(node);*/
 	}
 	else//New entry
 		entries_[name] = entry;

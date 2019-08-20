@@ -1,12 +1,12 @@
-#include "attributes.h"
+#include "runtime.h"
 
-cminus::logic::attributes::object::object(const std::string &name)
-	: single(name, nullptr){}
+cminus::logic::attributes::object::object(const std::string &name, naming::parent *parent)
+	: single(name, parent){}
 
 cminus::logic::attributes::object::~object() = default;
 
 cminus::logic::attributes::external::external(const std::string &name)
-	: object(name){}
+	: object(name, nullptr){}
 
 cminus::logic::attributes::external::~external() = default;
 

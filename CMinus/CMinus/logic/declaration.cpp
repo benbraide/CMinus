@@ -1,7 +1,7 @@
 #include "runtime.h"
 #include "declaration.h"
 
-cminus::logic::declaration::declaration(unsigned int attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<node::object> initialization)
+cminus::logic::declaration::declaration(const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<node::object> initialization)
 	: attributes_(attributes), type_(type), name_(name), initialization_(initialization){}
 
 cminus::logic::declaration::~declaration() = default;
@@ -53,7 +53,7 @@ void cminus::logic::declaration::print(logic::runtime &runtime) const{
 		print_initialization_(runtime);
 }
 
-unsigned int cminus::logic::declaration::get_attributes() const{
+const std::vector<std::shared_ptr<cminus::logic::attributes::object>> &cminus::logic::declaration::get_attributes() const{
 	return attributes_;
 }
 
@@ -70,26 +70,38 @@ std::shared_ptr<cminus::node::object> cminus::logic::declaration::get_initializa
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::logic::declaration::allocate_memory_(logic::runtime &runtime) const{
-	return std::make_shared<memory::hard_reference>(runtime, type_, memory::reference::attribute_lvalue);
+	return nullptr;
+	//return std::make_shared<memory::hard_reference>(runtime, type_, memory::reference::attribute_lvalue);
 }
 
 void cminus::logic::declaration::evaluate_initialization_(logic::runtime &runtime, memory::reference &reference) const{
 	auto result = initialization_->evaluate(runtime);
 	if (result == nullptr)
 		throw memory::exception(memory::error_code::allocation_failure, 0u);
-	reference.write(runtime, result);
+	reference.write(runtime, *result, type_->get_size());
 }
 
 void cminus::logic::declaration::print_attributes_(logic::runtime &runtime) const{
-	if ((attributes_ & attribute_static) != 0u)
-		runtime.writer.write_buffer("static ", 6u);
+	if (attributes_.empty())
+		return;
 
-	if ((attributes_ & attribute_thread_local) != 0u)
-		runtime.writer.write_buffer("thread_local ", 13u);
+	runtime.writer.write_scalar('[');
+	auto is_first = true;
+
+	for (auto attribute : attributes_){
+		if (!is_first)
+			runtime.writer.write_scalar(', ');
+		else
+			is_first = false;
+
+		attribute->print(runtime, true);
+	}
+
+	runtime.writer.write_scalar(']');
 }
 
 void cminus::logic::declaration::print_type_(logic::runtime &runtime) const{
-	//type_->print(writer, true);
+	type_->print(runtime, true);
 }
 
 void cminus::logic::declaration::print_name_(logic::runtime &runtime) const{

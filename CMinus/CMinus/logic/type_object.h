@@ -8,7 +8,7 @@ namespace cminus::memory{
 }
 
 namespace cminus::logic::type{
-	class object : public naming::single{
+	class object{
 	public:
 		enum class score_result_type{
 			nil					= 0,
@@ -24,9 +24,9 @@ namespace cminus::logic::type{
 			too_shortened		= 30,
 		};
 
-		object(const std::string &value, naming::parent *parent);
-
 		virtual ~object();
+
+		virtual void print(logic::runtime &runtime, bool is_qualified) const = 0;
 
 		virtual std::size_t get_size() const = 0;
 
@@ -35,5 +35,16 @@ namespace cminus::logic::type{
 		virtual std::shared_ptr<memory::reference> convert_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<object> target_type) const = 0;
 
 		virtual std::shared_ptr<memory::reference> convert_value(logic::runtime &runtime, const std::byte *data, std::shared_ptr<object> target_type) const = 0;
+	};
+
+	class named_object : public object, public naming::single{
+	public:
+		named_object(const std::string &value, naming::parent *parent);
+
+		virtual ~named_object();
+
+		virtual void print(logic::runtime &runtime, bool is_qualified) const override;
+
+		virtual std::string get_qualified_naming_value() const override;
 	};
 }

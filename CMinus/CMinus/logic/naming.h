@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <memory>
 #include <unordered_map>
 
@@ -26,6 +27,10 @@ namespace cminus::logic::naming{
 		virtual void print(logic::runtime &runtime, bool is_qualified) const = 0;
 
 		virtual bool is_same(const object &target) const = 0;
+
+		static std::shared_ptr<object> build_name(const std::vector<std::string> &branches);
+
+		static std::shared_ptr<object> build_name(const std::string &value);
 	};
 
 	class single : public object{

@@ -36,31 +36,31 @@ std::shared_ptr<cminus::memory::reference> cminus::node::named_constant::evaluat
 	case constant_type::false_:
 		return std::make_shared<memory::reference_with_value<constant_type>>(
 			runtime.global_storage->find_type(logic::type::primitive::convert_id_to_string(logic::type::primitive::id_type::bool_), false),
-			0u,
+			nullptr,
 			constant_type::false_
 		);
 	case constant_type::true_:
 		return std::make_shared<memory::reference_with_value<constant_type>>(
 			runtime.global_storage->find_type(logic::type::primitive::convert_id_to_string(logic::type::primitive::id_type::bool_), false),
-			0u,
+			nullptr,
 			constant_type::true_
 		);
 	case constant_type::indeterminate:
 		return std::make_shared<memory::reference_with_value<constant_type>>(
 			runtime.global_storage->find_type(logic::type::primitive::convert_id_to_string(logic::type::primitive::id_type::bool_), false),
-			0u,
+			nullptr,
 			constant_type::indeterminate
 		);
 	case constant_type::nullptr_:
 		return std::make_shared<memory::reference_with_value<unsigned __int64>>(
 			runtime.global_storage->find_type(logic::type::primitive::convert_id_to_string(logic::type::primitive::id_type::nullptr_), false),
-			0u,
+			nullptr,
 			0ui64
 		);
 	case constant_type::nan_:
 		return std::make_shared<memory::reference_with_value<constant_type>>(
 			runtime.global_storage->find_type(logic::type::primitive::convert_id_to_string(logic::type::primitive::id_type::nan_), false),
-			0u,
+			nullptr,
 			constant_type::nan_
 		);
 	default:

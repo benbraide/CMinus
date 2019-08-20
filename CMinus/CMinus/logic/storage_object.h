@@ -25,7 +25,6 @@ namespace cminus::logic::storage{
 	class object : public naming::parent{
 	public:
 		using parent_base_type = naming::parent;
-		using function_type = memory::reference_with_list<std::shared_ptr<node::object>>;
 
 		explicit object(const std::string &value, object *parent = nullptr);
 
