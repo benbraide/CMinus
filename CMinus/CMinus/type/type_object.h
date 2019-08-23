@@ -38,6 +38,8 @@ namespace cminus::type{
 
 		virtual score_result_type get_score(const object &target, bool is_ref) const = 0;
 
+		virtual std::shared_ptr<memory::reference> get_default_value(logic::runtime &runtime) const = 0;
+
 		virtual std::shared_ptr<memory::reference> convert_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<object> target_type, bool is_ref) const = 0;
 
 		virtual std::shared_ptr<memory::reference> convert_value(logic::runtime &runtime, const std::byte *data, std::shared_ptr<object> target_type) const = 0;

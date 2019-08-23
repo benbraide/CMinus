@@ -16,9 +16,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
 	read_attribute_guard left_read_guard(runtime, target, true);
-	if (target->is_nan())
-		return arithmetic::evaluate_nan_unary_left_(runtime, std::get<operator_id>(op));
-
 	switch (primitive_type->get_id()){
 	case type::primitive::id_type::float_:
 		return arithmetic::evaluate_unary_left_<float>(runtime, std::get<operator_id>(op), target);
@@ -44,7 +41,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 	if (auto result = compound_assignment::evaluate_(runtime, op, left_value, right); result != nullptr)//Handled
 		return result;
 
-	if (left_value == nullptr || !std::holds_alternative<operator_id>(op) || !object::operator_is_arithmetic(std::get<operator_id>(op)))
+	if (left_value == nullptr || !std::holds_alternative<operator_id>(op) || !object::operator_is_floating_point(std::get<operator_id>(op)))
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
 	auto right_value = object::convert_operand_to_memory_reference(runtime, right);
@@ -55,27 +52,29 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 	if (left_type == nullptr || right_type == nullptr)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
-	if (left_type->get_score(*right_type, false) != type::object::score_result_type::exact){
-		if (left_value->is_nan() || right_value->is_nan()){
-			read_attribute_guard left_read_guard(runtime, left_value, true);
-			read_attribute_guard right_read_guard(runtime, right_value, true);
-
-			if (auto result = arithmetic::evaluate_nan_(runtime, std::get<operator_id>(op)); result != nullptr)//Handled
-				return result;
-
-			if (auto result = arithmetic::compare_nan_(runtime, std::get<operator_id>(op), left_value); result != nullptr)//Handled
-				return result;
-		}
-
-		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
-	}
-
 	auto left_primitive_type = dynamic_cast<type::primitive *>(left_type.get());
 	if (left_primitive_type == nullptr)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
-	read_attribute_guard left_read_guard(runtime, left_value, true);
-	read_attribute_guard right_read_guard(runtime, right_value, true);
+	auto left_value_copy = left_value, right_value_copy = right_value;
+	switch (left_type->get_score(*right_type, false)){
+	case type::object::score_result_type::exact:
+	case type::object::score_result_type::assignable://Conversion from NaN value
+		break;
+	case type::object::score_result_type::shortened:
+	case type::object::score_result_type::too_shortened:
+		left_value = left_type->convert_value(runtime, left_value, right_type, false);
+		break;
+	default:
+		right_value = right_type->convert_value(runtime, right_value, left_type, false);
+		break;
+	}
+
+	if (left_value == nullptr || right_value == nullptr)
+		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
+
+	read_attribute_guard left_read_guard(runtime, left_value_copy, true);
+	read_attribute_guard right_read_guard(runtime, right_value_copy, true);
 
 	switch (left_primitive_type->get_id()){
 	case type::primitive::id_type::float_:

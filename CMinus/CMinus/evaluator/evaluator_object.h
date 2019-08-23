@@ -28,9 +28,15 @@ namespace cminus::evaluator{
 
 		static bool operator_is_arithmetic(operator_id id);
 
-		static bool operator_is_integral(operator_id id);
+		static bool operator_is_integral_arithmetic(operator_id id);
 
 		static bool operator_is_relational(operator_id id);
+
+		static bool operator_is_shift(operator_id id, bool include_index);
+
+		static bool operator_is_floating_point(operator_id id);
+
+		static bool operator_is_integral(operator_id id);
 
 		static std::shared_ptr<memory::reference> convert_operand_to_memory_reference(logic::runtime &runtime, const operand_type &value);
 	};

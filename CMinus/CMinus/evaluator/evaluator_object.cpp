@@ -149,10 +149,6 @@ bool cminus::evaluator::object::operator_is_compound_assignment(operator_id id){
 
 bool cminus::evaluator::object::operator_is_arithmetic(operator_id id){
 	switch (id){
-	case operator_id::compound_plus:
-	case operator_id::compound_minus:
-	case operator_id::compound_times:
-	case operator_id::compound_divide:
 	case operator_id::plus:
 	case operator_id::minus:
 	case operator_id::times:
@@ -165,14 +161,8 @@ bool cminus::evaluator::object::operator_is_arithmetic(operator_id id){
 	return false;
 }
 
-bool cminus::evaluator::object::operator_is_integral(operator_id id){
+bool cminus::evaluator::object::operator_is_integral_arithmetic(operator_id id){
 	switch (id){
-	case operator_id::compound_modulus:
-	case operator_id::compound_bitwise_or:
-	case operator_id::compound_bitwise_xor:
-	case operator_id::compound_bitwise_and:
-	case operator_id::compound_left_shift:
-	case operator_id::compound_right_shift:
 	case operator_id::modulus:
 	case operator_id::bitwise_or:
 	case operator_id::bitwise_xor:
@@ -203,6 +193,28 @@ bool cminus::evaluator::object::operator_is_relational(operator_id id){
 	}
 
 	return false;
+}
+
+bool cminus::evaluator::object::operator_is_shift(operator_id id, bool include_index){
+	switch (id){
+	case operator_id::index:
+		return include_index;
+	case operator_id::left_shift:
+	case operator_id::right_shift:
+		return true;
+	default:
+		break;
+	}
+
+	return false;
+}
+
+bool cminus::evaluator::object::operator_is_floating_point(operator_id id){
+	return (operator_is_arithmetic(id) || operator_is_relational(id));
+}
+
+bool cminus::evaluator::object::operator_is_integral(operator_id id){
+	return (operator_is_arithmetic(id) || operator_is_integral_arithmetic(id) || operator_is_relational(id) || operator_is_shift(id, true));
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::evaluator::object::convert_operand_to_memory_reference(logic::runtime &runtime, const operand_type &value){

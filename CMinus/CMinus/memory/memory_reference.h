@@ -157,28 +157,6 @@ namespace cminus::memory{
 		std::function<void()> deallocator_;
 	};
 
-	/*class proxy_reference : public reference{
-	public:
-		proxy_reference(std::shared_ptr<reference> target, unsigned int attributes);
-
-		virtual ~proxy_reference();
-
-		virtual void write(logic::runtime &runtime, std::shared_ptr<reference> source) override;
-
-		virtual void write(logic::runtime &runtime, const std::byte *source, std::shared_ptr<type::object> type) override;
-
-		virtual unsigned int get_attributes() const override;
-
-		virtual std::size_t get_address() const override;
-
-		virtual const std::byte *get_data() const override;
-
-		virtual std::shared_ptr<reference> get_target() const;
-
-	protected:
-		std::shared_ptr<reference> target_;
-	};*/
-
 	template <class value_type>
 	class reference_with_value : public reference{
 	public:
@@ -211,48 +189,4 @@ namespace cminus::memory{
 
 		m_value_type value_;
 	};
-
-	/*template <class value_type>
-	class reference_with_list : public reference{
-	public:
-		using m_value_type = value_type;
-		using m_list_type = std::list<m_value_type>;
-
-		reference_with_list(std::shared_ptr<type::object> type, unsigned int attributes)
-			: reference(type, attributes){
-			attributes_ &= ~attribute_uninitialized;
-		}
-
-		reference_with_list(std::shared_ptr<type::object> type, unsigned int attributes, const m_value_type &item)
-			: reference(type, attributes){
-			attributes_ &= ~attribute_uninitialized;
-			list_.push_back(item);
-		}
-
-		reference_with_list(std::shared_ptr<type::object> type, unsigned int attributes, const m_list_type &list)
-			: reference(type, attributes), list_(list){
-			attributes_ &= ~attribute_uninitialized;
-		}
-
-		virtual ~reference_with_list() = default;
-
-		virtual const std::byte *get_data() const override{
-			return nullptr;
-		}
-
-		virtual void add_item(const m_value_type &item){
-			list_.push_back(item);
-		}
-
-		virtual const m_list_type &get_list() const{
-			return list_;
-		}
-
-		virtual m_list_type &get_list(){
-			return list_;
-		}
-
-	protected:
-		m_list_type list_;
-	};*/
 }

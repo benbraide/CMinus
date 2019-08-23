@@ -85,6 +85,49 @@ cminus::type::object::score_result_type cminus::type::primitive::get_score(const
 	return score_result_type::nil;
 }
 
+std::shared_ptr<cminus::memory::reference> cminus::type::primitive::get_default_value(logic::runtime &runtime) const{
+	switch (id_){
+	case id_type::nullptr_:
+		return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nullptr_);
+	case id_type::bool_:
+		return runtime.global_storage->get_named_constant(node::named_constant::constant_type::indeterminate);
+	case id_type::byte_:
+		return std::make_shared<memory::reference_with_value<std::byte>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::byte_), nullptr, static_cast<std::byte>(0));
+	case id_type::char_:
+		return std::make_shared<memory::reference_with_value<char>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::char_), nullptr, static_cast<char>(0));
+	case id_type::wchar_:
+		return std::make_shared<memory::reference_with_value<wchar_t>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::wchar_), nullptr, static_cast<wchar_t>(0));
+	case id_type::int8_:
+		return std::make_shared<memory::reference_with_value<__int8>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::int8_), nullptr, static_cast<__int8>(0));
+	case id_type::uint8_:
+		return std::make_shared<memory::reference_with_value<unsigned __int8>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::uint8_), nullptr, static_cast<unsigned __int8>(0));
+	case id_type::int16_:
+		return std::make_shared<memory::reference_with_value<__int16>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::int16_), nullptr, static_cast<__int16>(0));
+	case id_type::uint16_:
+		return std::make_shared<memory::reference_with_value<unsigned __int16>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::uint16_), nullptr, static_cast<unsigned __int16>(0));
+	case id_type::int32_:
+		return std::make_shared<memory::reference_with_value<__int32>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::int32_), nullptr, static_cast<__int32>(0));
+	case id_type::uint32_:
+		return std::make_shared<memory::reference_with_value<unsigned __int32>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::uint32_), nullptr, static_cast<unsigned __int32>(0));
+	case id_type::int64_:
+		return std::make_shared<memory::reference_with_value<__int64>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::int64_), nullptr, static_cast<__int64>(0));
+	case id_type::uint64_:
+		return std::make_shared<memory::reference_with_value<unsigned __int64>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::uint64_), nullptr, static_cast<unsigned __int64>(0));
+	case id_type::float_:
+		return std::make_shared<memory::reference_with_value<float>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::float_), nullptr, static_cast<float>(0));
+	case id_type::double_:
+		return std::make_shared<memory::reference_with_value<double>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::double_), nullptr, static_cast<double>(0));
+	case id_type::ldouble:
+		return std::make_shared<memory::reference_with_value<long double>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::ldouble), nullptr, static_cast<long double>(0));
+	case id_type::nan_:
+		return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
+	default:
+		break;
+	}
+
+	return nullptr;
+}
+
 std::shared_ptr<cminus::memory::reference> cminus::type::primitive::convert_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<type::object> target_type, bool is_ref) const{
 	if (is_ref)
 		return nullptr;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <bitset>
+
 #include "boolean_evaluator.h"
 
 namespace cminus::evaluator{
@@ -82,6 +84,18 @@ namespace cminus::evaluator{
 				return std::make_shared<memory::reference_with_value<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) >> right_value->read_scalar<shift_type>(runtime)));
 			default:
 				break;
+			}
+
+			if (op == operator_id::index){//Get bit
+				auto index = static_cast<std::size_t>(right_value->read_scalar<shift_type>(runtime));
+				if (8u <= index)//Out of bounds
+					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::false_);
+
+				auto value = left_value->read_scalar<value_type>(runtime);
+				if (std::bitset<8u>(static_cast<std::size_t>(value)).test(index))
+					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::true_);
+
+				return runtime.global_storage->get_named_constant(node::named_constant::constant_type::false_);
 			}
 
 			return nullptr;

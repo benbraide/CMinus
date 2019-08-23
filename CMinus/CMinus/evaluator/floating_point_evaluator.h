@@ -4,7 +4,7 @@
 #include "arithmetic_evaluator.h"
 
 namespace cminus::evaluator{
-	class floating_point : public boolean, public compound_assignment, public arithmetic{
+	class floating_point : public object, public assignment, public compound_assignment, public explicit_comparison, public arithmetic{
 	public:
 		virtual ~floating_point();
 
@@ -20,7 +20,7 @@ namespace cminus::evaluator{
 			if (auto result = arithmetic::evaluate_binary_<value_type>(runtime, op, left_value, right_value); result != nullptr)
 				return result;
 
-			return boolean::evaluate_<value_type>(runtime, op, left_value, right_value);
+			return arithmetic::compare_<value_type>(runtime, op, left_value, right_value);
 		}
 	};
 }

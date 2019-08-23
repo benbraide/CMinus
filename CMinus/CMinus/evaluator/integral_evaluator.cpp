@@ -23,37 +23,23 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 		write_guard = std::make_shared<write_attribute_guard>(runtime, target, true);
 
 	read_attribute_guard read_guard(runtime, target, true);
-	if (target->is_nan()){
-		switch (std::get<operator_id>(op)){
-		case operator_id::increment:
-		case operator_id::decrement:
-			return target;
-		case operator_id::bitwise_inverse:
-			return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
-		default:
-			break;
-		}
-
-		return arithmetic::evaluate_nan_unary_left_(runtime, std::get<operator_id>(op));
-	}
-
 	switch (primitive_type->get_id()){
 	case type::primitive::id_type::int8_:
-		return arithmetic::evaluate_unary_left_<__int8>(runtime, std::get<operator_id>(op), target);
+		return arithmetic::evaluate_integral_unary_left_<__int8>(runtime, std::get<operator_id>(op), target);
 	case type::primitive::id_type::uint8_:
-		return arithmetic::evaluate_unsigned_unary_left_<unsigned __int8>(runtime, std::get<operator_id>(op), target);
+		return arithmetic::evaluate_unsigned_integral_unary_left_<unsigned __int8>(runtime, std::get<operator_id>(op), target);
 	case type::primitive::id_type::int16_:
-		return arithmetic::evaluate_unary_left_<__int16>(runtime, std::get<operator_id>(op), target);
+		return arithmetic::evaluate_integral_unary_left_<__int16>(runtime, std::get<operator_id>(op), target);
 	case type::primitive::id_type::uint16_:
-		return arithmetic::evaluate_unsigned_unary_left_<unsigned __int16>(runtime, std::get<operator_id>(op), target);
+		return arithmetic::evaluate_unsigned_integral_unary_left_<unsigned __int16>(runtime, std::get<operator_id>(op), target);
 	case type::primitive::id_type::int32_:
-		return arithmetic::evaluate_unary_left_<__int32>(runtime, std::get<operator_id>(op), target);
+		return arithmetic::evaluate_integral_unary_left_<__int32>(runtime, std::get<operator_id>(op), target);
 	case type::primitive::id_type::uint32_:
-		return arithmetic::evaluate_unsigned_unary_left_<unsigned __int32>(runtime, std::get<operator_id>(op), target);
+		return arithmetic::evaluate_unsigned_integral_unary_left_<unsigned __int32>(runtime, std::get<operator_id>(op), target);
 	case type::primitive::id_type::int64_:
-		return arithmetic::evaluate_unary_left_<__int64>(runtime, std::get<operator_id>(op), target);
+		return arithmetic::evaluate_integral_unary_left_<__int64>(runtime, std::get<operator_id>(op), target);
 	case type::primitive::id_type::uint64_:
-		return arithmetic::evaluate_unsigned_unary_left_<unsigned __int64>(runtime, std::get<operator_id>(op), target);
+		return arithmetic::evaluate_unsigned_integral_unary_left_<unsigned __int64>(runtime, std::get<operator_id>(op), target);
 	default:
 		break;
 	}
@@ -72,31 +58,11 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 	if (primitive_type == nullptr || !primitive_type->is_integral())
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
-	auto will_write = (std::get<operator_id>(op) == operator_id::increment || std::get<operator_id>(op) == operator_id::decrement);
-	if (!will_write && std::get<operator_id>(op) != operator_id::bitwise_inverse && std::get<operator_id>(op) != operator_id::plus){
-		if (std::get<operator_id>(op) != operator_id::minus || primitive_type->is_unsigned_integral())
-			throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
-	}
-
-	std::shared_ptr<write_attribute_guard> write_guard;
-	if (will_write)
-		write_guard = std::make_shared<write_attribute_guard>(runtime, target, true);
-
-	read_attribute_guard read_guard(runtime, target, true);
-	if (target->is_nan()){
-		switch (std::get<operator_id>(op)){
-		case operator_id::increment:
-		case operator_id::decrement:
-			return target;
-		case operator_id::bitwise_inverse:
-			return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
-		default:
-			break;
-		}
-
+	if (std::get<operator_id>(op) != operator_id::increment && std::get<operator_id>(op) != operator_id::decrement)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
-		return nullptr;
-	}
+
+	write_attribute_guard write_guard(runtime, target, true);
+	read_attribute_guard read_guard(runtime, target, true);
 
 	switch (primitive_type->get_id()){
 	case type::primitive::id_type::int8_:
@@ -133,7 +99,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 	if (auto result = compound_assignment::evaluate_(runtime, op, left_value, right); result != nullptr)//Handled
 		return result;
 
-	if (left_value == nullptr || !std::holds_alternative<operator_id>(op) || (!object::operator_is_arithmetic(std::get<operator_id>(op)) && !object::operator_is_integral(std::get<operator_id>(op))))
+	if (left_value == nullptr || !std::holds_alternative<operator_id>(op) || !object::operator_is_integral(std::get<operator_id>(op)))
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
 	auto right_value = object::convert_operand_to_memory_reference(runtime, right);
@@ -144,24 +110,69 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 	if (left_type == nullptr || right_type == nullptr)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
-	if (left_type->get_score(*right_type, false) != type::object::score_result_type::exact){
-		if (left_value->is_nan() || right_value->is_nan()){
-			if (auto result = arithmetic::evaluate_nan_(runtime, std::get<operator_id>(op)); result != nullptr)//Handled
-				return result;
-
-			if (auto result = arithmetic::compare_nan_(runtime, std::get<operator_id>(op), left_value); result != nullptr)//Handled
-				return result;
-		}
-
-		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
-	}
-
 	auto left_primitive_type = dynamic_cast<type::primitive *>(left_type.get());
 	if (left_primitive_type == nullptr)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
-	read_attribute_guard left_read_guard(runtime, left_value, true);
-	read_attribute_guard right_read_guard(runtime, right_value, true);
+	if (object::operator_is_shift(std::get<operator_id>(op), true)){
+		read_attribute_guard left_read_guard(runtime, left_value, true);
+		read_attribute_guard right_read_guard(runtime, right_value, true);
+
+		std::shared_ptr<memory::reference> result;
+		switch (left_primitive_type->get_id()){
+		case type::primitive::id_type::int8_:
+			result = arithmetic::evaluate_integral_shift_<__int8>(runtime, std::get<operator_id>(op), left_value, right_value);
+			break;
+		case type::primitive::id_type::uint8_:
+			result = arithmetic::evaluate_integral_shift_<unsigned __int8>(runtime, std::get<operator_id>(op), left_value, right_value);
+			break;
+		case type::primitive::id_type::int16_:
+			result = arithmetic::evaluate_integral_shift_<__int16>(runtime, std::get<operator_id>(op), left_value, right_value);
+			break;
+		case type::primitive::id_type::uint16_:
+			result = arithmetic::evaluate_integral_shift_<unsigned __int16>(runtime, std::get<operator_id>(op), left_value, right_value);
+			break;
+		case type::primitive::id_type::int32_:
+			result = arithmetic::evaluate_integral_shift_<__int32>(runtime, std::get<operator_id>(op), left_value, right_value);
+			break;
+		case type::primitive::id_type::uint32_:
+			result = arithmetic::evaluate_integral_shift_<unsigned __int32>(runtime, std::get<operator_id>(op), left_value, right_value);
+			break;
+		case type::primitive::id_type::int64_:
+			result = arithmetic::evaluate_integral_shift_<__int64>(runtime, std::get<operator_id>(op), left_value, right_value);
+			break;
+		case type::primitive::id_type::uint64_:
+			result = arithmetic::evaluate_integral_shift_<unsigned __int64>(runtime, std::get<operator_id>(op), left_value, right_value);
+			break;
+		default:
+			break;
+		}
+
+		if (result == nullptr)
+			throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
+
+		return result;
+	}
+
+	auto left_value_copy = left_value, right_value_copy = right_value;
+	switch (left_type->get_score(*right_type, false)){
+	case type::object::score_result_type::exact:
+	case type::object::score_result_type::assignable://Conversion from NaN value
+		break;
+	case type::object::score_result_type::shortened:
+	case type::object::score_result_type::too_shortened:
+		left_value = left_type->convert_value(runtime, left_value, right_type, false);
+		break;
+	default:
+		right_value = right_type->convert_value(runtime, right_value, left_type, false);
+		break;
+	}
+
+	if (left_value == nullptr || right_value == nullptr)
+		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
+
+	read_attribute_guard left_read_guard(runtime, left_value_copy, true);
+	read_attribute_guard right_read_guard(runtime, right_value_copy, true);
 
 	switch (left_primitive_type->get_id()){
 	case type::primitive::id_type::int8_:

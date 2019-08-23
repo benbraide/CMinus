@@ -4,7 +4,7 @@
 #include "arithmetic_evaluator.h"
 
 namespace cminus::evaluator{
-	class integral : public byte, public arithmetic{
+	class integral : public object, public assignment, public compound_assignment, public explicit_comparison, public arithmetic{
 	public:
 		virtual ~integral();
 
@@ -19,13 +19,10 @@ namespace cminus::evaluator{
 
 		template <typename value_type>
 		std::shared_ptr<memory::reference> evaluate_binary_(logic::runtime &runtime, operator_id op, std::shared_ptr<memory::reference> left_value, std::shared_ptr<memory::reference> right_value) const{
-			if (auto result = arithmetic::evaluate_binary_<value_type>(runtime, op, left_value, right_value); result != nullptr)
+			if (auto result = arithmetic::evaluate_integral_binary_<value_type>(runtime, op, left_value, right_value); result != nullptr)
 				return result;
 
-			if (auto result = byte::evaluate_binary_<value_type>(runtime, op, left_value, right_value); result != nullptr)
-				return result;
-
-			return boolean::evaluate_<value_type>(runtime, op, left_value, right_value);
+			return arithmetic::compare_<value_type>(runtime, op, left_value, right_value);
 		}
 	};
 }
