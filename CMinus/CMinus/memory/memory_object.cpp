@@ -36,12 +36,6 @@ std::shared_ptr<cminus::memory::block> cminus::memory::object::allocate_block(st
 	return allocate_block_(size, attributes, min_free_size);
 }
 
-/*
-std::shared_ptr<cminus::memory::block> cminus::memory::object::allocate_composite_block(std::size_t size, unsigned int attributes, std::size_t reserve_size){
-	std::lock_guard<std::shared_mutex> guard(lock_);
-	return allocate_block_(size, attributes, (allocation_state_use_free | allocation_state_composite), reserve_size);
-}*/
-
 std::shared_ptr<cminus::memory::block> cminus::memory::object::reallocate_block(std::size_t address, std::size_t size){
 	if (is_locked())
 		return reallocate_block_(address, size);
@@ -57,6 +51,22 @@ void cminus::memory::object::deallocate_block(std::size_t address){
 	}
 	else
 		deallocate_block_(address);
+}
+
+std::size_t cminus::memory::object::compare(int &result, std::size_t destination_address, const std::byte *buffer, std::size_t size) const{
+	if (is_locked())
+		return compare_(result, destination_address, buffer, size);
+
+	std::shared_lock<std::shared_mutex> guard(lock_);
+	return compare_(result, destination_address, buffer, size);
+}
+
+std::size_t cminus::memory::object::compare(int &result, std::size_t source_address, std::size_t destination_address, std::size_t size) const{
+	if (is_locked())
+		return compare_(result, source_address, destination_address, size);
+
+	std::shared_lock<std::shared_mutex> guard(lock_);
+	return compare_(result, source_address, destination_address, size);
 }
 
 std::size_t cminus::memory::object::read(std::size_t source_address, std::byte *buffer, std::size_t size) const{
@@ -298,6 +308,80 @@ void cminus::memory::object::deallocate_block_(std::size_t address){
 	}
 
 	throw exception(error_code::block_not_found, address);
+}
+
+std::size_t cminus::memory::object::compare_(int &result, std::size_t destination_address, const std::byte *buffer, std::size_t size) const{
+	if (size == 0u){
+		result = 0;
+		return size;
+	}
+
+	auto destination_it = blocks_.end();
+	auto destination_block = find_block_(destination_address, &destination_it);
+
+	if (destination_block == nullptr || destination_it == blocks_.end())
+		throw exception(error_code::block_not_found, destination_address);
+
+	std::size_t compare_size = 0u;
+	while (compare_size < size){
+		compare_size += destination_block->compare(result, 0, (buffer + compare_size), (size - compare_size));
+		if (result == 0 && ++destination_it != blocks_.end())
+			destination_block = *destination_it;
+		else
+			break;
+	}
+
+	return compare_size;
+}
+
+std::size_t cminus::memory::object::compare_(int &result, std::size_t source_address, std::size_t destination_address, std::size_t size) const{
+	if (size == 0u){
+		result = 0;
+		return size;
+	}
+
+	auto source_it = blocks_.end();
+	auto source_block = find_block_(source_address, &source_it);
+
+	if (source_block == nullptr || source_it == blocks_.end())
+		throw exception(error_code::block_not_found, source_address);
+
+	auto destination_it = blocks_.end();
+	auto destination_block = find_block_(destination_address, &destination_it);
+
+	if (destination_block == nullptr || destination_it == blocks_.end())
+		throw exception(error_code::block_not_found, destination_address);
+
+	std::size_t compare_size = 0u, current_compare_size = 0u, source_offset = 0u, destination_offset = 0u;
+	while (compare_size < size){
+		current_compare_size = destination_block->compare(result, source_offset, *source_block, (size - compare_size), destination_offset);
+		compare_size += current_compare_size;
+
+		if (result != 0)
+			break;
+
+		if ((source_block->size_ - source_offset) <= current_compare_size){//Use next block
+			source_offset = 0u;
+			if (++source_it != blocks_.end())
+				source_block = *source_it;
+			else
+				break;
+		}
+		else//Advance offset
+			source_offset += current_compare_size;
+
+		if ((destination_block->size_ - destination_offset) <= current_compare_size){//Use next block
+			destination_offset = 0u;
+			if (++destination_it != blocks_.end())
+				destination_block = *destination_it;
+			else
+				break;
+		}
+		else//Advance offset
+			destination_offset += current_compare_size;
+	}
+
+	return compare_size;
 }
 
 std::size_t cminus::memory::object::read_(std::size_t source_address, std::byte *buffer, std::size_t size) const{

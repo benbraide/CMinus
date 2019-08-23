@@ -20,13 +20,13 @@ namespace cminus::memory{
 
 		std::shared_ptr<block> allocate_block(std::size_t size, unsigned int attributes, std::size_t min_free_size = 0u);
 
-		//std::shared_ptr<block> allocate_exclusive_block(std::size_t size, unsigned int attributes);
-
-		//std::shared_ptr<block> allocate_composite_block(std::size_t size, unsigned int attributes, std::size_t reserve_size = 0u);
-
 		std::shared_ptr<block> reallocate_block(std::size_t address, std::size_t size);
 
 		void deallocate_block(std::size_t address);
+
+		std::size_t compare(int &result, std::size_t destination_address, const std::byte *buffer, std::size_t size) const;
+
+		std::size_t compare(int &result, std::size_t source_address, std::size_t destination_address, std::size_t size) const;
 
 		std::size_t read(std::size_t source_address, std::byte *buffer, std::size_t size) const;
 
@@ -91,6 +91,10 @@ namespace cminus::memory{
 		std::shared_ptr<block> reallocate_block_(std::size_t address, std::size_t size);
 
 		void deallocate_block_(std::size_t address);
+
+		std::size_t compare_(int &result, std::size_t destination_address, const std::byte *buffer, std::size_t size) const;
+
+		std::size_t compare_(int &result, std::size_t source_address, std::size_t destination_address, std::size_t size) const;
 
 		std::size_t read_(std::size_t source_address, std::byte *buffer, std::size_t size) const;
 

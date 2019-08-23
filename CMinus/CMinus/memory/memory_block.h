@@ -119,6 +119,10 @@ namespace cminus::memory{
 
 		virtual bool is_executable() const;
 
+		virtual std::size_t compare(int &result, std::size_t offset, const std::byte *buffer, std::size_t size) const = 0;
+
+		virtual std::size_t compare(int &result, std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset = 0u) const = 0;
+
 		virtual std::size_t read(std::size_t offset, std::byte *buffer, std::size_t size) const = 0;
 
 		virtual std::size_t read(std::size_t offset, io::binary_writer &buffer, std::size_t size) const = 0;
@@ -191,6 +195,10 @@ namespace cminus::memory{
 
 		virtual std::byte *get_data(std::size_t offset = 0u) const override;
 
+		virtual std::size_t compare(int &result, std::size_t offset, const std::byte *buffer, std::size_t size) const override;
+
+		virtual std::size_t compare(int &result, std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset = 0u) const override;
+
 		virtual std::size_t read(std::size_t offset, std::byte *buffer, std::size_t size) const override;
 
 		virtual std::size_t read(std::size_t offset, io::binary_writer &buffer, std::size_t size) const override;
@@ -233,6 +241,10 @@ namespace cminus::memory{
 
 		virtual unsigned int get_attributes() const override;
 
+		virtual std::size_t compare(int &result, std::size_t offset, const std::byte *buffer, std::size_t size) const override;
+
+		virtual std::size_t compare(int &result, std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset = 0u) const override;
+
 		virtual std::size_t read(std::size_t offset, std::byte *buffer, std::size_t size) const override;
 
 		virtual std::size_t read(std::size_t offset, io::binary_writer &buffer, std::size_t size) const override;
@@ -270,6 +282,10 @@ namespace cminus::memory{
 
 		virtual std::byte *get_data(std::size_t offset = 0u) const override;
 
+		virtual std::size_t compare(int &result, std::size_t offset, const std::byte *buffer, std::size_t size) const override;
+
+		virtual std::size_t compare(int &result, std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset = 0u) const override;
+
 		virtual std::size_t read(std::size_t offset, std::byte *buffer, std::size_t size) const override;
 
 		virtual std::size_t read(std::size_t offset, io::binary_writer &buffer, std::size_t size) const override;
@@ -291,74 +307,4 @@ namespace cminus::memory{
 
 		std::unique_ptr<std::byte[]> data_;
 	};
-
-	/*class inclusive_block : public block{
-	public:
-		inclusive_block();
-
-		inclusive_block(composite_block *owner, std::size_t address, std::size_t size, unsigned int attributes = attribute_none);
-
-		virtual ~inclusive_block();
-
-		virtual std::byte *get_data(std::size_t offset = 0u) const override;
-
-		virtual unsigned int get_attributes() const override;
-
-		virtual std::size_t read(std::size_t offset, std::byte *buffer, std::size_t size) const override;
-
-		virtual std::size_t read(std::size_t offset, io::binary_writer &buffer, std::size_t size) const override;
-
-		virtual std::size_t read(std::size_t offset, block &buffer, std::size_t size, std::size_t buffer_offset = 0u) const override;
-
-		virtual std::size_t write(std::size_t offset, const std::byte *buffer, std::size_t size) override;
-
-		virtual std::size_t write(std::size_t offset, const io::binary_reader &buffer, std::size_t size) override;
-
-		virtual std::size_t write(std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset = 0u) override;
-
-		virtual std::size_t set(std::size_t offset, std::byte value, std::size_t size) override;
-
-	private:
-		friend class object;
-		friend class composite_block;
-
-		composite_block *owner_ = nullptr;
-	};
-
-	class composite_block : public block{
-	public:
-		explicit composite_block(std::size_t reserve_size = 0u);
-
-		composite_block(std::size_t address, std::size_t size, unsigned int attributes = attribute_none, std::size_t reserve_size = 0u);
-
-		virtual ~composite_block();
-
-		virtual std::byte *get_data(std::size_t offset = 0u) const override;
-
-		virtual std::size_t read(std::size_t offset, std::byte *buffer, std::size_t size) const override;
-
-		virtual std::size_t read(std::size_t offset, io::binary_writer &buffer, std::size_t size) const override;
-
-		virtual std::size_t read(std::size_t offset, block &buffer, std::size_t size, std::size_t buffer_offset = 0u) const override;
-
-		virtual std::size_t write(std::size_t offset, const std::byte *buffer, std::size_t size) override;
-
-		virtual std::size_t write(std::size_t offset, const io::binary_reader &buffer, std::size_t size) override;
-
-		virtual std::size_t write(std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset = 0u) override;
-
-		virtual std::size_t set(std::size_t offset, std::byte value, std::size_t size) override;
-
-	private:
-		friend class object;
-		friend class inclusive_block;
-
-		virtual block *append_block_(std::size_t size, unsigned int attributes);
-
-		virtual block *get_block_(std::size_t offset) const;
-
-		std::unique_ptr<std::byte[]> data_;
-		std::vector<std::shared_ptr<block>> blocks_;
-		std::size_t next_block_offset_ = 0u;
-	};*/
 }

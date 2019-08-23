@@ -40,8 +40,11 @@ namespace cminus::logic::storage{
 
 		virtual object *find_storage(const std::string &name, bool search_tree, object *branch = nullptr) const;
 
+		virtual std::shared_ptr<attributes::object> find_attribute(const std::string &name, bool search_tree, object *branch = nullptr) const;
+
 	protected:
 		std::unordered_map<std::string, std::shared_ptr<memory::reference>> entries_;
+		std::unordered_map<std::string, std::shared_ptr<attributes::object>> attributes_;
 	};
 }
 

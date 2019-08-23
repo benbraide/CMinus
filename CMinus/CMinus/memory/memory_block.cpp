@@ -79,6 +79,18 @@ std::byte *cminus::memory::protected_block::get_data(std::size_t offset) const{
 	return nullptr;
 }
 
+std::size_t cminus::memory::protected_block::compare(int &result, std::size_t offset, const std::byte *buffer, std::size_t size) const{
+	if (size != 0u)
+		throw exception(error_code::access_protected, (address_ + offset));
+	return 0u;
+}
+
+std::size_t cminus::memory::protected_block::compare(int &result, std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset) const{
+	if (size != 0u)
+		throw exception(error_code::access_protected, (address_ + offset));
+	return 0u;
+}
+
 std::size_t cminus::memory::protected_block::read(std::size_t offset, std::byte *buffer, std::size_t size) const{
 	if (size != 0u)
 		throw exception(error_code::access_protected, (address_ + offset));
@@ -146,6 +158,14 @@ unsigned int cminus::memory::offset_block::get_attributes() const{
 	return (target_->get_attributes() & ~attribute_has_managed_object);
 }
 
+std::size_t cminus::memory::offset_block::compare(int &result, std::size_t offset, const std::byte *buffer, std::size_t size) const{
+	return target_->compare(result, (offset_ + offset), buffer, size);
+}
+
+std::size_t cminus::memory::offset_block::compare(int &result, std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset) const{
+	return target_->compare(result, (offset_ + offset), buffer, size, buffer_offset);
+}
+
 std::size_t cminus::memory::offset_block::read(std::size_t offset, std::byte *buffer, std::size_t size) const{
 	return target_->read((offset_ + offset), buffer, size);
 }
@@ -204,6 +224,50 @@ cminus::memory::exclusive_block::~exclusive_block(){
 
 std::byte *cminus::memory::exclusive_block::get_data(std::size_t offset) const{
 	return ((data_.get() == nullptr || size_ <= offset) ? nullptr : (data_.get() + offset));
+}
+
+std::size_t cminus::memory::exclusive_block::compare(int &result, std::size_t offset, const std::byte *buffer, std::size_t size) const{
+	if (size == 0u || size_ <= offset){
+		result = 0;
+		return 0u;//Out of bounds
+	}
+
+	if (is_access_protected())//Write protected
+		throw exception(error_code::access_protected, (address_ + offset));
+
+	if ((size_ - offset) < size)//Restrict size
+		size = (size_ - offset);
+
+	if (0u < size && size <= size_)
+		result = memcmp((data_.get() + offset), buffer, size);
+
+	return ((size <= size_) ? size : 0u);
+}
+
+std::size_t cminus::memory::exclusive_block::compare(int &result, std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset) const{
+	if (size == 0u || size_ <= offset){
+		result = 0;
+		return 0u;//Out of bounds
+	}
+
+	if (is_access_protected())//Write protected
+		throw exception(error_code::access_protected, (address_ + offset));
+
+	if ((size_ - offset) < size)//Restrict size
+		size = (size_ - offset);
+
+	if (0u < size && size <= size_){
+		size = buffer.compare(result, buffer_offset, (data_.get() + offset), size);
+		switch (result){
+		case -1:
+		case 1:
+			result = -result;
+		default:
+			break;
+		}
+	}
+
+	return ((size <= size_) ? size : 0u);
 }
 
 std::size_t cminus::memory::exclusive_block::read(std::size_t offset, std::byte *buffer, std::size_t size) const{
@@ -306,7 +370,7 @@ std::size_t cminus::memory::exclusive_block::write(std::size_t offset, const blo
 	if (size == 0u || size_ <= offset)
 		return 0u;//Out of bounds
 
-	if (offset == 0u && buffer_offset == 0u && size == sizeof(std::size_t) && size <= size_ && size <= buffer.get_size() && buffer.has_attributes(attribute_has_managed_object)){//Copy managed
+	if (offset == 0u && buffer_offset == 0u && size == sizeof(void *) && size <= size_ && size <= buffer.get_size() && buffer.has_attributes(attribute_has_managed_object)){//Copy managed
 		auto object = buffer.read_scalar<managed_object *>(0u);
 		if (auto object_clone = object->clone(); object_clone != nullptr){
 			try{
@@ -331,18 +395,19 @@ std::size_t cminus::memory::exclusive_block::write(std::size_t offset, const blo
 			delete read_scalar<managed_object *>(0u);
 			attributes_ &= ~attribute_has_managed_object;
 		}
-		buffer.read(buffer_offset, (data_.get() + offset), size);
+
+		size = buffer.read(buffer_offset, (data_.get() + offset), size);
 	}
 
 	return ((size <= size_) ? size : 0u);
 }
 
 std::size_t cminus::memory::exclusive_block::write(managed_object &object){
-	if (size_ != sizeof(std::size_t) || !write_scalar(0u, &object))
+	if (size_ != sizeof(void *) || !write_scalar(0u, &object))
 		throw exception(error_code::block_misaligned, address_);
 
 	attributes_ |= attribute_has_managed_object;
-	return sizeof(std::size_t);
+	return sizeof(void *);
 }
 
 std::size_t cminus::memory::exclusive_block::set(std::size_t offset, std::byte value, std::size_t size){

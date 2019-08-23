@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../logic/runtime.h"
 #include "../logic/primitive_type.h"
 
 #include "node_object.h"

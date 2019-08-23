@@ -67,3 +67,13 @@ cminus::logic::storage::object *cminus::logic::storage::object::find_storage(con
 
 	return nullptr;
 }
+
+std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::object::find_attribute(const std::string &name, bool search_tree, object *branch) const{
+	if (!attributes_.empty())
+		return nullptr;
+
+	if (auto it = attributes_.find(name); it != attributes_.end())
+		return it->second;
+
+	return nullptr;
+}

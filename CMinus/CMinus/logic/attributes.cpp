@@ -3,7 +3,51 @@
 cminus::logic::attributes::object::object(const std::string &name, naming::parent *parent)
 	: single(name, parent){}
 
+void cminus::logic::attributes::object::call(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	return call_(runtime, stage, target, args);
+}
+
+void cminus::logic::attributes::object::call(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const{
+	return call_(runtime, stage, target, std::vector<std::shared_ptr<memory::reference>>{});
+}
+
 cminus::logic::attributes::object::~object() = default;
+
+cminus::logic::attributes::bound_object::bound_object(std::shared_ptr<object> target, const std::vector<std::shared_ptr<memory::reference>> &args)
+	: object(target->get_naming_value(), target->get_naming_parent()), target_(target), args_(args){}
+
+cminus::logic::attributes::bound_object::bound_object(std::shared_ptr<object> target, std::vector<std::shared_ptr<memory::reference>> &&args)
+	: object(target->get_naming_value(), target->get_naming_parent()), target_(target), args_(std::move(args)){}
+
+cminus::logic::attributes::bound_object::~bound_object() = default;
+
+bool cminus::logic::attributes::bound_object::handles_stage(stage_type value) const{
+	return target_->handles_stage(value);
+}
+
+std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::bound_object::get_target() const{
+	return target_;
+}
+
+const std::vector<std::shared_ptr<cminus::memory::reference>> &cminus::logic::attributes::bound_object::get_args() const{
+	return args_;
+}
+
+void cminus::logic::attributes::bound_object::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	if (args.empty())
+		return target_->call(runtime, stage, target, args_);
+
+	std::vector<std::shared_ptr<memory::reference>> combined_args;
+	combined_args.reserve(args_.size() + args.size());
+
+	for (auto arg : args_)
+		combined_args.push_back(arg);
+
+	for (auto arg : args)
+		combined_args.push_back(arg);
+
+	return target_->call(runtime, stage, target, combined_args);
+}
 
 cminus::logic::attributes::external::external(const std::string &name)
 	: object(name, nullptr){}
@@ -19,7 +63,7 @@ bool cminus::logic::attributes::read_only::handles_stage(stage_type value) const
 	return (value == stage_type::before_write);
 }
 
-void cminus::logic::attributes::read_only::call(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+void cminus::logic::attributes::read_only::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
 	if (stage != stage_type::before_write)
 		return;
 	
@@ -38,7 +82,7 @@ bool cminus::logic::attributes::write_only::handles_stage(stage_type value) cons
 	return (value == stage_type::before_read);
 }
 
-void cminus::logic::attributes::write_only::call(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+void cminus::logic::attributes::write_only::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
 	if (stage != stage_type::before_read)
 		return;
 
@@ -57,7 +101,7 @@ bool cminus::logic::attributes::not_null::handles_stage(stage_type value) const{
 	return (value == stage_type::before_write);
 }
 
-void cminus::logic::attributes::not_null::call(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+void cminus::logic::attributes::not_null::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
 	if (stage != stage_type::before_write || args.size() < 1u/* || !target->get_type()->IsPointer() || !args[0]->IsNull*/)
 		return;
 

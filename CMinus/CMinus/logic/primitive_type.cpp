@@ -1,4 +1,4 @@
-#include "primitive_type.h"
+#include "runtime.h"
 
 cminus::logic::type::primitive::primitive(id_type id)
 	: named_object(convert_id_to_string(id), nullptr), id_(id){}
@@ -41,9 +41,13 @@ std::size_t cminus::logic::type::primitive::get_size() const{
 	return 0u;
 }
 
-cminus::logic::type::object::score_result_type cminus::logic::type::primitive::get_score(const type::object &target) const{
+std::size_t cminus::logic::type::primitive::compute_base_offset(const type::object &target) const{
+	return 0u;
+}
+
+cminus::logic::type::object::score_result_type cminus::logic::type::primitive::get_score(const type::object &target, bool is_ref) const{
 	auto type_target = dynamic_cast<const primitive *>(&target);
-	if (type_target == nullptr){//Check for composite
+	if (type_target == nullptr){//Check for pointer
 		if (type_target == nullptr)
 			return score_result_type::nil;
 	}
@@ -51,18 +55,23 @@ cminus::logic::type::object::score_result_type cminus::logic::type::primitive::g
 	if (type_target->id_ == id_)
 		return score_result_type::exact;
 
+	if (is_ref)
+		return score_result_type::nil;
+
 	switch (id_){
 	case id_type::bool_:
 	case id_type::byte_:
 	case id_type::char_:
 	case id_type::wchar_:
 		return score_result_type::nil;
+	case id_type::nan_:
+		return score_result_type::assignable;
 	default:
 		break;
 	};
 
-	if (is_integer()){
-		if (type_target->is_integer())
+	if (is_integral()){
+		if (type_target->is_integral())
 			return ((id_ < type_target->id_) ? score_result_type::shortened : score_result_type::widened);
 		return (type_target->is_floating_point() ? score_result_type::too_shortened : score_result_type::nil);
 	}
@@ -70,45 +79,47 @@ cminus::logic::type::object::score_result_type cminus::logic::type::primitive::g
 	if (is_floating_point()){
 		if (type_target->is_floating_point())
 			return ((id_ < type_target->id_) ? score_result_type::shortened : score_result_type::widened);
-		return (type_target->is_integer() ? score_result_type::too_widened : score_result_type::nil);
+		return (type_target->is_integral() ? score_result_type::too_widened : score_result_type::nil);
 	}
 
 	return score_result_type::nil;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::type::primitive::convert_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<type::object> target_type) const{
+std::shared_ptr<cminus::memory::reference> cminus::logic::type::primitive::convert_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<type::object> target_type, bool is_ref) const{
+	if (is_ref)
+		return nullptr;
+
 	if (data->get_address() == 0u)//Reference with value
 		return convert_value(runtime, data->get_data(runtime), target_type);
 
 	auto primitive_target_type = dynamic_cast<const primitive *>(target_type.get());
 	if (primitive_target_type == nullptr)
-		throw memory::exception(memory::error_code::incompatible_types, 0u);
+		return nullptr;
 
 	switch (primitive_target_type->id_){
 	case id_type::int8_:
-		return std::make_shared<memory::reference_with_value<__int8>>(target_type, nullptr, convert_source_<__int8>(runtime, data->get_address(), *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<__int8>>(target_type, nullptr, convert_source_<__int8>(runtime.memory_object, data->get_address(), *primitive_target_type));
 	case id_type::uint8_:
-		return std::make_shared<memory::reference_with_value<unsigned __int8>>(target_type, nullptr, convert_source_<unsigned __int8>(runtime, data->get_address(), *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<unsigned __int8>>(target_type, nullptr, convert_source_<unsigned __int8>(runtime.memory_object, data->get_address(), *primitive_target_type));
 	case id_type::int16_:
-		return std::make_shared<memory::reference_with_value<__int16>>(target_type, nullptr, convert_source_<__int16>(runtime, data->get_address(), *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<__int16>>(target_type, nullptr, convert_source_<__int16>(runtime.memory_object, data->get_address(), *primitive_target_type));
 	case id_type::uint16_:
-		return std::make_shared<memory::reference_with_value<unsigned __int16>>(target_type, nullptr, convert_source_<unsigned __int16>(runtime, data->get_address(), *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<unsigned __int16>>(target_type, nullptr, convert_source_<unsigned __int16>(runtime.memory_object, data->get_address(), *primitive_target_type));
 	case id_type::int32_:
-		return std::make_shared<memory::reference_with_value<__int32>>(target_type, nullptr, convert_source_<__int32>(runtime, data->get_address(), *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<__int32>>(target_type, nullptr, convert_source_<__int32>(runtime.memory_object, data->get_address(), *primitive_target_type));
 	case id_type::uint32_:
-		return std::make_shared<memory::reference_with_value<unsigned __int32>>(target_type, nullptr, convert_source_<unsigned __int32>(runtime, data->get_address(), *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<unsigned __int32>>(target_type, nullptr, convert_source_<unsigned __int32>(runtime.memory_object, data->get_address(), *primitive_target_type));
 	case id_type::int64_:
-		return std::make_shared<memory::reference_with_value<__int64>>(target_type, nullptr, convert_source_<__int64>(runtime, data->get_address(), *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<__int64>>(target_type, nullptr, convert_source_<__int64>(runtime.memory_object, data->get_address(), *primitive_target_type));
 	case id_type::uint64_:
-		return std::make_shared<memory::reference_with_value<unsigned __int64>>(target_type, nullptr, convert_source_<unsigned __int64>(runtime, data->get_address(), *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<unsigned __int64>>(target_type, nullptr, convert_source_<unsigned __int64>(runtime.memory_object, data->get_address(), *primitive_target_type));
 	case id_type::float_:
-		return std::make_shared<memory::reference_with_value<float>>(target_type, nullptr, convert_source_<float>(runtime, data->get_address(), *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<float>>(target_type, nullptr, convert_source_<float>(runtime.memory_object, data->get_address(), *primitive_target_type));
 	case id_type::double_:
-		return std::make_shared<memory::reference_with_value<double>>(target_type, nullptr, convert_source_<double>(runtime, data->get_address(), *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<double>>(target_type, nullptr, convert_source_<double>(runtime.memory_object, data->get_address(), *primitive_target_type));
 	case id_type::ldouble:
-		return std::make_shared<memory::reference_with_value<long double>>(target_type, nullptr, convert_source_<long double>(runtime, data->get_address(), *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<long double>>(target_type, nullptr, convert_source_<long double>(runtime.memory_object, data->get_address(), *primitive_target_type));
 	default:
-		throw memory::exception(memory::error_code::incompatible_types, 0u);
 		break;
 	}
 
@@ -121,33 +132,32 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::type::primitive::conve
 
 	auto primitive_target_type = dynamic_cast<const primitive *>(target_type.get());
 	if (primitive_target_type == nullptr)
-		throw memory::exception(memory::error_code::incompatible_types, 0u);
+		return nullptr;
 
 	switch (primitive_target_type->id_){
 	case id_type::int8_:
-		return std::make_shared<memory::reference_with_value<__int8>>(target_type, nullptr, convert_source_<__int8>(runtime, data, *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<__int8>>(target_type, nullptr, convert_source_<__int8>(runtime.memory_object, data, *primitive_target_type));
 	case id_type::uint8_:
-		return std::make_shared<memory::reference_with_value<unsigned __int8>>(target_type, nullptr, convert_source_<unsigned __int8>(runtime, data, *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<unsigned __int8>>(target_type, nullptr, convert_source_<unsigned __int8>(runtime.memory_object, data, *primitive_target_type));
 	case id_type::int16_:
-		return std::make_shared<memory::reference_with_value<__int16>>(target_type, nullptr, convert_source_<__int16>(runtime, data, *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<__int16>>(target_type, nullptr, convert_source_<__int16>(runtime.memory_object, data, *primitive_target_type));
 	case id_type::uint16_:
-		return std::make_shared<memory::reference_with_value<unsigned __int16>>(target_type, nullptr, convert_source_<unsigned __int16>(runtime, data, *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<unsigned __int16>>(target_type, nullptr, convert_source_<unsigned __int16>(runtime.memory_object, data, *primitive_target_type));
 	case id_type::int32_:
-		return std::make_shared<memory::reference_with_value<__int32>>(target_type, nullptr, convert_source_<__int32>(runtime, data, *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<__int32>>(target_type, nullptr, convert_source_<__int32>(runtime.memory_object, data, *primitive_target_type));
 	case id_type::uint32_:
-		return std::make_shared<memory::reference_with_value<unsigned __int32>>(target_type, nullptr, convert_source_<unsigned __int32>(runtime, data, *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<unsigned __int32>>(target_type, nullptr, convert_source_<unsigned __int32>(runtime.memory_object, data, *primitive_target_type));
 	case id_type::int64_:
-		return std::make_shared<memory::reference_with_value<__int64>>(target_type, nullptr, convert_source_<__int64>(runtime, data, *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<__int64>>(target_type, nullptr, convert_source_<__int64>(runtime.memory_object, data, *primitive_target_type));
 	case id_type::uint64_:
-		return std::make_shared<memory::reference_with_value<unsigned __int64>>(target_type, nullptr, convert_source_<unsigned __int64>(runtime, data, *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<unsigned __int64>>(target_type, nullptr, convert_source_<unsigned __int64>(runtime.memory_object, data, *primitive_target_type));
 	case id_type::float_:
-		return std::make_shared<memory::reference_with_value<float>>(target_type, nullptr, convert_source_<float>(runtime, data, *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<float>>(target_type, nullptr, convert_source_<float>(runtime.memory_object, data, *primitive_target_type));
 	case id_type::double_:
-		return std::make_shared<memory::reference_with_value<double>>(target_type, nullptr, convert_source_<double>(runtime, data, *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<double>>(target_type, nullptr, convert_source_<double>(runtime.memory_object, data, *primitive_target_type));
 	case id_type::ldouble:
-		return std::make_shared<memory::reference_with_value<long double>>(target_type, nullptr, convert_source_<long double>(runtime, data, *primitive_target_type));
+		return std::make_shared<memory::reference_with_value<long double>>(target_type, nullptr, convert_source_<long double>(runtime.memory_object, data, *primitive_target_type));
 	default:
-		throw memory::exception(memory::error_code::incompatible_types, 0u);
 		break;
 	}
 
@@ -163,8 +173,27 @@ cminus::logic::type::primitive::id_type cminus::logic::type::primitive::get_id()
 	return id_;
 }
 
-bool cminus::logic::type::primitive::is_integer() const{
+bool cminus::logic::type::primitive::is_numeric() const{
+	return (id_type::int8_ <= id_ && id_ <= id_type::ldouble);
+}
+
+bool cminus::logic::type::primitive::is_integral() const{
 	return (id_type::int8_ <= id_ && id_ <= id_type::uint128_);
+}
+
+bool cminus::logic::type::primitive::is_unsigned_integral() const{
+	switch (id_){
+	case id_type::uint8_:
+	case id_type::uint16_:
+	case id_type::uint32_:
+	case id_type::uint64_:
+	case id_type::uint128_:
+		return true;
+	default:
+		break;
+	}
+
+	return false;
 }
 
 bool cminus::logic::type::primitive::is_floating_point() const{

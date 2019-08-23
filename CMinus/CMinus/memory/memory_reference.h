@@ -38,9 +38,19 @@ namespace cminus::memory{
 
 		virtual bool is_lvalue() const;
 
+		virtual bool is_nan() const;
+
+		virtual void set_address(std::size_t value);
+
 		virtual std::size_t get_address() const;
 
 		virtual const std::byte *get_data(logic::runtime &runtime) const;
+
+		virtual int compare(logic::runtime &runtime, const std::byte *buffer, std::size_t size) const;
+
+		virtual int compare(logic::runtime &runtime, std::size_t buffer, std::size_t size) const;
+
+		virtual int compare(logic::runtime &runtime, const reference &buffer, std::size_t size) const;
 
 		virtual std::size_t read(logic::runtime &runtime, std::byte *buffer, std::size_t size) const;
 
@@ -90,6 +100,10 @@ namespace cminus::memory{
 			return write(runtime, reinterpret_cast<const std::byte *>(buffer), (sizeof(target_type) * size));
 		}
 
+		static void call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args);
+
+		static void call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, std::shared_ptr<memory::reference> target);
+
 	protected:
 		virtual std::shared_ptr<reference> clone_(const attribute_list_type &attributes) const = 0;
 
@@ -109,6 +123,8 @@ namespace cminus::memory{
 		hard_reference(std::size_t address, std::shared_ptr<logic::type::object> type, std::shared_ptr<reference> context);
 
 		virtual ~hard_reference();
+
+		virtual void set_address(std::size_t value) override;
 
 		virtual std::size_t get_address() const override;
 
