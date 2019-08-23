@@ -7,9 +7,9 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::boolean::evaluate_
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
 	auto type = target->get_type();
-	auto primitive_type = dynamic_cast<logic::type::primitive *>(type.get());
+	auto primitive_type = dynamic_cast<type::primitive *>(type.get());
 
-	if (primitive_type == nullptr || primitive_type->get_id() != logic::type::primitive::id_type::bool_)
+	if (primitive_type == nullptr || primitive_type->get_id() != type::primitive::id_type::bool_)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
 	read_attribute_guard read_guard(runtime, target, true);

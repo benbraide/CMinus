@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../logic/primitive_type.h"
+#include "../type/primitive_type.h"
 
 #include "node_object.h"
 

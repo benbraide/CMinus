@@ -7,7 +7,7 @@ cminus::logic::storage::global::global()
 
 cminus::logic::storage::global::~global() = default;
 
-std::shared_ptr<cminus::logic::type::object> cminus::logic::storage::global::get_primitve_type(type::primitive::id_type id) const{
+std::shared_ptr<cminus::type::object> cminus::logic::storage::global::get_primitve_type(type::primitive::id_type id) const{
 	if (primitive_types_.empty())
 		return nullptr;
 

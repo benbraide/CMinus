@@ -40,11 +40,11 @@ bool cminus::logic::function_object::is_defined() const{
 	return (body_ != nullptr);
 }
 
-std::shared_ptr<cminus::logic::type::object> cminus::logic::function_object::get_computed_type() const{
+std::shared_ptr<cminus::type::object> cminus::logic::function_object::get_computed_type() const{
 	return computed_type_;
 }
 
-std::shared_ptr<cminus::logic::type::object> cminus::logic::function_object::get_owner_type() const{
+std::shared_ptr<cminus::type::object> cminus::logic::function_object::get_owner_type() const{
 	return owner_type_;
 }
 
@@ -52,7 +52,7 @@ const std::vector<std::shared_ptr<cminus::logic::attributes::object>> &cminus::l
 	return attributes_;
 }
 
-std::shared_ptr<cminus::logic::type::object> cminus::logic::function_object::get_return_type() const{
+std::shared_ptr<cminus::type::object> cminus::logic::function_object::get_return_type() const{
 	return return_type_;
 }
 

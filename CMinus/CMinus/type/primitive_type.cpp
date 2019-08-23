@@ -1,11 +1,11 @@
-#include "runtime.h"
+#include "../logic/runtime.h"
 
-cminus::logic::type::primitive::primitive(id_type id)
+cminus::type::primitive::primitive(id_type id)
 	: named_object(convert_id_to_string(id), nullptr), id_(id){}
 
-cminus::logic::type::primitive::~primitive() = default;
+cminus::type::primitive::~primitive() = default;
 
-std::size_t cminus::logic::type::primitive::get_size() const{
+std::size_t cminus::type::primitive::get_size() const{
 	switch (id_){
 	case id_type::bool_:
 	case id_type::byte_:
@@ -41,11 +41,11 @@ std::size_t cminus::logic::type::primitive::get_size() const{
 	return 0u;
 }
 
-std::size_t cminus::logic::type::primitive::compute_base_offset(const type::object &target) const{
+std::size_t cminus::type::primitive::compute_base_offset(const type::object &target) const{
 	return 0u;
 }
 
-cminus::logic::type::object::score_result_type cminus::logic::type::primitive::get_score(const type::object &target, bool is_ref) const{
+cminus::type::object::score_result_type cminus::type::primitive::get_score(const type::object &target, bool is_ref) const{
 	auto type_target = dynamic_cast<const primitive *>(&target);
 	if (type_target == nullptr){//Check for pointer
 		if (type_target == nullptr)
@@ -85,7 +85,7 @@ cminus::logic::type::object::score_result_type cminus::logic::type::primitive::g
 	return score_result_type::nil;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::type::primitive::convert_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<type::object> target_type, bool is_ref) const{
+std::shared_ptr<cminus::memory::reference> cminus::type::primitive::convert_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<type::object> target_type, bool is_ref) const{
 	if (is_ref)
 		return nullptr;
 
@@ -126,7 +126,7 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::type::primitive::conve
 	return nullptr;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::type::primitive::convert_value(logic::runtime &runtime, const std::byte *data, std::shared_ptr<type::object> target_type) const{
+std::shared_ptr<cminus::memory::reference> cminus::type::primitive::convert_value(logic::runtime &runtime, const std::byte *data, std::shared_ptr<type::object> target_type) const{
 	if (data == nullptr)//Data required
 		return nullptr;
 
@@ -164,24 +164,24 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::type::primitive::conve
 	return nullptr;
 }
 
-bool cminus::logic::type::primitive::is_same(const naming::object &target) const{
+bool cminus::type::primitive::is_same(const logic::naming::object &target) const{
 	auto type_target = dynamic_cast<const primitive *>(&target);
 	return (type_target != nullptr && type_target->id_ == id_);
 }
 
-cminus::logic::type::primitive::id_type cminus::logic::type::primitive::get_id() const{
+cminus::type::primitive::id_type cminus::type::primitive::get_id() const{
 	return id_;
 }
 
-bool cminus::logic::type::primitive::is_numeric() const{
+bool cminus::type::primitive::is_numeric() const{
 	return (id_type::int8_ <= id_ && id_ <= id_type::ldouble);
 }
 
-bool cminus::logic::type::primitive::is_integral() const{
+bool cminus::type::primitive::is_integral() const{
 	return (id_type::int8_ <= id_ && id_ <= id_type::uint128_);
 }
 
-bool cminus::logic::type::primitive::is_unsigned_integral() const{
+bool cminus::type::primitive::is_unsigned_integral() const{
 	switch (id_){
 	case id_type::uint8_:
 	case id_type::uint16_:
@@ -196,11 +196,11 @@ bool cminus::logic::type::primitive::is_unsigned_integral() const{
 	return false;
 }
 
-bool cminus::logic::type::primitive::is_floating_point() const{
+bool cminus::type::primitive::is_floating_point() const{
 	return (id_type::float_ <= id_ && id_ <= id_type::ldouble);
 }
 
-cminus::logic::type::primitive::id_type cminus::logic::type::primitive::convert_string_to_id(const std::string &value){
+cminus::type::primitive::id_type cminus::type::primitive::convert_string_to_id(const std::string &value){
 	if (value == "nullptr_t")
 		return id_type::nullptr_;
 
@@ -261,7 +261,7 @@ cminus::logic::type::primitive::id_type cminus::logic::type::primitive::convert_
 	return id_type::nil;
 }
 
-std::string cminus::logic::type::primitive::convert_id_to_string(id_type value){
+std::string cminus::type::primitive::convert_id_to_string(id_type value){
 	switch (value){
 	case id_type::nullptr_:
 		return "nullptr_t";

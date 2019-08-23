@@ -47,23 +47,23 @@ namespace cminus::evaluator{
 		template <typename value_type>
 		std::shared_ptr<memory::reference> evaluate_shift_(logic::runtime &runtime, operator_id op, std::shared_ptr<memory::reference> left_value, std::shared_ptr<memory::reference> right_value) const{
 			auto right_type = right_value->get_type();
-			if (auto right_primitive_type = dynamic_cast<logic::type::primitive *>(right_type.get()); right_primitive_type != nullptr){
+			if (auto right_primitive_type = dynamic_cast<type::primitive *>(right_type.get()); right_primitive_type != nullptr){
 				switch (right_primitive_type->get_id()){
-				case logic::type::primitive::id_type::int8_:
+				case type::primitive::id_type::int8_:
 					return evaluate_shift_<value_type, __int8>(runtime, op, left_value, right_value);
-				case logic::type::primitive::id_type::uint8_:
+				case type::primitive::id_type::uint8_:
 					return evaluate_shift_<value_type, unsigned __int8>(runtime, op, left_value, right_value);
-				case logic::type::primitive::id_type::int16_:
+				case type::primitive::id_type::int16_:
 					return evaluate_shift_<value_type, __int16>(runtime, op, left_value, right_value);
-				case logic::type::primitive::id_type::uint16_:
+				case type::primitive::id_type::uint16_:
 					return evaluate_shift_<value_type, unsigned __int16>(runtime, op, left_value, right_value);
-				case logic::type::primitive::id_type::int32_:
+				case type::primitive::id_type::int32_:
 					return evaluate_shift_<value_type, __int32>(runtime, op, left_value, right_value);
-				case logic::type::primitive::id_type::uint32_:
+				case type::primitive::id_type::uint32_:
 					return evaluate_shift_<value_type, unsigned __int32>(runtime, op, left_value, right_value);
-				case logic::type::primitive::id_type::int64_:
+				case type::primitive::id_type::int64_:
 					return evaluate_shift_<value_type, __int64>(runtime, op, left_value, right_value);
-				case logic::type::primitive::id_type::uint64_:
+				case type::primitive::id_type::uint64_:
 					return evaluate_shift_<value_type, unsigned __int64>(runtime, op, left_value, right_value);
 				default:
 					break;

@@ -57,7 +57,7 @@ const std::vector<std::shared_ptr<cminus::logic::attributes::object>> &cminus::l
 	return attributes_;
 }
 
-std::shared_ptr<cminus::logic::type::object> cminus::logic::declaration::get_type() const{
+std::shared_ptr<cminus::type::object> cminus::logic::declaration::get_type() const{
 	return type_;
 }
 

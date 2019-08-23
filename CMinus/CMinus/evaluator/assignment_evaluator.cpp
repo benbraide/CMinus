@@ -18,7 +18,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 		if (!right_value->is_lvalue())
 			throw logic::exception("Ref assignment requires an l-value source", 0u, 0u);
 
-		if (left_value->find_attribute("ReadOnly", true, true) == nullptr)//Destination must be read-only
+		if (left_value->find_attribute("ReadOnly", true, true) == nullptr)//Destination must be writable
 			memory::reference::call_attributes(runtime, logic::attributes::object::stage_type::before_write, true, right_value);
 	}
 
@@ -30,18 +30,18 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 	read_attribute_guard read_guard(runtime, right_value, true);
 
 	switch (left_type->get_score(*right_type, is_ref)){
-	case logic::type::object::score_result_type::exact:
-	case logic::type::object::score_result_type::assignable:
+	case type::object::score_result_type::exact:
+	case type::object::score_result_type::assignable:
 		break;
-	case logic::type::object::score_result_type::ancestor:
+	case type::object::score_result_type::ancestor:
 		right_value = std::make_shared<memory::hard_reference>((right_value->get_address() + left_type->compute_base_offset(*right_type)), left_type, nullptr);
 		break;
-	case logic::type::object::score_result_type::widened:
-	case logic::type::object::score_result_type::too_widened:
-	case logic::type::object::score_result_type::shortened:
-	case logic::type::object::score_result_type::too_shortened:
-	case logic::type::object::score_result_type::compatible:
-	case logic::type::object::score_result_type::class_compatible:
+	case type::object::score_result_type::widened:
+	case type::object::score_result_type::too_widened:
+	case type::object::score_result_type::shortened:
+	case type::object::score_result_type::too_shortened:
+	case type::object::score_result_type::compatible:
+	case type::object::score_result_type::class_compatible:
 		if ((right_value = right_type->convert_value(runtime, right_value, left_type, is_ref)) == nullptr)
 			throw logic::exception("Cannot assign object to destination type", 0u, 0u);
 		break;

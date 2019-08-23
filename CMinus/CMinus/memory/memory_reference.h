@@ -5,7 +5,7 @@
 #include <functional>
 
 #include "../logic/attributes.h"
-#include "../logic/type_object.h"
+#include "../type/type_object.h"
 
 #include "memory_object.h"
 
@@ -14,13 +14,13 @@ namespace cminus::memory{
 	public:
 		using attribute_list_type = std::vector<std::shared_ptr<logic::attributes::object>>;
 
-		reference(std::shared_ptr<logic::type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
+		reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
 
 		virtual ~reference();
 
 		virtual std::shared_ptr<reference> clone(const attribute_list_type &attributes, bool inherit_attributes) const;
 
-		virtual std::shared_ptr<logic::type::object> get_type() const;
+		virtual std::shared_ptr<type::object> get_type() const;
 
 		virtual std::shared_ptr<reference> get_context() const;
 
@@ -107,20 +107,20 @@ namespace cminus::memory{
 	protected:
 		virtual std::shared_ptr<reference> clone_(const attribute_list_type &attributes) const = 0;
 
-		std::shared_ptr<logic::type::object> type_;
+		std::shared_ptr<type::object> type_;
 		std::unordered_map<logic::attributes::object *, std::shared_ptr<logic::attributes::object>> attributes_;
 		std::shared_ptr<reference> context_;
 	};
 
 	class hard_reference : public reference{
 	public:
-		hard_reference(logic::runtime &runtime, std::shared_ptr<logic::type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
+		hard_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
 
-		hard_reference(logic::runtime &runtime, std::shared_ptr<logic::type::object> type, std::shared_ptr<reference> context);
+		hard_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, std::shared_ptr<reference> context);
 
-		hard_reference(std::size_t address, std::shared_ptr<logic::type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
+		hard_reference(std::size_t address, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
 
-		hard_reference(std::size_t address, std::shared_ptr<logic::type::object> type, std::shared_ptr<reference> context);
+		hard_reference(std::size_t address, std::shared_ptr<type::object> type, std::shared_ptr<reference> context);
 
 		virtual ~hard_reference();
 
@@ -165,7 +165,7 @@ namespace cminus::memory{
 
 		virtual void write(logic::runtime &runtime, std::shared_ptr<reference> source) override;
 
-		virtual void write(logic::runtime &runtime, const std::byte *source, std::shared_ptr<logic::type::object> type) override;
+		virtual void write(logic::runtime &runtime, const std::byte *source, std::shared_ptr<type::object> type) override;
 
 		virtual unsigned int get_attributes() const override;
 
@@ -184,10 +184,10 @@ namespace cminus::memory{
 	public:
 		using m_value_type = value_type;
 
-		reference_with_value(std::shared_ptr<logic::type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context, const m_value_type &value)
+		reference_with_value(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context, const m_value_type &value)
 			: reference(type, attributes, context), value_(value){}
 
-		reference_with_value(std::shared_ptr<logic::type::object> type, std::shared_ptr<reference> context, const m_value_type &value)
+		reference_with_value(std::shared_ptr<type::object> type, std::shared_ptr<reference> context, const m_value_type &value)
 			: reference_with_value(type, attribute_list_type{}, context, value){}
 
 		virtual ~reference_with_value() = default;
@@ -218,18 +218,18 @@ namespace cminus::memory{
 		using m_value_type = value_type;
 		using m_list_type = std::list<m_value_type>;
 
-		reference_with_list(std::shared_ptr<logic::type::object> type, unsigned int attributes)
+		reference_with_list(std::shared_ptr<type::object> type, unsigned int attributes)
 			: reference(type, attributes){
 			attributes_ &= ~attribute_uninitialized;
 		}
 
-		reference_with_list(std::shared_ptr<logic::type::object> type, unsigned int attributes, const m_value_type &item)
+		reference_with_list(std::shared_ptr<type::object> type, unsigned int attributes, const m_value_type &item)
 			: reference(type, attributes){
 			attributes_ &= ~attribute_uninitialized;
 			list_.push_back(item);
 		}
 
-		reference_with_list(std::shared_ptr<logic::type::object> type, unsigned int attributes, const m_list_type &list)
+		reference_with_list(std::shared_ptr<type::object> type, unsigned int attributes, const m_list_type &list)
 			: reference(type, attributes), list_(list){
 			attributes_ &= ~attribute_uninitialized;
 		}

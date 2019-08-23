@@ -4,7 +4,7 @@
 #include "../evaluator/evaluator_id.h"
 
 #include "storage_object.h"
-#include "primitive_type.h"
+#include "../type/primitive_type.h"
 
 namespace cminus::evaluator{
 	class object;

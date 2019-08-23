@@ -1,6 +1,6 @@
 #include "../logic/runtime.h"
 
-cminus::memory::reference::reference(std::shared_ptr<logic::type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+cminus::memory::reference::reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
 	: type_(type), context_(context){
 	for (auto attribute : attributes)
 		attributes_[attribute.get()] = attribute;
@@ -24,7 +24,7 @@ std::shared_ptr<cminus::memory::reference> cminus::memory::reference::clone(cons
 	return clone_(combined_attributes);
 }
 
-std::shared_ptr<cminus::logic::type::object> cminus::memory::reference::get_type() const{
+std::shared_ptr<cminus::type::object> cminus::memory::reference::get_type() const{
 	return type_;
 }
 
@@ -99,7 +99,7 @@ bool cminus::memory::reference::is_lvalue() const{
 }
 
 bool cminus::memory::reference::is_nan() const{
-	if (auto primitive_type = dynamic_cast<logic::type::primitive *>(type_.get()); primitive_type != nullptr && primitive_type->get_id() == logic::type::primitive::primitive::id_type::nan_)
+	if (auto primitive_type = dynamic_cast<type::primitive *>(type_.get()); primitive_type != nullptr && primitive_type->get_id() == type::primitive::primitive::id_type::nan_)
 		return true;
 	return (find_attribute("#NaN#", true, false) != nullptr);
 }
@@ -204,7 +204,7 @@ std::size_t cminus::memory::reference::set(logic::runtime &runtime, std::byte va
 	return 0u;
 }
 
-cminus::memory::hard_reference::hard_reference(logic::runtime &runtime, std::shared_ptr<logic::type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+cminus::memory::hard_reference::hard_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
 	: reference(type, attributes, context){
 	try{
 		if (find_attribute("Ref", true, false) == nullptr){
@@ -224,13 +224,13 @@ cminus::memory::hard_reference::hard_reference(logic::runtime &runtime, std::sha
 	}
 }
 
-cminus::memory::hard_reference::hard_reference(logic::runtime &runtime, std::shared_ptr<logic::type::object> type, std::shared_ptr<reference> context)
+cminus::memory::hard_reference::hard_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
 	: hard_reference(runtime, type, attribute_list_type{}, context){}
 
-cminus::memory::hard_reference::hard_reference(std::size_t address, std::shared_ptr<logic::type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+cminus::memory::hard_reference::hard_reference(std::size_t address, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
 	: reference(type, attributes, context), address_(address){}
 
-cminus::memory::hard_reference::hard_reference(std::size_t address, std::shared_ptr<logic::type::object> type, std::shared_ptr<reference> context)
+cminus::memory::hard_reference::hard_reference(std::size_t address, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
 	: hard_reference(address, type, attribute_list_type{}, context){}
 
 cminus::memory::hard_reference::~hard_reference(){
@@ -329,7 +329,7 @@ void cminus::memory::proxy_reference::write(logic::runtime &runtime, std::shared
 	target_->write(runtime, source);
 }
 
-void cminus::memory::proxy_reference::write(logic::runtime &runtime, const std::byte *source, std::shared_ptr<logic::type::object> type){
+void cminus::memory::proxy_reference::write(logic::runtime &runtime, const std::byte *source, std::shared_ptr<type::object> type){
 	target_->write(runtime, source, type);
 }
 

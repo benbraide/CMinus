@@ -10,7 +10,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
 	auto type = target->get_type();
-	auto primitive_type = dynamic_cast<logic::type::primitive *>(type.get());
+	auto primitive_type = dynamic_cast<type::primitive *>(type.get());
 
 	if (primitive_type == nullptr || !primitive_type->is_floating_point())
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
@@ -20,11 +20,11 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 		return arithmetic::evaluate_nan_unary_left_(runtime, std::get<operator_id>(op));
 
 	switch (primitive_type->get_id()){
-	case logic::type::primitive::id_type::float_:
+	case type::primitive::id_type::float_:
 		return arithmetic::evaluate_unary_left_<float>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::double_:
+	case type::primitive::id_type::double_:
 		return arithmetic::evaluate_unary_left_<double>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::ldouble:
+	case type::primitive::id_type::ldouble:
 		return arithmetic::evaluate_unary_left_<long double>(runtime, std::get<operator_id>(op), target);
 	default:
 		break;
@@ -55,7 +55,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 	if (left_type == nullptr || right_type == nullptr)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
-	if (left_type->get_score(*right_type, false) != logic::type::object::score_result_type::exact){
+	if (left_type->get_score(*right_type, false) != type::object::score_result_type::exact){
 		if (left_value->is_nan() || right_value->is_nan()){
 			read_attribute_guard left_read_guard(runtime, left_value, true);
 			read_attribute_guard right_read_guard(runtime, right_value, true);
@@ -70,7 +70,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 	}
 
-	auto left_primitive_type = dynamic_cast<logic::type::primitive *>(left_type.get());
+	auto left_primitive_type = dynamic_cast<type::primitive *>(left_type.get());
 	if (left_primitive_type == nullptr)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
@@ -78,11 +78,11 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 	read_attribute_guard right_read_guard(runtime, right_value, true);
 
 	switch (left_primitive_type->get_id()){
-	case logic::type::primitive::id_type::float_:
+	case type::primitive::id_type::float_:
 		return evaluate_binary_<float>(runtime, std::get<operator_id>(op), left_value, right_value);
-	case logic::type::primitive::id_type::double_:
+	case type::primitive::id_type::double_:
 		return evaluate_binary_<double>(runtime, std::get<operator_id>(op), left_value, right_value);
-	case logic::type::primitive::id_type::ldouble:
+	case type::primitive::id_type::ldouble:
 		return evaluate_binary_<long double>(runtime, std::get<operator_id>(op), left_value, right_value);
 	default:
 		break;

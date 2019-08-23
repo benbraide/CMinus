@@ -1,6 +1,6 @@
 #pragma once
 
-#include "naming.h"
+#include "../logic/naming.h"
 
 namespace cminus::memory{
 	class object;
@@ -11,7 +11,7 @@ namespace cminus::evaluator{
 	class object;
 }
 
-namespace cminus::logic::type{
+namespace cminus::type{
 	class object{
 	public:
 		enum class score_result_type{
@@ -47,9 +47,9 @@ namespace cminus::logic::type{
 		static int get_score_value(score_result_type score);
 	};
 
-	class named_object : public object, public naming::single{
+	class named_object : public object, public logic::naming::single{
 	public:
-		named_object(const std::string &value, naming::parent *parent);
+		named_object(const std::string &value, logic::naming::parent *parent);
 
 		virtual ~named_object();
 

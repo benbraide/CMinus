@@ -7,9 +7,9 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::byte::evaluate_una
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
 	auto type = target->get_type();
-	auto primitive_type = dynamic_cast<logic::type::primitive *>(type.get());
+	auto primitive_type = dynamic_cast<type::primitive *>(type.get());
 
-	if (primitive_type == nullptr || primitive_type->get_id() != logic::type::primitive::id_type::bool_)
+	if (primitive_type == nullptr || primitive_type->get_id() != type::primitive::id_type::bool_)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
 	read_attribute_guard read_guard(runtime, target, true);
@@ -42,7 +42,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::byte::evaluate_bin
 		return result;
 
 	auto left_type = left_value->get_type(), right_type = right_value->get_type();
-	if (left_type == nullptr || left_type->get_score(*right_type, false) != logic::type::object::score_result_type::exact)
+	if (left_type == nullptr || left_type->get_score(*right_type, false) != type::object::score_result_type::exact)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
 	read_attribute_guard left_read_guard(runtime, left_value, true);

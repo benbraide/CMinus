@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../logic/type_object.h"
+#include "../type/type_object.h"
 
 namespace cminus::node{
 	class object{

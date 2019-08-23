@@ -7,7 +7,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
 	auto type = target->get_type();
-	auto primitive_type = dynamic_cast<logic::type::primitive *>(type.get());
+	auto primitive_type = dynamic_cast<type::primitive *>(type.get());
 
 	if (primitive_type == nullptr || !primitive_type->is_integral())
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
@@ -38,21 +38,21 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 	}
 
 	switch (primitive_type->get_id()){
-	case logic::type::primitive::id_type::int8_:
+	case type::primitive::id_type::int8_:
 		return arithmetic::evaluate_unary_left_<__int8>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::uint8_:
+	case type::primitive::id_type::uint8_:
 		return arithmetic::evaluate_unsigned_unary_left_<unsigned __int8>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::int16_:
+	case type::primitive::id_type::int16_:
 		return arithmetic::evaluate_unary_left_<__int16>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::uint16_:
+	case type::primitive::id_type::uint16_:
 		return arithmetic::evaluate_unsigned_unary_left_<unsigned __int16>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::int32_:
+	case type::primitive::id_type::int32_:
 		return arithmetic::evaluate_unary_left_<__int32>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::uint32_:
+	case type::primitive::id_type::uint32_:
 		return arithmetic::evaluate_unsigned_unary_left_<unsigned __int32>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::int64_:
+	case type::primitive::id_type::int64_:
 		return arithmetic::evaluate_unary_left_<__int64>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::uint64_:
+	case type::primitive::id_type::uint64_:
 		return arithmetic::evaluate_unsigned_unary_left_<unsigned __int64>(runtime, std::get<operator_id>(op), target);
 	default:
 		break;
@@ -67,7 +67,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
 	auto type = target->get_type();
-	auto primitive_type = dynamic_cast<logic::type::primitive *>(type.get());
+	auto primitive_type = dynamic_cast<type::primitive *>(type.get());
 
 	if (primitive_type == nullptr || !primitive_type->is_integral())
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
@@ -99,21 +99,21 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 	}
 
 	switch (primitive_type->get_id()){
-	case logic::type::primitive::id_type::int8_:
+	case type::primitive::id_type::int8_:
 		return arithmetic::evaluate_unsigned_unary_right_<__int8>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::uint8_:
+	case type::primitive::id_type::uint8_:
 		return arithmetic::evaluate_unsigned_unary_right_<unsigned __int8>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::int16_:
+	case type::primitive::id_type::int16_:
 		return arithmetic::evaluate_unsigned_unary_right_<__int16>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::uint16_:
+	case type::primitive::id_type::uint16_:
 		return arithmetic::evaluate_unsigned_unary_right_<unsigned __int16>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::int32_:
+	case type::primitive::id_type::int32_:
 		return arithmetic::evaluate_unsigned_unary_right_<__int32>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::uint32_:
+	case type::primitive::id_type::uint32_:
 		return arithmetic::evaluate_unsigned_unary_right_<unsigned __int32>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::int64_:
+	case type::primitive::id_type::int64_:
 		return arithmetic::evaluate_unsigned_unary_right_<__int64>(runtime, std::get<operator_id>(op), target);
-	case logic::type::primitive::id_type::uint64_:
+	case type::primitive::id_type::uint64_:
 		return arithmetic::evaluate_unsigned_unary_right_<unsigned __int64>(runtime, std::get<operator_id>(op), target);
 	default:
 		break;
@@ -144,7 +144,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 	if (left_type == nullptr || right_type == nullptr)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
-	if (left_type->get_score(*right_type, false) != logic::type::object::score_result_type::exact){
+	if (left_type->get_score(*right_type, false) != type::object::score_result_type::exact){
 		if (left_value->is_nan() || right_value->is_nan()){
 			if (auto result = arithmetic::evaluate_nan_(runtime, std::get<operator_id>(op)); result != nullptr)//Handled
 				return result;
@@ -156,7 +156,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 	}
 
-	auto left_primitive_type = dynamic_cast<logic::type::primitive *>(left_type.get());
+	auto left_primitive_type = dynamic_cast<type::primitive *>(left_type.get());
 	if (left_primitive_type == nullptr)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
@@ -164,21 +164,21 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 	read_attribute_guard right_read_guard(runtime, right_value, true);
 
 	switch (left_primitive_type->get_id()){
-	case logic::type::primitive::id_type::int8_:
+	case type::primitive::id_type::int8_:
 		return evaluate_binary_<__int8>(runtime, std::get<operator_id>(op), left_value, right_value);
-	case logic::type::primitive::id_type::uint8_:
+	case type::primitive::id_type::uint8_:
 		return evaluate_binary_<unsigned __int8>(runtime, std::get<operator_id>(op), left_value, right_value);
-	case logic::type::primitive::id_type::int16_:
+	case type::primitive::id_type::int16_:
 		return evaluate_binary_<__int16>(runtime, std::get<operator_id>(op), left_value, right_value);
-	case logic::type::primitive::id_type::uint16_:
+	case type::primitive::id_type::uint16_:
 		return evaluate_binary_<unsigned __int16>(runtime, std::get<operator_id>(op), left_value, right_value);
-	case logic::type::primitive::id_type::int32_:
+	case type::primitive::id_type::int32_:
 		return evaluate_binary_<__int32>(runtime, std::get<operator_id>(op), left_value, right_value);
-	case logic::type::primitive::id_type::uint32_:
+	case type::primitive::id_type::uint32_:
 		return evaluate_binary_<unsigned __int32>(runtime, std::get<operator_id>(op), left_value, right_value);
-	case logic::type::primitive::id_type::int64_:
+	case type::primitive::id_type::int64_:
 		return evaluate_binary_<__int64>(runtime, std::get<operator_id>(op), left_value, right_value);
-	case logic::type::primitive::id_type::uint64_:
+	case type::primitive::id_type::uint64_:
 		return evaluate_binary_<unsigned __int64>(runtime, std::get<operator_id>(op), left_value, right_value);
 	default:
 		break;
