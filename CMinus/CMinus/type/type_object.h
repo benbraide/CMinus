@@ -11,6 +11,10 @@ namespace cminus::evaluator{
 	class object;
 }
 
+namespace cminus::node{
+	class object;
+}
+
 namespace cminus::type{
 	class object{
 	public:
@@ -31,6 +35,8 @@ namespace cminus::type{
 		virtual ~object();
 
 		virtual void construct_default(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const;
+
+		virtual void construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> initialization) const;
 
 		virtual void print(logic::runtime &runtime, bool is_qualified) const = 0;
 

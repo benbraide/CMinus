@@ -13,6 +13,19 @@ void cminus::type::object::construct_default(logic::runtime &runtime, std::share
 		target->set(runtime, static_cast<std::byte>(0), get_size());
 }
 
+void cminus::type::object::construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> initialization) const{
+	if (initialization != nullptr){
+		if (auto value = initialization->evaluate(runtime); value != nullptr){
+			target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
+			get_evaluator(runtime)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, value);
+		}
+		else
+			throw logic::exception("Failed to evaluate initialization", 0u, 0u);
+	}
+	else
+		construct_default(runtime, target);
+}
+
 int cminus::type::object::get_score_value(score_result_type score){
 	switch (score){
 	case score_result_type::exact:

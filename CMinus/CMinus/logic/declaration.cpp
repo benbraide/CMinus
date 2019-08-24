@@ -125,3 +125,40 @@ void cminus::logic::declaration::print_initialization_(logic::runtime &runtime) 
 	runtime.writer.write_buffer(" = ", 3u);
 	initialization_->print(runtime);
 }
+
+cminus::logic::contructed_declaration::contructed_declaration(const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<node::object> initialization)
+	: declaration(attributes, type, name, initialization){}
+
+cminus::logic::contructed_declaration::~contructed_declaration() = default;
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::contructed_declaration::allocate_memory(logic::runtime &runtime) const{
+	auto reference = std::make_shared<memory::hard_reference>(runtime, type_, attributes_, nullptr);
+	if (reference == nullptr || reference->get_address() == 0u)
+		throw memory::exception(memory::error_code::allocation_failure, 0u);
+
+	return reference;
+}
+
+void cminus::logic::contructed_declaration::initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<memory::reference> value) const{
+	if (initialization_ == nullptr)
+		target->get_type()->construct_default(runtime, target);
+	else
+		target->get_type()->construct(runtime, target, initialization_);
+}
+
+void cminus::logic::contructed_declaration::print_initialization_(logic::runtime &runtime) const{
+	runtime.writer.write_scalar('(');
+	initialization_->print(runtime);
+	runtime.writer.write_scalar(')');
+}
+
+cminus::logic::uniform_contructed_declaration::uniform_contructed_declaration(const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<node::object> initialization)
+	: contructed_declaration(attributes, type, name, initialization){}
+
+cminus::logic::uniform_contructed_declaration::~uniform_contructed_declaration() = default;
+
+void cminus::logic::uniform_contructed_declaration::print_initialization_(logic::runtime &runtime) const{
+	runtime.writer.write_scalar('{');
+	initialization_->print(runtime);
+	runtime.writer.write_scalar('}');
+}
