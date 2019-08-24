@@ -38,5 +38,6 @@ namespace cminus::logic{
 		std::shared_ptr<type::object> type_;
 		std::string name_;
 		std::shared_ptr<node::object> initialization_;
+		mutable std::shared_ptr<memory::reference> static_value_;
 	};
 }

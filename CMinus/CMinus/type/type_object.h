@@ -30,6 +30,8 @@ namespace cminus::type{
 
 		virtual ~object();
 
+		virtual void construct_default(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const;
+
 		virtual void print(logic::runtime &runtime, bool is_qualified) const = 0;
 
 		virtual std::size_t get_size() const = 0;

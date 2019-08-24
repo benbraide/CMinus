@@ -11,6 +11,7 @@ namespace cminus::logic::attributes{
 	public:
 		enum class stage_type{
 			nil,
+			after_uninitialized_declaration,
 			before_lookup,
 			after_lookup,
 			before_read,

@@ -1,6 +1,17 @@
+#include "../evaluator/evaluator_object.h"
+
 #include "../logic/runtime.h"
 
 cminus::type::object::~object() = default;
+
+void cminus::type::object::construct_default(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const{
+	if (auto default_value = get_default_value(runtime); default_value != nullptr){
+		target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
+		get_evaluator(runtime)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, default_value);
+	}
+	else//Zero memory
+		target->set(runtime, static_cast<std::byte>(0), get_size());
+}
 
 int cminus::type::object::get_score_value(score_result_type score){
 	switch (score){

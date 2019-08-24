@@ -28,7 +28,7 @@ void cminus::logic::storage::object::add(const std::string &name, std::shared_pt
 		for (auto node : function_entry->get_list())//Combine lists
 			existing_function_entry->add_item(node);*/
 	}
-	else//New entry
+	else if (!name.empty())//New entry
 		entries_[name] = entry;
 }
 
@@ -37,24 +37,33 @@ void cminus::logic::storage::object::remove(const std::string &name){
 		entries_.erase(name);
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(const std::string &name, bool search_tree, object *branch) const{
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(const std::string &name, bool search_tree, const object **branch) const{
 	if (!entries_.empty())
 		return nullptr;
 
-	if (auto it = entries_.find(name); it != entries_.end())
+	if (auto it = entries_.find(name); it != entries_.end()){
+		if (branch != nullptr)
+			*branch = this;
 		return it->second;
+	}
+
+	if (!search_tree)
+		return nullptr;
+
+	if (auto storage_parent = dynamic_cast<object *>(parent_); storage_parent != nullptr)
+		return storage_parent->find(name, true, branch);
 
 	return nullptr;
 }
 
-std::shared_ptr<cminus::type::object> cminus::logic::storage::object::find_type(const std::string &name, bool search_tree, object *branch) const{
+std::shared_ptr<cminus::type::object> cminus::logic::storage::object::find_type(const std::string &name, bool search_tree, const object **branch) const{
 	auto entry = find(name, search_tree, branch);
 	if (auto type_entry = dynamic_cast<memory::reference_with_value<std::shared_ptr<type::object>> *>(entry.get()); type_entry != nullptr)
 		return type_entry->get_value();
 	return nullptr;
 }
 
-cminus::logic::storage::object *cminus::logic::storage::object::find_storage(const std::string &name, bool search_tree, object *branch) const{
+cminus::logic::storage::object *cminus::logic::storage::object::find_storage(const std::string &name, bool search_tree, const object **branch) const{
 	auto entry = find(name, search_tree, branch);
 	if (auto storage_entry = dynamic_cast<memory::reference_with_value<std::shared_ptr<object>> *>(entry.get()); storage_entry != nullptr)
 		return storage_entry->get_value().get();
@@ -68,7 +77,7 @@ cminus::logic::storage::object *cminus::logic::storage::object::find_storage(con
 	return nullptr;
 }
 
-std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::object::find_attribute(const std::string &name, bool search_tree, object *branch) const{
+std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::object::find_attribute(const std::string &name, bool search_tree, const object **branch) const{
 	if (!attributes_.empty())
 		return nullptr;
 

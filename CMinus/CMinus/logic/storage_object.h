@@ -34,13 +34,13 @@ namespace cminus::logic::storage{
 
 		virtual void remove(const std::string &name);
 
-		virtual std::shared_ptr<memory::reference> find(const std::string &name, bool search_tree, object *branch = nullptr) const;
+		virtual std::shared_ptr<memory::reference> find(const std::string &name, bool search_tree, const object **branch = nullptr) const;
 
-		virtual std::shared_ptr<type::object> find_type(const std::string &name, bool search_tree, object *branch = nullptr) const;
+		virtual std::shared_ptr<type::object> find_type(const std::string &name, bool search_tree, const object **branch = nullptr) const;
 
-		virtual object *find_storage(const std::string &name, bool search_tree, object *branch = nullptr) const;
+		virtual object *find_storage(const std::string &name, bool search_tree, const object **branch = nullptr) const;
 
-		virtual std::shared_ptr<attributes::object> find_attribute(const std::string &name, bool search_tree, object *branch = nullptr) const;
+		virtual std::shared_ptr<attributes::object> find_attribute(const std::string &name, bool search_tree, const object **branch = nullptr) const;
 
 	protected:
 		std::unordered_map<std::string, std::shared_ptr<memory::reference>> entries_;
