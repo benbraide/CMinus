@@ -18,23 +18,27 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 		if (!right_value->is_lvalue())
 			throw logic::exception("Ref assignment requires an l-value source", 0u, 0u);
 
-		if (left_value->find_attribute("ReadOnly", true, true) == nullptr)//Destination must be writable
-			memory::reference::call_attributes(runtime, logic::attributes::object::stage_type::before_write, true, right_value);
+		if (left_value->find_attribute("ReadOnly", true, true) == nullptr && right_value->find_attribute("ReadOnly", true, true) != nullptr)//Destination must be writable
+			throw logic::exception("Read-only source requires a read-only destination", 0u, 0u);
 	}
 
 	auto left_type = left_value->get_type(), right_type = right_value->get_type();
 	if (left_type == nullptr || right_type == nullptr)
 		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
 
-	write_attribute_guard write_guard(runtime, left_value, true);
-	read_attribute_guard read_guard(runtime, right_value, true);
+	std::shared_ptr<write_attribute_guard> write_guard;
+	if (left_value->find_attribute("#Init#", true, false) == nullptr)
+		write_guard = std::make_shared<write_attribute_guard>(runtime, left_value, true);
+	else
+		left_value->remove_attribute("#Init#", true);
 
+	read_attribute_guard read_guard(runtime, right_value, true);
 	switch (left_type->get_score(*right_type, is_ref)){
 	case type::object::score_result_type::exact:
 	case type::object::score_result_type::assignable:
 		break;
 	case type::object::score_result_type::ancestor:
-		right_value = std::make_shared<memory::hard_reference>((right_value->get_address() + left_type->compute_base_offset(*right_type)), left_type, nullptr);
+		right_value = std::make_shared<memory::hard_reference>((right_value->get_address() + right_type->compute_base_offset(*left_type)), left_type, left_value->get_context());
 		break;
 	case type::object::score_result_type::widened:
 	case type::object::score_result_type::too_widened:

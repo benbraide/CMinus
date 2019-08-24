@@ -38,6 +38,8 @@ namespace cminus::memory{
 
 		virtual bool is_lvalue() const;
 
+		virtual bool is_ref() const;
+
 		virtual bool is_nan() const;
 
 		virtual void set_address(std::size_t value);
@@ -123,6 +125,8 @@ namespace cminus::memory{
 		hard_reference(std::size_t address, std::shared_ptr<type::object> type, std::shared_ptr<reference> context);
 
 		virtual ~hard_reference();
+
+		virtual bool is_ref() const override;
 
 		virtual void set_address(std::size_t value) override;
 

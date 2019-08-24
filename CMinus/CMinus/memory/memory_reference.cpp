@@ -95,7 +95,11 @@ void cminus::memory::reference::traverse_attributes(const std::function<void(std
 }
 
 bool cminus::memory::reference::is_lvalue() const{
-	return (find_attribute("LValue", true, false) != nullptr && (context_ == nullptr || context_->is_lvalue()));
+	return (find_attribute("#LVal#", true, false) != nullptr && (context_ == nullptr || context_->is_lvalue()));
+}
+
+bool cminus::memory::reference::is_ref() const{
+	return false;
 }
 
 bool cminus::memory::reference::is_nan() const{
@@ -207,11 +211,10 @@ std::size_t cminus::memory::reference::set(logic::runtime &runtime, std::byte va
 cminus::memory::hard_reference::hard_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
 	: reference(type, attributes, context){
 	try{
-		if (find_attribute("Ref", true, false) == nullptr){
+		if (find_attribute("Ref", true, false) == nullptr){//Destination address will be copied
 			if (auto block = runtime.memory_object.allocate_block(type->get_size(), memory::block::attribute_none); block != nullptr){
+				add_attribute(runtime.global_storage->find_attribute("#LVal", false));
 				address_ = block->get_address();
-				//#TODO: Insert LValue attribute
-				block->set(0u, static_cast<std::byte>(0), block->get_size());
 				deallocator_ = [address = address_, &memory_object = runtime.memory_object](){
 					if (address != 0u)
 						memory_object.deallocate_block(address);
@@ -239,6 +242,10 @@ cminus::memory::hard_reference::~hard_reference(){
 			deallocator_();
 	}
 	catch (...){}
+}
+
+bool cminus::memory::hard_reference::is_ref() const{
+	return (address_ != 0u && deallocator_ == nullptr);
 }
 
 void cminus::memory::hard_reference::set_address(std::size_t value){

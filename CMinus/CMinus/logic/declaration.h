@@ -21,11 +21,11 @@ namespace cminus::logic{
 
 		virtual std::shared_ptr<node::object> get_initialization() const;
 
+		virtual std::shared_ptr<memory::reference> allocate_memory(logic::runtime &runtime) const;
+
+		virtual void initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<memory::reference> value) const;
+
 	protected:
-		virtual std::shared_ptr<memory::reference> allocate_memory_(logic::runtime &runtime) const;
-
-		virtual void evaluate_initialization_(logic::runtime &runtime, memory::reference &reference) const;
-
 		virtual void print_attributes_(logic::runtime &runtime) const;
 
 		virtual void print_type_(logic::runtime &runtime) const;

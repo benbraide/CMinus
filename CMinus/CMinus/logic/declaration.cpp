@@ -1,3 +1,5 @@
+#include "../evaluator/evaluator_object.h"
+
 #include "runtime.h"
 #include "declaration.h"
 
@@ -31,14 +33,11 @@ void cminus::logic::declaration::evaluate(logic::runtime &runtime, std::shared_p
 	//Before writing from a variable, call all registered 'before write' attributes
 	//After writing from a variable, call all registered 'after write' attributes
 
-	auto reference = allocate_memory_(runtime);
-	if (reference == nullptr || reference->get_address() == 0u)
+	auto reference = allocate_memory(runtime);
+	if (reference != nullptr && reference->get_address() != 0u)
+		initialize_memory(runtime, reference, value);
+	else
 		throw memory::exception(memory::error_code::allocation_failure, 0u);
-
-	if (initialization_ != nullptr)
-		evaluate_initialization_(runtime, *reference);
-	//else if (type_->IsReference())
-		//throw memory::exception(memory::error_code::allocation_failure, 0u);
 
 	runtime.current_storage->add(name_, reference);
 }
@@ -69,16 +68,29 @@ std::shared_ptr<cminus::node::object> cminus::logic::declaration::get_initializa
 	return initialization_;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::declaration::allocate_memory_(logic::runtime &runtime) const{
-	return nullptr;
-	//return std::make_shared<memory::hard_reference>(runtime, type_, memory::reference::attribute_lvalue);
+std::shared_ptr<cminus::memory::reference> cminus::logic::declaration::allocate_memory(logic::runtime &runtime) const{
+	return std::make_shared<memory::hard_reference>(runtime, type_, attributes_, nullptr);
 }
 
-void cminus::logic::declaration::evaluate_initialization_(logic::runtime &runtime, memory::reference &reference) const{
-	auto result = initialization_->evaluate(runtime);
-	if (result == nullptr)
-		throw memory::exception(memory::error_code::allocation_failure, 0u);
-	reference.write(runtime, *result, type_->get_size());
+void cminus::logic::declaration::initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<memory::reference> value) const{
+	auto is_ref = (target->find_attribute("Ref", true, false) != nullptr);
+	if (value == nullptr){
+		if (initialization_ == nullptr){
+			if (!is_ref)
+				value = type_->get_default_value(runtime);
+			else
+				throw logic::exception("Reference declaration requires initialization", 0u, 0u);
+		}
+		else if ((value = initialization_->evaluate(runtime)) == nullptr)
+			throw logic::exception("Failed to evaluate initialization", 0u, 0u);
+	}
+
+	if (value != nullptr){
+		target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
+		type_->get_evaluator(runtime)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, value);
+	}
+	else if (is_ref)
+		throw logic::exception("Reference declaration requires initialization", 0u, 0u);
 }
 
 void cminus::logic::declaration::print_attributes_(logic::runtime &runtime) const{
