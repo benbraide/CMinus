@@ -8,9 +8,12 @@ cminus::type::primitive::~primitive() = default;
 std::size_t cminus::type::primitive::get_size() const{
 	switch (id_){
 	case id_type::bool_:
+	case id_type::nan_:
+		return sizeof(node::named_constant::constant_type);
 	case id_type::byte_:
-	case id_type::char_:
 		return sizeof(std::byte);
+	case id_type::char_:
+		return sizeof(char);
 	case id_type::wchar_:
 		return sizeof(wchar_t);
 	case id_type::int8_:
@@ -34,6 +37,8 @@ std::size_t cminus::type::primitive::get_size() const{
 		return sizeof(double);
 	case id_type::ldouble:
 		return sizeof(long double);
+	case id_type::nullptr_:
+		return sizeof(nullptr);
 	default:
 		break;
 	}
@@ -45,10 +50,10 @@ std::size_t cminus::type::primitive::compute_base_offset(const type::object &tar
 	return 0u;
 }
 
-cminus::type::object::score_result_type cminus::type::primitive::get_score(const type::object &target, bool is_ref) const{
+cminus::type::object::score_result_type cminus::type::primitive::get_score(logic::runtime &runtime, const type::object &target, bool is_ref) const{
 	auto type_target = dynamic_cast<const primitive *>(&target);
-	if (type_target == nullptr){//Check for pointer
-		if (type_target == nullptr)
+	if (type_target == nullptr){//Check for string
+		if (is_ref)
 			return score_result_type::nil;
 	}
 

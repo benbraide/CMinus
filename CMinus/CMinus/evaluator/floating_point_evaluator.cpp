@@ -57,7 +57,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
 	auto left_value_copy = left_value, right_value_copy = right_value;
-	switch (left_type->get_score(*right_type, false)){
+	switch (left_type->get_score(runtime, *right_type, false)){
 	case type::object::score_result_type::exact:
 	case type::object::score_result_type::assignable://Conversion from NaN value
 		break;

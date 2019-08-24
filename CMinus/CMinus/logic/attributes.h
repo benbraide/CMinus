@@ -28,7 +28,11 @@ namespace cminus::logic::attributes{
 
 		virtual ~object();
 
-		virtual bool handles_stage(stage_type value) const = 0;
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const = 0;
+
+		virtual bool is_required_on_ref_destination(logic::runtime &runtime) const;
+
+		virtual bool is_included_in_comparison(logic::runtime &runtime) const;
 
 		virtual void call(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const;
 
@@ -46,7 +50,11 @@ namespace cminus::logic::attributes{
 
 		virtual ~bound_object();
 
-		virtual bool handles_stage(stage_type value) const override;
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+
+		virtual bool is_required_on_ref_destination(logic::runtime &runtime) const override;
+
+		virtual bool is_included_in_comparison(logic::runtime &runtime) const override;
 
 		virtual std::shared_ptr<object> get_target() const;
 
@@ -72,7 +80,11 @@ namespace cminus::logic::attributes{
 
 		virtual ~read_only();
 
-		virtual bool handles_stage(stage_type value) const override;
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+
+		virtual bool is_required_on_ref_destination(logic::runtime &runtime) const override;
+
+		virtual bool is_included_in_comparison(logic::runtime &runtime) const override;
 
 	protected:
 		virtual void call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const override;
@@ -84,7 +96,11 @@ namespace cminus::logic::attributes{
 
 		virtual ~write_only();
 
-		virtual bool handles_stage(stage_type value) const override;
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+
+		virtual bool is_required_on_ref_destination(logic::runtime &runtime) const override;
+
+		virtual bool is_included_in_comparison(logic::runtime &runtime) const override;
 
 	protected:
 		virtual void call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const override;
@@ -96,7 +112,11 @@ namespace cminus::logic::attributes{
 
 		virtual ~not_null();
 
-		virtual bool handles_stage(stage_type value) const override;
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+
+		virtual bool is_required_on_ref_destination(logic::runtime &runtime) const override;
+
+		virtual bool is_included_in_comparison(logic::runtime &runtime) const override;
 
 	protected:
 		virtual void call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const override;

@@ -44,7 +44,7 @@ namespace cminus::type{
 
 		virtual std::size_t compute_base_offset(const object &target) const = 0;
 
-		virtual score_result_type get_score(const object &target, bool is_ref) const = 0;
+		virtual score_result_type get_score(logic::runtime &runtime, const object &target, bool is_ref) const = 0;
 
 		virtual std::shared_ptr<memory::reference> get_default_value(logic::runtime &runtime) const = 0;
 

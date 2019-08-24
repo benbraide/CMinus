@@ -1,26 +1,82 @@
 #include "function.h"
 
-cminus::logic::function_object::function_object(std::shared_ptr<type::object> owner_type, const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<type::object> return_type, std::string name, const std::vector<std::shared_ptr<declaration>> &params, std::shared_ptr<node::object> body)
-	: owner_type_(owner_type), attributes_(attributes), return_type_(return_type), name_(name), params_(params), body_(body){
+cminus::logic::function_object::function_object(std::shared_ptr<type::object> owner_type, const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<declaration> return_declaration, std::string name, const std::vector<std::shared_ptr<declaration>> &params, std::shared_ptr<node::object> body)
+	: owner_type_(owner_type), attributes_(attributes), return_declaration_(return_declaration), name_(name), params_(params), body_(body){
 	compute_values_();
 }
 
-cminus::logic::function_object::function_object(std::shared_ptr<type::object> owner_type, const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<type::object> return_type, std::string name, std::vector<std::shared_ptr<declaration>> &&params, std::shared_ptr<node::object> body)
-	: owner_type_(owner_type), attributes_(attributes), return_type_(return_type), name_(name), params_(std::move(params)), body_(body){
+cminus::logic::function_object::function_object(std::shared_ptr<type::object> owner_type, std::vector<std::shared_ptr<attributes::object>> &&attributes, std::shared_ptr<declaration> return_declaration, std::string name, std::vector<std::shared_ptr<declaration>> &&params, std::shared_ptr<node::object> body)
+	: owner_type_(owner_type), attributes_(std::move(attributes)), return_declaration_(return_declaration), name_(name), params_(std::move(params)), body_(body){
 	compute_values_();
 }
 
 cminus::logic::function_object::~function_object() = default;
 
-void cminus::logic::function_object::call(logic::runtime &runtime, std::shared_ptr<memory::reference> value, const std::vector<std::shared_ptr<memory::reference>> &args) const{
-	if (body_ == nullptr)
-		throw exception("Undefined function called", 0u, 0u);
+cminus::type::object::score_result_type cminus::logic::function_object::get_rank(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	if (args.size() < min_arg_count_ || max_arg_count_ < args.size())
+		return type::object::score_result_type::nil;
+
+	if (args.empty())
+		return type::object::score_result_type::exact;
+
+	type::object::score_result_type lowest_rank = type::object::score_result_type::exact, current_rank;
+	int lowest_rank_score = type::object::get_score_value(lowest_rank), current_rank_score;
+
+	auto arg_it = args.begin();
+	auto param_it = params_.begin();
+
+	auto param_type_has_ref = false, attributes_mismatch = false;
+	std::shared_ptr<type::object> variadic_base_type, param_type;
+
+	for (; arg_it != args.end(); ++arg_it){
+		if (variadic_base_type == nullptr){
+			param_type = (*param_it)->get_type();
+			if (auto variadic_type = dynamic_cast<type::variadic *>(param_type.get()); variadic_type != nullptr)
+				param_type = variadic_base_type = variadic_type->get_base_type();
+
+			param_type_has_ref = type::function::has_attribute((*param_it)->get_attributes(), "Ref");
+		}
+		else
+			param_type = variadic_base_type;
+
+		if (param_type_has_ref){//Check attributes
+			if ((current_rank = param_type->get_score(runtime, *(*arg_it)->get_type(), true)) == type::object::score_result_type::nil)
+				break;
+
+			attributes_mismatch = false;
+			(*arg_it)->traverse_attributes(runtime, [&](std::shared_ptr<attributes::object> attribute){
+				if (!attributes_mismatch && attribute->is_required_on_ref_destination(runtime) && !type::function::has_attribute((*param_it)->get_attributes(), attribute))
+					attributes_mismatch = true;
+			}, attributes::object::stage_type::nil, false);
+
+			if (attributes_mismatch)
+				break;
+		}
+		else if ((current_rank = param_type->get_score(runtime, *(*arg_it)->get_type(), false)) == type::object::score_result_type::nil)
+			return type::object::score_result_type::nil;
+
+		if ((current_rank_score = type::object::get_score_value(current_rank)) < lowest_rank_score)
+			lowest_rank = current_rank;//Update rank
+
+		if (variadic_base_type == nullptr && param_it != params_.end())
+			++param_it;
+	}
+
+	if (arg_it != args.end())
+		return type::object::score_result_type::nil;
+
+	return lowest_rank;
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::function_object::call(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	if (get_rank(runtime, args) == type::object::score_result_type::nil)
+		throw exception("Function does not take the specified arguments", 0u, 0u);
+	return call_(runtime, args);
 }
 
 void cminus::logic::function_object::print(logic::runtime &runtime) const{
 	print_attributes_(runtime);
-	if (return_type_ != nullptr)
-		print_return_type_(runtime);
+	return_declaration_->print(runtime);
 
 	print_name_(runtime);
 	print_params_(runtime);
@@ -53,7 +109,7 @@ const std::vector<std::shared_ptr<cminus::logic::attributes::object>> &cminus::l
 }
 
 std::shared_ptr<cminus::type::object> cminus::logic::function_object::get_return_type() const{
-	return return_type_;
+	return return_declaration_->get_type();
 }
 
 const std::string &cminus::logic::function_object::get_name() const{
@@ -77,19 +133,33 @@ std::size_t cminus::logic::function_object::get_max_arg_count() const{
 }
 
 void cminus::logic::function_object::compute_values_(){
-	std::vector<std::shared_ptr<type::object>> params_types;
+	std::vector<type::function::type_info> params_types;
 	params_types.reserve(params_.size());
 
 	for (auto param : params_){
-		params_types.push_back(param->get_type());
-		if (param->get_initialization() == nullptr)
-			++min_arg_count_;
-		
-		if (false/*param->get_type()->IsVariadiic()*/)
-			max_arg_count_ = static_cast<std::size_t>(-1);
-		else if (++max_arg_count_ != min_arg_count_)
+		if (max_arg_count_ == static_cast<std::size_t>(-1))
 			throw exception("Bad function parameter list", 0u, 0u);
+
+		params_types.push_back(type::function::type_info{
+			param->get_type(),
+			param->get_attributes()
+		});
+
+		if (dynamic_cast<type::variadic *>(param->get_type().get()) == nullptr){\
+			if (param->get_initialization() == nullptr){
+				if (max_arg_count_ == min_arg_count_)
+					++min_arg_count_;
+				else
+					throw exception("Bad function parameter list", 0u, 0u);
+			}
+
+			++max_arg_count_;
+		}
+		else//Variadic type
+			max_arg_count_ = static_cast<std::size_t>(-1);
 	}
+
+	computed_type_ = std::make_shared<type::function>(type::function::type_info{ return_declaration_->get_type(), return_declaration_->get_attributes() }, std::move(params_types));
 }
 
 void cminus::logic::function_object::print_attributes_(logic::runtime &runtime) const{
@@ -109,10 +179,6 @@ void cminus::logic::function_object::print_attributes_(logic::runtime &runtime) 
 	}
 
 	runtime.writer.write_scalar(']');
-}
-
-void cminus::logic::function_object::print_return_type_(logic::runtime &runtime) const{
-	return_type_->print(runtime, true);
 }
 
 void cminus::logic::function_object::print_name_(logic::runtime &runtime) const{
@@ -143,4 +209,26 @@ void cminus::logic::function_object::print_params_(logic::runtime &runtime) cons
 
 void cminus::logic::function_object::print_body_(logic::runtime &runtime) const{
 	body_->print(runtime);
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::function_object::call_(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	if (body_ == nullptr)
+		throw exception("Undefined function called", 0u, 0u);
+
+	std::shared_ptr<memory::reference> return_value;
+	try{
+
+	}
+	catch (return_interrupt){//Returned value
+
+	}
+	catch (...){
+		throw;//Forward exception
+	}
+
+	return nullptr;
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::function_object::get_context_() const{
+	return nullptr;
 }

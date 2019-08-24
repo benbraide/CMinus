@@ -3,6 +3,14 @@
 cminus::logic::attributes::object::object(const std::string &name, naming::parent *parent)
 	: single(name, parent){}
 
+bool cminus::logic::attributes::object::is_required_on_ref_destination(logic::runtime &runtime) const{
+	return false;
+}
+
+bool cminus::logic::attributes::object::is_included_in_comparison(logic::runtime &runtime) const{
+	return false;
+}
+
 void cminus::logic::attributes::object::call(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
 	return call_(runtime, stage, target, args);
 }
@@ -21,8 +29,16 @@ cminus::logic::attributes::bound_object::bound_object(std::shared_ptr<object> ta
 
 cminus::logic::attributes::bound_object::~bound_object() = default;
 
-bool cminus::logic::attributes::bound_object::handles_stage(stage_type value) const{
-	return target_->handles_stage(value);
+bool cminus::logic::attributes::bound_object::handles_stage(logic::runtime &runtime, stage_type value) const{
+	return target_->handles_stage(runtime, value);
+}
+
+bool cminus::logic::attributes::bound_object::is_required_on_ref_destination(logic::runtime &runtime) const{
+	return target_->is_required_on_ref_destination(runtime);
+}
+
+bool cminus::logic::attributes::bound_object::is_included_in_comparison(logic::runtime &runtime) const{
+	return target_->is_included_in_comparison(runtime);
 }
 
 std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::bound_object::get_target() const{
@@ -59,8 +75,16 @@ cminus::logic::attributes::read_only::read_only()
 
 cminus::logic::attributes::read_only::~read_only() = default;
 
-bool cminus::logic::attributes::read_only::handles_stage(stage_type value) const{
+bool cminus::logic::attributes::read_only::handles_stage(logic::runtime &runtime, stage_type value) const{
 	return (value == stage_type::before_write);
+}
+
+bool cminus::logic::attributes::read_only::is_required_on_ref_destination(logic::runtime &runtime) const{
+	return true;
+}
+
+bool cminus::logic::attributes::read_only::is_included_in_comparison(logic::runtime &runtime) const{
+	return true;
 }
 
 void cminus::logic::attributes::read_only::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
@@ -78,8 +102,16 @@ cminus::logic::attributes::write_only::write_only()
 
 cminus::logic::attributes::write_only::~write_only() = default;
 
-bool cminus::logic::attributes::write_only::handles_stage(stage_type value) const{
+bool cminus::logic::attributes::write_only::handles_stage(logic::runtime &runtime, stage_type value) const{
 	return (value == stage_type::before_read);
+}
+
+bool cminus::logic::attributes::write_only::is_required_on_ref_destination(logic::runtime &runtime) const{
+	return true;
+}
+
+bool cminus::logic::attributes::write_only::is_included_in_comparison(logic::runtime &runtime) const{
+	return true;
 }
 
 void cminus::logic::attributes::write_only::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
@@ -97,8 +129,16 @@ cminus::logic::attributes::not_null::not_null()
 
 cminus::logic::attributes::not_null::~not_null() = default;
 
-bool cminus::logic::attributes::not_null::handles_stage(stage_type value) const{
+bool cminus::logic::attributes::not_null::handles_stage(logic::runtime &runtime, stage_type value) const{
 	return (value == stage_type::before_write);
+}
+
+bool cminus::logic::attributes::not_null::is_required_on_ref_destination(logic::runtime &runtime) const{
+	return true;
+}
+
+bool cminus::logic::attributes::not_null::is_included_in_comparison(logic::runtime &runtime) const{
+	return true;
 }
 
 void cminus::logic::attributes::not_null::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{

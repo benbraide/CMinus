@@ -1,17 +1,26 @@
 #pragma once
 
+#include "../type/function_type.h"
+#include "../type/variadic_type.h"
+
 #include "declaration.h"
 
 namespace cminus::logic{
 	class function_object{
 	public:
-		function_object(std::shared_ptr<type::object> owner_type, const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<type::object> return_type, std::string name, const std::vector<std::shared_ptr<declaration>> &params, std::shared_ptr<node::object> body);
+		enum class return_interrupt{
+			nil,
+		};
 
-		function_object(std::shared_ptr<type::object> owner_type, const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<type::object> return_type, std::string name, std::vector<std::shared_ptr<declaration>> &&params, std::shared_ptr<node::object> body);
+		function_object(std::shared_ptr<type::object> owner_type, const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<declaration> return_declaration, std::string name, const std::vector<std::shared_ptr<declaration>> &params, std::shared_ptr<node::object> body);
+
+		function_object(std::shared_ptr<type::object> owner_type, std::vector<std::shared_ptr<attributes::object>> &&attributes, std::shared_ptr<declaration> return_declaration, std::string name, std::vector<std::shared_ptr<declaration>> &&params, std::shared_ptr<node::object> body);
 
 		virtual ~function_object();
 
-		virtual void call(logic::runtime &runtime, std::shared_ptr<memory::reference> value, const std::vector<std::shared_ptr<memory::reference>> &args) const;
+		virtual type::object::score_result_type get_rank(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const;
+
+		virtual std::shared_ptr<memory::reference> call(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const;
 
 		virtual void print(logic::runtime &runtime) const;
 
@@ -42,19 +51,21 @@ namespace cminus::logic{
 
 		virtual void print_attributes_(logic::runtime &runtime) const;
 
-		virtual void print_return_type_(logic::runtime &runtime) const;
-
 		virtual void print_name_(logic::runtime &runtime) const;
 
 		virtual void print_params_(logic::runtime &runtime) const;
 
 		virtual void print_body_(logic::runtime &runtime) const;
 
+		virtual std::shared_ptr<memory::reference> call_(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const;
+
+		virtual std::shared_ptr<memory::reference> get_context_() const;
+
 		std::shared_ptr<type::object> computed_type_;
 		std::shared_ptr<type::object> owner_type_;
 
 		std::vector<std::shared_ptr<attributes::object>> attributes_;
-		std::shared_ptr<type::object> return_type_;
+		std::shared_ptr<declaration> return_declaration_;
 		std::string name_;
 
 		std::vector<std::shared_ptr<declaration>> params_;

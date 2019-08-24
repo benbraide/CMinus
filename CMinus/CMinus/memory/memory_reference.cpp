@@ -84,14 +84,14 @@ std::shared_ptr<cminus::logic::attributes::object> cminus::memory::reference::fi
 	return ((include_context && context_ != nullptr) ? context_->find_attribute(name, true) : nullptr);
 }
 
-void cminus::memory::reference::traverse_attributes(const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage, bool include_context) const{
+void cminus::memory::reference::traverse_attributes(logic::runtime &runtime, const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage, bool include_context) const{
 	for (auto &attribute : attributes_){
-		if (stage == logic::attributes::object::stage_type::nil || attribute.first->handles_stage(stage))
+		if (stage == logic::attributes::object::stage_type::nil || attribute.first->handles_stage(runtime, stage))
 			callback(attribute.second);
 	}
 
 	if (include_context && context_ != nullptr)
-		context_->traverse_attributes(callback, stage, true);
+		context_->traverse_attributes(runtime, callback, stage, true);
 }
 
 bool cminus::memory::reference::is_lvalue() const{
@@ -249,7 +249,7 @@ bool cminus::memory::hard_reference::is_ref() const{
 }
 
 void cminus::memory::hard_reference::set_address(std::size_t value){
-	if (find_attribute("Ref", true, false) != nullptr)
+	if (find_attribute("#Init#", true, false) != nullptr && find_attribute("Ref", true, false) != nullptr)
 		address_ = value;
 }
 
@@ -311,13 +311,13 @@ std::size_t cminus::memory::hard_reference::set(logic::runtime &runtime, std::by
 }
 
 void cminus::memory::reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args){
-	target->traverse_attributes([&](std::shared_ptr<logic::attributes::object> attr){
+	target->traverse_attributes(runtime, [&](std::shared_ptr<logic::attributes::object> attr){
 		attr->call(runtime, stage, target, args);
 	}, stage, include_context);
 }
 
 void cminus::memory::reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, std::shared_ptr<memory::reference> target){
-	target->traverse_attributes([&](std::shared_ptr<logic::attributes::object> attr){
+	target->traverse_attributes(runtime, [&](std::shared_ptr<logic::attributes::object> attr){
 		attr->call(runtime, stage, target);
 	}, stage, include_context);
 }
