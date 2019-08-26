@@ -29,6 +29,9 @@ void cminus::logic::declaration::evaluate(logic::runtime &runtime, std::shared_p
 	//Before writing from a variable, call all registered 'before write' attributes
 	//After writing from a variable, call all registered 'after write' attributes
 
+	if (name_.empty())
+		throw exception("Cannot evaluate an unnamed declaration", 0u, 0u);
+
 	auto reference = static_value_;
 	if (reference == nullptr){//No static entry found
 		if ((reference = allocate_memory(runtime)) != nullptr && reference->get_address() != 0u)
@@ -37,7 +40,9 @@ void cminus::logic::declaration::evaluate(logic::runtime &runtime, std::shared_p
 			throw memory::exception(memory::error_code::allocation_failure, 0u);
 	}
 
+	reference->add_attribute(runtime.global_storage->find_attribute("#LVal#", false));
 	runtime.current_storage->add(name_, reference);
+
 	if (reference->find_attribute("Static", true, false) != nullptr)
 		static_value_ = reference;
 }

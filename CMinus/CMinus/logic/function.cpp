@@ -1,12 +1,12 @@
 #include "function.h"
 
-cminus::logic::function_object::function_object(std::shared_ptr<type::object> owner_type, const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<declaration> return_declaration, std::string name, const std::vector<std::shared_ptr<declaration>> &params, std::shared_ptr<node::object> body)
-	: owner_type_(owner_type), attributes_(attributes), return_declaration_(return_declaration), name_(name), params_(params), body_(body){
+cminus::logic::function_object::function_object(std::string name, naming::parent *parent, const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<declaration> return_declaration, const std::vector<std::shared_ptr<declaration>> &params, std::shared_ptr<node::object> body)
+	: single(name, parent), attributes_(attributes), return_declaration_(return_declaration), params_(params), body_(body){
 	compute_values_();
 }
 
-cminus::logic::function_object::function_object(std::shared_ptr<type::object> owner_type, std::vector<std::shared_ptr<attributes::object>> &&attributes, std::shared_ptr<declaration> return_declaration, std::string name, std::vector<std::shared_ptr<declaration>> &&params, std::shared_ptr<node::object> body)
-	: owner_type_(owner_type), attributes_(std::move(attributes)), return_declaration_(return_declaration), name_(name), params_(std::move(params)), body_(body){
+cminus::logic::function_object::function_object(std::string name, naming::parent *parent, std::vector<std::shared_ptr<attributes::object>> &&attributes, std::shared_ptr<declaration> return_declaration, std::vector<std::shared_ptr<declaration>> &&params, std::shared_ptr<node::object> body)
+	: single(name, parent), attributes_(std::move(attributes)), return_declaration_(return_declaration), params_(std::move(params)), body_(body){
 	compute_values_();
 }
 
@@ -30,11 +30,15 @@ cminus::type::object::score_result_type cminus::logic::function_object::get_rank
 
 	for (; arg_it != args.end(); ++arg_it){
 		if (variadic_base_type == nullptr){
+			if (param_it == params_.end())
+				break;
+
 			param_type = (*param_it)->get_type();
 			if (auto variadic_type = dynamic_cast<type::variadic *>(param_type.get()); variadic_type != nullptr)
 				param_type = variadic_base_type = variadic_type->get_base_type();
 
 			param_type_has_ref = type::function::has_attribute((*param_it)->get_attributes(), "Ref");
+			++param_it;
 		}
 		else
 			param_type = variadic_base_type;
@@ -57,9 +61,6 @@ cminus::type::object::score_result_type cminus::logic::function_object::get_rank
 
 		if ((current_rank_score = type::object::get_score_value(current_rank)) < lowest_rank_score)
 			lowest_rank = current_rank;//Update rank
-
-		if (variadic_base_type == nullptr && param_it != params_.end())
-			++param_it;
 	}
 
 	if (arg_it != args.end())
@@ -68,10 +69,10 @@ cminus::type::object::score_result_type cminus::logic::function_object::get_rank
 	return lowest_rank;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::function_object::call(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+std::shared_ptr<cminus::memory::reference> cminus::logic::function_object::call(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const{
 	if (get_rank(runtime, args) == type::object::score_result_type::nil)
 		throw exception("Function does not take the specified arguments", 0u, 0u);
-	return call_(runtime, args);
+	return call_(runtime, context, args);
 }
 
 void cminus::logic::function_object::print(logic::runtime &runtime) const{
@@ -100,20 +101,12 @@ std::shared_ptr<cminus::type::object> cminus::logic::function_object::get_comput
 	return computed_type_;
 }
 
-std::shared_ptr<cminus::type::object> cminus::logic::function_object::get_owner_type() const{
-	return owner_type_;
-}
-
 const std::vector<std::shared_ptr<cminus::logic::attributes::object>> &cminus::logic::function_object::get_attributes() const{
 	return attributes_;
 }
 
 std::shared_ptr<cminus::type::object> cminus::logic::function_object::get_return_type() const{
 	return return_declaration_->get_type();
-}
-
-const std::string &cminus::logic::function_object::get_name() const{
-	return name_;
 }
 
 const std::vector<std::shared_ptr<cminus::logic::declaration>> &cminus::logic::function_object::get_params() const{
@@ -182,8 +175,11 @@ void cminus::logic::function_object::print_attributes_(logic::runtime &runtime) 
 }
 
 void cminus::logic::function_object::print_name_(logic::runtime &runtime) const{
-	if (!name_.empty())
-		runtime.writer.write_buffer(name_.data(), name_.size());
+	auto name = get_qualified_naming_value();
+	if (name.empty())
+		runtime.writer.write_buffer("function", 8u);
+	else
+		runtime.writer.write_buffer(name.data(), name.size());
 }
 
 void cminus::logic::function_object::print_params_(logic::runtime &runtime) const{
@@ -211,24 +207,132 @@ void cminus::logic::function_object::print_body_(logic::runtime &runtime) const{
 	body_->print(runtime);
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::function_object::call_(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+std::shared_ptr<cminus::memory::reference> cminus::logic::function_object::call_(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const{
 	if (body_ == nullptr)
 		throw exception("Undefined function called", 0u, 0u);
 
+	if (context != nullptr && dynamic_cast<type::object *>(context->get_type().get()) != dynamic_cast<type::object *>(parent_))
+		throw exception("Function context is invalid", 0u, 0u);
+
+	if (type::function::has_attribute(attributes_, "Static"))
+		context = nullptr;//Ignore context
+	else if (context == nullptr)
+		throw exception("A member function requires a context", 0u, 0u);
+
 	std::shared_ptr<memory::reference> return_value;
+	storage::runtime_storage_guard guard(runtime, std::make_shared<storage::function>(context, dynamic_cast<storage::object *>(parent_)));
+
 	try{
-
+		copy_args_(runtime, args);
+		copy_return_value_(runtime, nullptr);
 	}
-	catch (return_interrupt){//Returned value
-
+	catch (storage::specialized::interrupt_type e){//Check for value return
+		if (e == storage::specialized::interrupt_type::return_)
+			return_value = copy_return_value_(runtime, dynamic_cast<storage::function *>(runtime.current_storage.get())->get_raised_interrupt_value());
+		else//Forward exception
+			throw;
 	}
 	catch (...){
 		throw;//Forward exception
 	}
 
-	return nullptr;
+	return return_value;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::function_object::get_context_() const{
-	return nullptr;
+void cminus::logic::function_object::copy_args_(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	auto arg_it = args.begin();
+	auto param_it = params_.begin();
+	auto variadic_it = params_.end();
+
+	std::vector<std::shared_ptr<memory::reference>> variadic_references;
+	std::shared_ptr<declaration> variadic_declaration, current_declaration;
+
+	for (; arg_it != args.end(); ++arg_it){
+		if (variadic_it == params_.end()){
+			if (param_it == params_.end())
+				break;
+
+			auto param_type = (*param_it)->get_type();
+			if (auto variadic_type = dynamic_cast<type::variadic *>(param_type.get()); variadic_type != nullptr){
+				variadic_declaration = std::make_shared<declaration>((*param_it)->get_attributes(), variadic_type->get_base_type(), "", nullptr);
+				current_declaration = variadic_declaration;
+				variadic_it = param_it;
+			}
+			else
+				current_declaration = *param_it;
+			++param_it;
+		}
+		else
+			current_declaration = variadic_declaration;
+
+		if (current_declaration->get_name().empty()){
+			auto reference = current_declaration->allocate_memory(runtime);
+			if (reference == nullptr || reference->get_address() == 0u)
+				throw memory::exception(memory::error_code::allocation_failure, 0u);
+
+			current_declaration->initialize_memory(runtime, reference, *arg_it);
+			dynamic_cast<storage::function *>(runtime.current_storage.get())->add_unnamed(reference);
+
+			if (current_declaration == variadic_declaration){
+				reference->add_attribute(runtime.global_storage->find_attribute("#LVal#", false));
+				variadic_references.push_back(reference);
+			}
+		}
+		else//Named
+			current_declaration->evaluate(runtime, *arg_it);
+	}
+
+	for (; param_it != params_.end(); ++param_it){//Check for parameters with default arguments
+		if (variadic_declaration != nullptr)
+			break;
+
+		auto param_type = (*param_it)->get_type();
+		if (auto variadic_type = dynamic_cast<type::variadic *>(param_type.get()); variadic_type != nullptr){
+			variadic_it = param_it;
+			break;
+		}
+		else
+			current_declaration = *param_it;
+
+		if (current_declaration->get_name().empty()){
+			auto reference = current_declaration->allocate_memory(runtime);
+			if (reference == nullptr || reference->get_address() == 0u)
+				throw memory::exception(memory::error_code::allocation_failure, 0u);
+
+			current_declaration->initialize_memory(runtime, reference, nullptr);
+			dynamic_cast<storage::function *>(runtime.current_storage.get())->add_unnamed(reference);
+		}
+		else//Named
+			current_declaration->evaluate(runtime, nullptr);
+	}
+
+	if (variadic_it != params_.end()){//Add variadic entry
+		variadic_declaration = std::make_shared<declaration>((*param_it)->get_attributes(), (*variadic_it)->get_type(), (*variadic_it)->get_name(), nullptr);
+	}
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::function_object::copy_return_value_(logic::runtime &runtime, std::shared_ptr<memory::reference> value) const{
+	auto is_void_return = (return_declaration_ == nullptr);
+	if (!is_void_return){
+		auto primitive_type = dynamic_cast<type::primitive *>(return_declaration_->get_type().get());
+		is_void_return = (primitive_type != nullptr && primitive_type->get_id() == type::primitive::id_type::void_);
+	}
+
+	if (is_void_return){
+		if (value != nullptr)
+			throw exception("A void function cannot return a value", 0u, 0u);
+		return nullptr;
+	}
+
+	if (value == nullptr)
+		throw exception("A void function must return a value", 0u, 0u);
+
+	auto reference = return_declaration_->allocate_memory(runtime);
+	if (reference == nullptr || reference->get_address() == 0u)
+		throw memory::exception(memory::error_code::allocation_failure, 0u);
+
+	return_declaration_->initialize_memory(runtime, reference, value);
+	dynamic_cast<storage::function *>(runtime.current_storage.get())->add_unnamed(reference);
+
+	return reference;
 }

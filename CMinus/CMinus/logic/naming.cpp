@@ -25,7 +25,7 @@ const std::string &cminus::logic::naming::single::get_naming_value() const{
 }
 
 std::string cminus::logic::naming::single::get_qualified_naming_value() const{
-	return (((parent_ == nullptr) ? "" : parent_->get_qualified_naming_value()) + "::" + value_);
+	return (((parent_ == nullptr || value_.empty()) ? "" : parent_->get_qualified_naming_value()) + "::" + value_);
 }
 
 void cminus::logic::naming::single::print(logic::runtime &runtime, bool is_qualified) const{

@@ -28,6 +28,7 @@ namespace cminus::type{
 			double_,
 			ldouble,
 			nan_,
+			void_,
 		};
 
 		explicit primitive(id_type id);

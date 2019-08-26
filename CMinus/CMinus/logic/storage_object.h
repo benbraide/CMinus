@@ -46,5 +46,16 @@ namespace cminus::logic::storage{
 		std::unordered_map<std::string, std::shared_ptr<memory::reference>> entries_;
 		std::unordered_map<std::string, std::shared_ptr<attributes::object>> attributes_;
 	};
+
+	class runtime_storage_guard{
+	public:
+		runtime_storage_guard(logic::runtime &runtime, std::shared_ptr<object> current);
+
+		~runtime_storage_guard();
+
+	private:
+		logic::runtime &runtime_;
+		std::shared_ptr<object> old_;
+	};
 }
 

@@ -13,6 +13,7 @@ namespace cminus::memory{
 	class reference{
 	public:
 		using attribute_list_type = std::vector<std::shared_ptr<logic::attributes::object>>;
+		using optimised_attribute_list_type = std::unordered_map<logic::attributes::object *, std::shared_ptr<logic::attributes::object>>;
 
 		reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
 
@@ -33,6 +34,8 @@ namespace cminus::memory{
 		virtual std::shared_ptr<logic::attributes::object> find_attribute(const std::string &name, bool global_only, bool include_context) const;
 
 		virtual std::shared_ptr<logic::attributes::object> find_attribute(std::shared_ptr<logic::naming::object> name, bool include_context) const;
+
+		virtual const optimised_attribute_list_type get_attributes() const;
 
 		virtual void traverse_attributes(logic::runtime &runtime, const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage, bool include_context) const;
 
@@ -110,7 +113,7 @@ namespace cminus::memory{
 		virtual std::shared_ptr<reference> clone_(const attribute_list_type &attributes) const = 0;
 
 		std::shared_ptr<type::object> type_;
-		std::unordered_map<logic::attributes::object *, std::shared_ptr<logic::attributes::object>> attributes_;
+		optimised_attribute_list_type attributes_;
 		std::shared_ptr<reference> context_;
 	};
 
@@ -123,6 +126,8 @@ namespace cminus::memory{
 		hard_reference(std::size_t address, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
 
 		hard_reference(std::size_t address, std::shared_ptr<type::object> type, std::shared_ptr<reference> context);
+
+		hard_reference(std::shared_ptr<reference> base, std::shared_ptr<reference> context, std::size_t address_offset = 0u);
 
 		virtual ~hard_reference();
 

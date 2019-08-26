@@ -84,6 +84,10 @@ std::shared_ptr<cminus::logic::attributes::object> cminus::memory::reference::fi
 	return ((include_context && context_ != nullptr) ? context_->find_attribute(name, true) : nullptr);
 }
 
+const cminus::memory::reference::optimised_attribute_list_type cminus::memory::reference::get_attributes() const{
+	return attributes_;
+}
+
 void cminus::memory::reference::traverse_attributes(logic::runtime &runtime, const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage, bool include_context) const{
 	for (auto &attribute : attributes_){
 		if (stage == logic::attributes::object::stage_type::nil || attribute.first->handles_stage(runtime, stage))
@@ -235,6 +239,11 @@ cminus::memory::hard_reference::hard_reference(std::size_t address, std::shared_
 
 cminus::memory::hard_reference::hard_reference(std::size_t address, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
 	: hard_reference(address, type, attribute_list_type{}, context){}
+
+cminus::memory::hard_reference::hard_reference(std::shared_ptr<reference> base, std::shared_ptr<reference> context, std::size_t address_offset)
+	: hard_reference((base->get_address() + address_offset), base->get_type(), attribute_list_type{}, context){
+	attributes_ = base->get_attributes();
+}
 
 cminus::memory::hard_reference::~hard_reference(){
 	try{

@@ -1,4 +1,4 @@
-#include "storage_object.h"
+#include "runtime.h"
 
 cminus::logic::storage::exception::exception(error_code code)
 	: base_type("Storage Exception"), code_(code){}
@@ -13,7 +13,7 @@ cminus::logic::storage::object::object(const std::string &value, object *parent)
 cminus::logic::storage::object::~object() = default;
 
 void cminus::logic::storage::object::add(const std::string &name, std::shared_ptr<memory::reference> entry){
-	if (auto it = entries_.find(name); it != entries_.end()){
+	if (auto entry = find(name, false); entry != nullptr){
 		/*auto function_entry = dynamic_cast<function_type *>(entry.get());
 		if (function_entry == nullptr)
 			throw exception(error_code::duplicate_entry);
@@ -85,4 +85,13 @@ std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::objec
 		return it->second;
 
 	return nullptr;
+}
+
+cminus::logic::storage::runtime_storage_guard::runtime_storage_guard(logic::runtime &runtime, std::shared_ptr<object> current)
+	: runtime_(runtime), old_(runtime.current_storage){
+	runtime.current_storage = current;
+}
+
+cminus::logic::storage::runtime_storage_guard::~runtime_storage_guard(){
+	runtime_.current_storage = old_;
 }
