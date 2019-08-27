@@ -21,7 +21,11 @@ namespace cminus::memory{
 
 		virtual std::shared_ptr<reference> clone(const attribute_list_type &attributes, bool inherit_attributes) const;
 
+		virtual void set_type(std::shared_ptr<type::object> value);
+
 		virtual std::shared_ptr<type::object> get_type() const;
+
+		virtual void set_context(std::shared_ptr<reference> value);
 
 		virtual std::shared_ptr<reference> get_context() const;
 

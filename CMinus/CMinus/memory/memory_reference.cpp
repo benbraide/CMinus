@@ -24,8 +24,16 @@ std::shared_ptr<cminus::memory::reference> cminus::memory::reference::clone(cons
 	return clone_(combined_attributes);
 }
 
+void cminus::memory::reference::set_type(std::shared_ptr<type::object> value){
+	type_ = value;
+}
+
 std::shared_ptr<cminus::type::object> cminus::memory::reference::get_type() const{
 	return type_;
+}
+
+void cminus::memory::reference::set_context(std::shared_ptr<reference> value){
+	context_ = value;
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::memory::reference::get_context() const{
@@ -212,6 +220,18 @@ std::size_t cminus::memory::reference::set(logic::runtime &runtime, std::byte va
 	return 0u;
 }
 
+void cminus::memory::reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args){
+	target->traverse_attributes(runtime, [&](std::shared_ptr<logic::attributes::object> attr){
+		attr->call(runtime, stage, target, args);
+	}, stage, include_context);
+}
+
+void cminus::memory::reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, std::shared_ptr<memory::reference> target){
+	target->traverse_attributes(runtime, [&](std::shared_ptr<logic::attributes::object> attr){
+		attr->call(runtime, stage, target);
+	}, stage, include_context);
+}
+
 cminus::memory::hard_reference::hard_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
 	: reference(type, attributes, context){
 	try{
@@ -319,48 +339,6 @@ std::size_t cminus::memory::hard_reference::set(logic::runtime &runtime, std::by
 	return runtime.memory_object.set(address_, value, size);
 }
 
-void cminus::memory::reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args){
-	target->traverse_attributes(runtime, [&](std::shared_ptr<logic::attributes::object> attr){
-		attr->call(runtime, stage, target, args);
-	}, stage, include_context);
-}
-
-void cminus::memory::reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, std::shared_ptr<memory::reference> target){
-	target->traverse_attributes(runtime, [&](std::shared_ptr<logic::attributes::object> attr){
-		attr->call(runtime, stage, target);
-	}, stage, include_context);
-}
-
 std::shared_ptr<cminus::memory::reference> cminus::memory::hard_reference::clone_(const attribute_list_type &attributes) const{
 	return std::make_shared<hard_reference>(address_, type_, attributes, context_);
 }
-
-/*
-cminus::memory::proxy_reference::proxy_reference(std::shared_ptr<reference> target, unsigned int attributes)
-	: reference(target->get_type(), attributes), target_(target){}
-
-cminus::memory::proxy_reference::~proxy_reference() = default;
-
-void cminus::memory::proxy_reference::write(logic::runtime &runtime, std::shared_ptr<reference> source){
-	target_->write(runtime, source);
-}
-
-void cminus::memory::proxy_reference::write(logic::runtime &runtime, const std::byte *source, std::shared_ptr<type::object> type){
-	target_->write(runtime, source, type);
-}
-
-unsigned int cminus::memory::proxy_reference::get_attributes() const{
-	return (target_->get_attributes() | attributes_);
-}
-
-std::size_t cminus::memory::proxy_reference::get_address() const{
-	return target_->get_address();
-}
-
-const std::byte *cminus::memory::proxy_reference::get_data() const{
-	return target_->get_data();
-}
-
-std::shared_ptr<cminus::memory::reference> cminus::memory::proxy_reference::get_target() const{
-	return target_;
-}*/

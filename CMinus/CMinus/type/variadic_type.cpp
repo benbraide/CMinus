@@ -23,29 +23,14 @@ cminus::type::object::score_result_type cminus::type::variadic::get_score(logic:
 	if (type_target == nullptr)
 		return score_result_type::nil;
 
-	switch (base_type_->get_score(runtime, *type_target->base_type_, is_ref)){
-	case score_result_type::exact:
-		return score_result_type::exact;
-	case score_result_type::assignable:
-		return score_result_type::assignable;
-	case score_result_type::class_compatible:
-		return score_result_type::class_compatible;
-	default:
-		break;
-	}
-
-	return score_result_type::nil;
+	return base_type_->get_score(runtime, *type_target->base_type_, is_ref);
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::type::variadic::get_default_value(logic::runtime &runtime) const{
 	return nullptr;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::type::variadic::convert_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<object> target_type, bool is_ref) const{
-	return nullptr;
-}
-
-std::shared_ptr<cminus::memory::reference> cminus::type::variadic::convert_value(logic::runtime &runtime, const std::byte *data, std::shared_ptr<object> target_type) const{
+std::shared_ptr<cminus::memory::reference> cminus::type::variadic::cast(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<object> target_type, cast_type type) const{
 	return nullptr;
 }
 

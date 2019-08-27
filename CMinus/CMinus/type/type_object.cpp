@@ -30,6 +30,8 @@ int cminus::type::object::get_score_value(score_result_type score){
 	switch (score){
 	case score_result_type::exact:
 		return 100;
+	case score_result_type::assignable:
+		return 90;
 	case score_result_type::ancestor:
 	case score_result_type::widened:
 		return 80;

@@ -161,10 +161,10 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 		break;
 	case type::object::score_result_type::shortened:
 	case type::object::score_result_type::too_shortened:
-		left_value = left_type->convert_value(runtime, left_value, right_type, false);
+		left_value = left_type->cast(runtime, left_value, right_type, type::object::cast_type::static_);
 		break;
 	default:
-		right_value = right_type->convert_value(runtime, right_value, left_type, false);
+		right_value = right_type->cast(runtime, right_value, left_type, type::object::cast_type::static_);
 		break;
 	}
 

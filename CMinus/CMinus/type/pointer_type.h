@@ -3,11 +3,11 @@
 #include "../logic/runtime.h"
 
 namespace cminus::type{
-	class variadic : public object{
+	class pointer : public object{
 	public:
-		explicit variadic(std::shared_ptr<object> base_type);
+		explicit pointer(std::shared_ptr<object> base_type);
 
-		virtual ~variadic();
+		virtual ~pointer();
 
 		virtual void print(logic::runtime &runtime, bool is_qualified) const override;
 

@@ -37,10 +37,8 @@ std::size_t cminus::type::function::compute_base_offset(const object &target) co
 
 cminus::type::object::score_result_type cminus::type::function::get_score(logic::runtime &runtime, const object &target, bool is_ref) const{
 	auto type_target = dynamic_cast<const function *>(&target);
-	if (type_target == nullptr){//Check for pointer
-		if (is_ref)
-			return score_result_type::nil;
-	}
+	if (type_target == nullptr)//Check for pointer
+		return score_result_type::nil;
 
 	if ((return_type_.value == nullptr) != (type_target->return_type_.value == nullptr))
 		return score_result_type::nil;
@@ -63,11 +61,35 @@ std::shared_ptr<cminus::memory::reference> cminus::type::function::get_default_v
 	return nullptr;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::type::function::convert_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<object> target_type, bool is_ref) const{
-	return nullptr;
-}
+std::shared_ptr<cminus::memory::reference> cminus::type::function::cast(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<object> target_type, cast_type type) const{
+	if (type != cast_type::reinterpret)
+		return nullptr;//Not supported
 
-std::shared_ptr<cminus::memory::reference> cminus::type::function::convert_value(logic::runtime &runtime, const std::byte *data, std::shared_ptr<object> target_type) const{
+	auto primitive_target_type = dynamic_cast<const primitive *>(target_type.get());
+	if (primitive_target_type == nullptr)
+		return nullptr;
+
+	switch (primitive_target_type->get_id()){
+	case primitive::id_type::int8_:
+		return std::make_shared<cminus::memory::reference_with_value<__int8>>(target_type, nullptr, static_cast<__int8>(data->read_scalar<unsigned __int64>(runtime)));
+	case primitive::id_type::uint8_:
+		return std::make_shared<cminus::memory::reference_with_value<unsigned __int8>>(target_type, nullptr, static_cast<unsigned __int8>(data->read_scalar<unsigned __int64>(runtime)));
+	case primitive::id_type::int16_:
+		return std::make_shared<cminus::memory::reference_with_value<__int16>>(target_type, nullptr, static_cast<__int16>(data->read_scalar<unsigned __int64>(runtime)));
+	case primitive::id_type::uint16_:
+		return std::make_shared<cminus::memory::reference_with_value<unsigned __int16>>(target_type, nullptr, static_cast<unsigned __int16>(data->read_scalar<unsigned __int64>(runtime)));
+	case primitive::id_type::int32_:
+		return std::make_shared<cminus::memory::reference_with_value<__int32>>(target_type, nullptr, static_cast<__int32>(data->read_scalar<unsigned __int64>(runtime)));
+	case primitive::id_type::uint32_:
+		return std::make_shared<cminus::memory::reference_with_value<unsigned __int32>>(target_type, nullptr, static_cast<unsigned __int32>(data->read_scalar<unsigned __int64>(runtime)));
+	case primitive::id_type::int64_:
+		return std::make_shared<cminus::memory::reference_with_value<__int64>>(target_type, nullptr, static_cast<__int64>(data->read_scalar<unsigned __int64>(runtime)));
+	case primitive::id_type::uint64_:
+		return std::make_shared<cminus::memory::reference_with_value<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
+	default:
+		break;
+	}
+
 	return nullptr;
 }
 

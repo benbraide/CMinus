@@ -32,6 +32,15 @@ namespace cminus::type{
 			too_shortened,
 		};
 
+		enum class cast_type{
+			nil,
+			static_,
+			reinterpret,
+			dynamic,
+			ref_static,
+			ref_dynamic,
+		};
+
 		virtual ~object();
 
 		virtual void construct_default(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const;
@@ -48,9 +57,7 @@ namespace cminus::type{
 
 		virtual std::shared_ptr<memory::reference> get_default_value(logic::runtime &runtime) const = 0;
 
-		virtual std::shared_ptr<memory::reference> convert_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<object> target_type, bool is_ref) const = 0;
-
-		virtual std::shared_ptr<memory::reference> convert_value(logic::runtime &runtime, const std::byte *data, std::shared_ptr<object> target_type) const = 0;
+		virtual std::shared_ptr<memory::reference> cast(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<object> target_type, cast_type type) const = 0;
 
 		virtual std::shared_ptr<evaluator::object> get_evaluator(logic::runtime &runtime) const = 0;
 

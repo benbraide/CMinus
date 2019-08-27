@@ -26,9 +26,7 @@ namespace cminus::type{
 
 		virtual std::shared_ptr<memory::reference> get_default_value(logic::runtime &runtime) const override;
 
-		virtual std::shared_ptr<memory::reference> convert_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<object> target_type, bool is_ref) const override;
-
-		virtual std::shared_ptr<memory::reference> convert_value(logic::runtime &runtime, const std::byte *data, std::shared_ptr<object> target_type) const override;
+		virtual std::shared_ptr<memory::reference> cast(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<object> target_type, cast_type type) const override;
 
 		virtual std::shared_ptr<evaluator::object> get_evaluator(logic::runtime &runtime) const override;
 

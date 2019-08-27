@@ -48,7 +48,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 	case type::object::score_result_type::too_shortened:
 	case type::object::score_result_type::compatible:
 	case type::object::score_result_type::class_compatible:
-		if ((right_value = right_type->convert_value(runtime, right_value, left_type, is_ref)) == nullptr)
+		if ((right_value = right_type->cast(runtime, right_value, left_type, (is_ref ? type::object::cast_type::ref_static : type::object::cast_type::static_))) == nullptr)
 			throw logic::exception("Cannot assign object to destination type", 0u, 0u);
 		break;
 	default:
@@ -59,15 +59,21 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 	if (right_value == nullptr)
 		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
 
-	if (is_ref)//Copy address
-		left_value->set_address(right_value->get_address());
-	else if ((left_value = assign_(runtime, left_value, right_value)) == nullptr)
+	if (is_ref && (left_value = assign_address_(runtime, left_value, right_value)) == nullptr)//Copy address
+		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
+	
+	if (!is_ref && (left_value = assign_(runtime, left_value, right_value)) == nullptr)
 		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
 
 	if (is_init)
 		left_value->remove_attribute("#Init#", true);
 
 	return left_value;
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::assign_address_(logic::runtime &runtime, std::shared_ptr<memory::reference> destination, std::shared_ptr<memory::reference> source) const{
+	destination->set_address(source->get_address());
+	return destination;
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::assign_(logic::runtime &runtime, std::shared_ptr<memory::reference> destination, std::shared_ptr<memory::reference> source) const{
