@@ -8,6 +8,76 @@ cminus::type::primitive::primitive(id_type id)
 
 cminus::type::primitive::~primitive() = default;
 
+void cminus::type::primitive::print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const{
+	switch (id_){
+	case id_type::nan_:
+		runtime.writer.write_buffer("NaN", 3u);
+		break;
+	case id_type::byte_:
+		break;
+	case id_type::char_:
+		runtime.writer.write_scalar(data->read_scalar<char>(runtime));
+		break;
+	case id_type::wchar_:
+		runtime.writer.write_scalar(data->read_scalar<wchar_t>(runtime));
+		break;
+	case id_type::int8_:
+		runtime.writer.write_scalar(std::to_string(data->read_scalar<__int8>(runtime)) + "i8");
+		break;
+	case id_type::uint8_:
+		runtime.writer.write_scalar(std::to_string(data->read_scalar<unsigned __int8>(runtime)) + "ui8");
+		break;
+	case id_type::int16_:
+		runtime.writer.write_scalar(std::to_string(data->read_scalar<__int16>(runtime)) + "i16");
+		break;
+	case id_type::uint16_:
+		runtime.writer.write_scalar(std::to_string(data->read_scalar<unsigned __int16>(runtime)) + "ui16");
+		break;
+	case id_type::int32_:
+		runtime.writer.write_scalar(std::to_string(data->read_scalar<__int32>(runtime)) + "i32");
+		break;
+	case id_type::uint32_:
+		runtime.writer.write_scalar(std::to_string(data->read_scalar<unsigned __int32>(runtime)) + "ui32");
+		break;
+	case id_type::int64_:
+		runtime.writer.write_scalar(std::to_string(data->read_scalar<__int64>(runtime)) + "i64");
+		break;
+	case id_type::uint64_:
+		runtime.writer.write_scalar(std::to_string(data->read_scalar<unsigned __int64>(runtime)) + "ui64");
+		break;
+	case id_type::float_:
+		runtime.writer.write_scalar(std::to_string(data->read_scalar<float>(runtime)) + "f32");
+		break;
+	case id_type::double_:
+		runtime.writer.write_scalar(std::to_string(data->read_scalar<double>(runtime)) + "f64");
+		break;
+	case id_type::ldouble:
+		runtime.writer.write_scalar(std::to_string(data->read_scalar<long double>(runtime)) + "f128");
+		break;
+	case id_type::nullptr_:
+		runtime.writer.write_buffer("nullptr", 7u);
+		break;
+	default:
+		break;
+	}
+
+	if (id_ == id_type::bool_){
+		switch (data->read_scalar<node::named_constant::constant_type>(runtime)){
+		case node::named_constant::constant_type::indeterminate:
+			runtime.writer.write_buffer("indeterminate", 13u);
+			break;
+		case node::named_constant::constant_type::false_:
+			runtime.writer.write_buffer("false", 5u);
+			break;
+		case node::named_constant::constant_type::true_:
+			runtime.writer.write_buffer("true", 4u);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
 std::size_t cminus::type::primitive::get_size() const{
 	switch (id_){
 	case id_type::bool_:

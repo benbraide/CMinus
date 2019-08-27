@@ -3,6 +3,16 @@
 cminus::logic::attributes::object::object(const std::string &name, naming::parent *parent)
 	: single(name, parent){}
 
+cminus::logic::attributes::object::~object() = default;
+
+bool cminus::logic::attributes::object::is_same(const naming::object &target) const{
+	return single::is_same(target);
+}
+
+std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::object::get_non_pointer_object() const{
+	return nullptr;
+}
+
 bool cminus::logic::attributes::object::is_required_on_ref_destination(logic::runtime &runtime) const{
 	return false;
 }
@@ -19,7 +29,38 @@ void cminus::logic::attributes::object::call(logic::runtime &runtime, stage_type
 	return call_(runtime, stage, target, std::vector<std::shared_ptr<memory::reference>>{});
 }
 
-cminus::logic::attributes::object::~object() = default;
+cminus::logic::attributes::pointer_object::pointer_object(std::shared_ptr<object> target)
+	: object(("&" + target->get_naming_value()), target->get_naming_parent()), target_(target){}
+
+cminus::logic::attributes::pointer_object::~pointer_object() = default;
+
+bool cminus::logic::attributes::pointer_object::is_same(const naming::object &target) const{
+	if (auto pointer_target = dynamic_cast<const pointer_object *>(&target); pointer_target != nullptr)
+		return target_->is_same(*pointer_target->target_);
+	return false;
+}
+
+std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::pointer_object::get_non_pointer_object() const{
+	return target_;
+}
+
+bool cminus::logic::attributes::pointer_object::handles_stage(logic::runtime &runtime, stage_type value) const{
+	return false;
+}
+
+bool cminus::logic::attributes::pointer_object::is_required_on_ref_destination(logic::runtime &runtime) const{
+	return false;
+}
+
+bool cminus::logic::attributes::pointer_object::is_included_in_comparison(logic::runtime &runtime) const{
+	return target_->is_included_in_comparison(runtime);
+}
+
+std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::pointer_object::get_target() const{
+	return target_;
+}
+
+void cminus::logic::attributes::pointer_object::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{}
 
 cminus::logic::attributes::bound_object::bound_object(std::shared_ptr<object> target, const std::vector<std::shared_ptr<memory::reference>> &args)
 	: object(target->get_naming_value(), target->get_naming_parent()), target_(target), args_(args){}

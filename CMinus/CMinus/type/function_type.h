@@ -18,6 +18,8 @@ namespace cminus::type{
 
 		virtual void print(logic::runtime &runtime, bool is_qualified) const override;
 
+		virtual void print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const override;
+
 		virtual std::size_t get_size() const override;
 
 		virtual std::size_t compute_base_offset(const object &target) const override;

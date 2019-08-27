@@ -28,6 +28,10 @@ namespace cminus::logic::attributes{
 
 		virtual ~object();
 
+		virtual bool is_same(const naming::object &target) const override;
+
+		virtual std::shared_ptr<object> get_non_pointer_object() const;
+
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const = 0;
 
 		virtual bool is_required_on_ref_destination(logic::runtime &runtime) const;
@@ -40,6 +44,30 @@ namespace cminus::logic::attributes{
 
 	protected:
 		virtual void call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const = 0;
+	};
+
+	class pointer_object : public object{
+	public:
+		explicit pointer_object(std::shared_ptr<object> target);
+
+		virtual ~pointer_object();
+
+		virtual bool is_same(const naming::object &target) const override;
+
+		virtual std::shared_ptr<object> get_non_pointer_object() const override;
+
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+
+		virtual bool is_required_on_ref_destination(logic::runtime &runtime) const override;
+
+		virtual bool is_included_in_comparison(logic::runtime &runtime) const override;
+
+		virtual std::shared_ptr<object> get_target() const;
+
+	protected:
+		virtual void call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const override;
+
+		std::shared_ptr<object> target_;
 	};
 
 	class bound_object : public object{

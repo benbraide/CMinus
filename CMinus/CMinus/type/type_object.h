@@ -49,6 +49,8 @@ namespace cminus::type{
 
 		virtual void print(logic::runtime &runtime, bool is_qualified) const = 0;
 
+		virtual void print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const = 0;
+
 		virtual std::size_t get_size() const = 0;
 
 		virtual std::size_t compute_base_offset(const object &target) const = 0;

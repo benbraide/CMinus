@@ -10,6 +10,26 @@ void cminus::type::variadic::print(logic::runtime &runtime, bool is_qualified) c
 	runtime.writer.write_buffer("...", 3u);
 }
 
+void cminus::type::variadic::print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const{
+	auto variadic_data = dynamic_cast<memory::reference_with_value<std::vector<std::shared_ptr<memory::reference>>> *>(data.get());
+	if (variadic_data == nullptr)
+		return;
+
+	runtime.writer.write_scalar('[');
+	auto is_first = true;
+
+	for (auto entry : variadic_data->get_value()){
+		if (!is_first)
+			runtime.writer.write_scalar(', ');
+		else
+			is_first = false;
+
+		entry->get_type()->print_value(runtime, entry);
+	}
+
+	runtime.writer.write_scalar(']');
+}
+
 std::size_t cminus::type::variadic::get_size() const{
 	return 0u;
 }

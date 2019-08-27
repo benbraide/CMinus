@@ -27,6 +27,10 @@ void cminus::type::function::print(logic::runtime &runtime, bool is_qualified) c
 	runtime.writer.write_scalar(')');
 }
 
+void cminus::type::function::print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const{
+
+}
+
 std::size_t cminus::type::function::get_size() const{
 	return sizeof(void *);
 }

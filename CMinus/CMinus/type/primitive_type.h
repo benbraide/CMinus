@@ -35,6 +35,8 @@ namespace cminus::type{
 
 		virtual ~primitive();
 
+		virtual void print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const override;
+
 		virtual std::size_t get_size() const override;
 
 		virtual std::size_t compute_base_offset(const type::object &target) const override;

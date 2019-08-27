@@ -181,6 +181,12 @@ namespace cminus::memory{
 		reference_with_value(std::shared_ptr<type::object> type, std::shared_ptr<reference> context, const m_value_type &value)
 			: reference_with_value(type, attribute_list_type{}, context, value){}
 
+		reference_with_value(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context, m_value_type &&value)
+			: reference(type, attributes, context), value_(std::move(value)){}
+
+		reference_with_value(std::shared_ptr<type::object> type, std::shared_ptr<reference> context, m_value_type &&value)
+			: reference_with_value(type, attribute_list_type{}, context, std::move(value)){}
+
 		virtual ~reference_with_value() = default;
 
 		virtual const std::byte *get_data(logic::runtime &runtime) const override{

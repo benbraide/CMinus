@@ -12,6 +12,14 @@ void cminus::type::pointer::print(logic::runtime &runtime, bool is_qualified) co
 	runtime.writer.write_buffer(" *", 2u);
 }
 
+void cminus::type::pointer::print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const{
+	auto target_address = data->read_scalar<unsigned __int64>(runtime);
+	if (target_address == 0u){
+		runtime.writer.write_buffer("nullptr", 7u);
+		return;
+	}
+}
+
 std::size_t cminus::type::pointer::get_size() const{
 	return sizeof(void *);
 }
