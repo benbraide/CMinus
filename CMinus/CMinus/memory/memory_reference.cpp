@@ -287,58 +287,78 @@ std::size_t cminus::memory::hard_reference::get_address() const{
 }
 
 const std::byte *cminus::memory::hard_reference::get_data(logic::runtime &runtime) const{
-	auto block = runtime.memory_object.find_block(address_);
+	auto block = runtime.memory_object.find_block(get_address());
 	return ((block == nullptr) ? nullptr : block->get_data());
 }
 
 std::size_t cminus::memory::hard_reference::read(logic::runtime &runtime, std::byte *buffer, std::size_t size) const{
-	return runtime.memory_object.read(address_, buffer, size);
+	return runtime.memory_object.read(get_address(), buffer, size);
 }
 
 std::size_t cminus::memory::hard_reference::read(logic::runtime &runtime, io::binary_writer &buffer, std::size_t size) const{
-	return runtime.memory_object.read(address_, buffer, size);
+	return runtime.memory_object.read(get_address(), buffer, size);
 }
 
 std::size_t cminus::memory::hard_reference::read(logic::runtime &runtime, std::size_t buffer, std::size_t size) const{
-	return runtime.memory_object.read(address_, buffer, size);
+	return runtime.memory_object.read(get_address(), buffer, size);
 }
 
 std::size_t cminus::memory::hard_reference::read(logic::runtime &runtime, reference &buffer, std::size_t size) const{
 	if (auto address = buffer.get_address(); address != 0u)
-		return runtime.memory_object.read(address_, address, size);
+		return runtime.memory_object.read(get_address(), address, size);
 	return 0u;
 }
 
 std::size_t cminus::memory::hard_reference::write(logic::runtime &runtime, const std::byte *buffer, std::size_t size){
-	return runtime.memory_object.write(address_, buffer, size);
+	return runtime.memory_object.write(get_address(), buffer, size);
 }
 
 std::size_t cminus::memory::hard_reference::write(logic::runtime &runtime, const io::binary_reader &buffer, std::size_t size){
-	return runtime.memory_object.write(address_, buffer, size);
+	return runtime.memory_object.write(get_address(), buffer, size);
 }
 
 std::size_t cminus::memory::hard_reference::write(logic::runtime &runtime, std::size_t buffer, std::size_t size){
-	return runtime.memory_object.write(buffer, address_, size);
+	return runtime.memory_object.write(buffer, get_address(), size);
 }
 
 std::size_t cminus::memory::hard_reference::write(logic::runtime &runtime, const reference &buffer, std::size_t size){
 	if (auto address = buffer.get_address(); address != 0u)
-		return runtime.memory_object.write(address, address_, size);
+		return runtime.memory_object.write(address, get_address(), size);
 
 	if (auto data = buffer.get_data(runtime); data != nullptr)
-		return runtime.memory_object.write(address_, data, size);
+		return runtime.memory_object.write(get_address(), data, size);
 
 	return 0u;
 }
 
 std::size_t cminus::memory::hard_reference::write(logic::runtime &runtime, managed_object &object){
-	return runtime.memory_object.write(address_, object);
+	return runtime.memory_object.write(get_address(), object);
 }
 
 std::size_t cminus::memory::hard_reference::set(logic::runtime &runtime, std::byte value, std::size_t size){
-	return runtime.memory_object.set(address_, value, size);
+	return runtime.memory_object.set(get_address(), value, size);
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::memory::hard_reference::clone_(const attribute_list_type &attributes) const{
-	return std::make_shared<hard_reference>(address_, type_, attributes, context_);
+	return std::make_shared<hard_reference>(get_address(), type_, attributes, context_);
+}
+
+cminus::memory::ref_reference::ref_reference(logic::runtime &runtime, std::size_t address, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: hard_reference(address, type, attributes, context), object_(runtime.memory_object){}
+
+cminus::memory::ref_reference::ref_reference(logic::runtime &runtime, std::size_t address, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
+	: hard_reference(address, type, context), object_(runtime.memory_object){}
+
+cminus::memory::ref_reference::~ref_reference() = default;
+
+std::size_t cminus::memory::ref_reference::get_address() const{
+	return ((address_ == 0u) ? 0u : object_.read_scalar<std::size_t>(address_));
+}
+
+std::size_t cminus::memory::ref_reference::get_indirect_address() const{
+	return address_;
+}
+
+void cminus::memory::ref_reference::write_address(std::size_t value){
+	object_.write_scalar(address_, value);
 }

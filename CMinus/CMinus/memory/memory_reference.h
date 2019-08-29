@@ -170,6 +170,24 @@ namespace cminus::memory{
 		std::function<void()> deallocator_;
 	};
 
+	class ref_reference : public hard_reference{
+	public:
+		ref_reference(logic::runtime &runtime, std::size_t address, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		ref_reference(logic::runtime &runtime, std::size_t address, std::shared_ptr<type::object> type, std::shared_ptr<reference> context);
+
+		virtual ~ref_reference();
+
+		virtual std::size_t get_address() const override;
+
+		virtual std::size_t get_indirect_address() const;
+
+		virtual void write_address(std::size_t value);
+
+	protected:
+		memory::object &object_;
+	};
+
 	template <class value_type>
 	class reference_with_value : public reference{
 	public:

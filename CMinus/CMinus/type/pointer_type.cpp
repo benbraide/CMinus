@@ -30,13 +30,10 @@ std::size_t cminus::type::pointer::compute_base_offset(const object &target) con
 
 cminus::type::object::score_result_type cminus::type::pointer::get_score(logic::runtime &runtime, const object &target, bool is_ref) const{
 	auto type_target = dynamic_cast<const pointer *>(&target);
-	if (type_target == nullptr){
-		if (auto primitive_target_type = dynamic_cast<const primitive *>(&target); primitive_target_type != nullptr && primitive_target_type->get_id() == primitive::id_type::nullptr_)
-			return score_result_type::assignable;
+	if (type_target == nullptr)
 		return score_result_type::nil;
-	}
 
-	if (auto primitive_base_type = dynamic_cast<primitive *>(base_type_.get()); primitive_base_type != nullptr && primitive_base_type->get_id() == primitive::id_type::void_)
+	if (auto primitive_base_type = dynamic_cast<primitive *>(type_target->base_type_.get()); primitive_base_type != nullptr && primitive_base_type->get_id() == primitive::id_type::void_)
 		return score_result_type::assignable;
 
 	switch (base_type_->get_score(runtime, *type_target->base_type_, is_ref)){
@@ -62,12 +59,11 @@ std::shared_ptr<cminus::memory::reference> cminus::type::pointer::cast(logic::ru
 		return nullptr;//Not supported
 
 	auto pointer_target_type = dynamic_cast<const pointer *>(target_type.get());
-	if (pointer_target_type != nullptr){//Check for integer
-		if (type != cast_type::reinterpret)
+	if (pointer_target_type != nullptr){
+		if (type == cast_type::reinterpret)
 			return std::make_shared<cminus::memory::reference_with_value<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
 
-		auto score = pointer_target_type->base_type_->get_score(runtime, *base_type_, false);
-		if (score == score_result_type::ancestor){//Cast to base type pointer
+		if (auto score = base_type_->get_score(runtime, *pointer_target_type->base_type_, false); score == score_result_type::ancestor){//Cast to base type pointer
 			auto address = (data->read_scalar<unsigned __int64>(runtime) + base_type_->compute_base_offset(*pointer_target_type->base_type_));
 			return std::make_shared<cminus::memory::reference_with_value<unsigned __int64>>(target_type, nullptr, address);
 		}

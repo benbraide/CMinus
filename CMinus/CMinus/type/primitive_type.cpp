@@ -9,10 +9,12 @@ cminus::type::primitive::primitive(id_type id)
 cminus::type::primitive::~primitive() = default;
 
 void cminus::type::primitive::print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const{
-	switch (id_){
-	case id_type::nan_:
+	if ((is_integral() || is_floating_point()) && data->find_attribute("#NaN#", true, false) != nullptr){
 		runtime.writer.write_buffer("NaN", 3u);
-		break;
+		return;
+	}
+
+	switch (id_){
 	case id_type::byte_:
 		break;
 	case id_type::char_:
@@ -53,6 +55,9 @@ void cminus::type::primitive::print_value(logic::runtime &runtime, std::shared_p
 		break;
 	case id_type::ldouble:
 		runtime.writer.write_scalar(std::to_string(data->read_scalar<long double>(runtime)) + "f128");
+		break;
+	case id_type::nan_:
+		runtime.writer.write_buffer("NaN", 3u);
 		break;
 	case id_type::nullptr_:
 		runtime.writer.write_buffer("nullptr", 7u);
@@ -128,6 +133,9 @@ cminus::type::object::score_result_type cminus::type::primitive::get_score(logic
 	if (type_target == nullptr){//Check for string
 		if (is_ref)
 			return score_result_type::nil;
+
+		if (id_ == id_type::nullptr_ && dynamic_cast<const pointer *>(&target) != nullptr)
+			return score_result_type::assignable;
 	}
 
 	if (type_target->id_ == id_)
@@ -141,23 +149,25 @@ cminus::type::object::score_result_type cminus::type::primitive::get_score(logic
 	case id_type::byte_:
 	case id_type::char_:
 	case id_type::wchar_:
+	case id_type::nullptr_:
+	case id_type::void_:
 		return score_result_type::nil;
 	case id_type::nan_:
-		return score_result_type::assignable;
+		return (type_target->is_numeric() ? score_result_type::assignable : score_result_type::nil);
 	default:
 		break;
 	};
 
 	if (is_integral()){
 		if (type_target->is_integral())
-			return ((id_ < type_target->id_) ? score_result_type::shortened : score_result_type::widened);
-		return (type_target->is_floating_point() ? score_result_type::too_shortened : score_result_type::nil);
+			return ((id_ < type_target->id_) ? score_result_type::widened : score_result_type::shortened);
+		return (type_target->is_floating_point() ? score_result_type::too_widened : score_result_type::nil);
 	}
 
 	if (is_floating_point()){
 		if (type_target->is_floating_point())
-			return ((id_ < type_target->id_) ? score_result_type::shortened : score_result_type::widened);
-		return (type_target->is_integral() ? score_result_type::too_widened : score_result_type::nil);
+			return ((id_ < type_target->id_) ? score_result_type::widened : score_result_type::shortened);
+		return (type_target->is_integral() ? score_result_type::too_shortened : score_result_type::nil);
 	}
 
 	return score_result_type::nil;
@@ -216,40 +226,63 @@ std::shared_ptr<cminus::memory::reference> cminus::type::primitive::cast(logic::
 		if (id_ == id_type::nullptr_ && type == cast_type::static_ && pointer_target_type != nullptr)
 			return std::make_shared<memory::reference_with_value<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
 
-		if (is_integral() && type == cast_type::reinterpret && (pointer_target_type != nullptr || dynamic_cast<function *>(target_type.get()) != nullptr))
-			return std::make_shared<memory::reference_with_value<unsigned __int64>>(target_type, nullptr, cast_numeric_<unsigned __int64>(runtime, *data));
+		if (is_integral() && type == cast_type::reinterpret && (pointer_target_type != nullptr || dynamic_cast<function *>(target_type.get()) != nullptr)){
+			if (data->find_attribute("#NaN#", true, false) != nullptr)
+				return std::make_shared<memory::reference_with_value<unsigned __int64>>(target_type, nullptr, 0ui64);
+			return std::make_shared<memory::reference_with_value<unsigned __int64>>(target_type, nullptr, cast_integral<unsigned __int64>(runtime, *data));
+		}
 
 		return nullptr;
 	}
 
+	std::shared_ptr<memory::reference> value;
 	switch (primitive_target_type->id_){
 	case id_type::int8_:
-		return std::make_shared<memory::reference_with_value<__int8>>(target_type, nullptr, cast_numeric_<__int8>(runtime, *data));
+		value = std::make_shared<memory::reference_with_value<__int8>>(target_type, nullptr, cast_numeric<__int8>(runtime, *data));
+		break;
 	case id_type::uint8_:
-		return std::make_shared<memory::reference_with_value<unsigned __int8>>(target_type, nullptr, cast_numeric_<unsigned __int8>(runtime, *data));
+		value = std::make_shared<memory::reference_with_value<unsigned __int8>>(target_type, nullptr, cast_numeric<unsigned __int8>(runtime, *data));
+		break;
 	case id_type::int16_:
-		return std::make_shared<memory::reference_with_value<__int16>>(target_type, nullptr, cast_numeric_<__int16>(runtime, *data));
+		value = std::make_shared<memory::reference_with_value<__int16>>(target_type, nullptr, cast_numeric<__int16>(runtime, *data));
+		break;
 	case id_type::uint16_:
-		return std::make_shared<memory::reference_with_value<unsigned __int16>>(target_type, nullptr, cast_numeric_<unsigned __int16>(runtime, *data));
+		value = std::make_shared<memory::reference_with_value<unsigned __int16>>(target_type, nullptr, cast_numeric<unsigned __int16>(runtime, *data));
+		break;
 	case id_type::int32_:
-		return std::make_shared<memory::reference_with_value<__int32>>(target_type, nullptr, cast_numeric_<__int32>(runtime, *data));
+		value = std::make_shared<memory::reference_with_value<__int32>>(target_type, nullptr, cast_numeric<__int32>(runtime, *data));
+		break;
 	case id_type::uint32_:
-		return std::make_shared<memory::reference_with_value<unsigned __int32>>(target_type, nullptr, cast_numeric_<unsigned __int32>(runtime, *data));
+		value = std::make_shared<memory::reference_with_value<unsigned __int32>>(target_type, nullptr, cast_numeric<unsigned __int32>(runtime, *data));
+		break;
 	case id_type::int64_:
-		return std::make_shared<memory::reference_with_value<__int64>>(target_type, nullptr, cast_numeric_<__int64>(runtime, *data));
+		value = std::make_shared<memory::reference_with_value<__int64>>(target_type, nullptr, cast_numeric<__int64>(runtime, *data));
+		break;
 	case id_type::uint64_:
-		return std::make_shared<memory::reference_with_value<unsigned __int64>>(target_type, nullptr, cast_numeric_<unsigned __int64>(runtime, *data));
+		value = std::make_shared<memory::reference_with_value<unsigned __int64>>(target_type, nullptr, cast_numeric<unsigned __int64>(runtime, *data));
+		break;
 	case id_type::float_:
-		return std::make_shared<memory::reference_with_value<float>>(target_type, nullptr, cast_numeric_<float>(runtime, *data));
+		value = std::make_shared<memory::reference_with_value<float>>(target_type, nullptr, cast_numeric<float>(runtime, *data));
+		break;
 	case id_type::double_:
-		return std::make_shared<memory::reference_with_value<double>>(target_type, nullptr, cast_numeric_<double>(runtime, *data));
+		value = std::make_shared<memory::reference_with_value<double>>(target_type, nullptr, cast_numeric<double>(runtime, *data));
+		break;
 	case id_type::ldouble:
-		return std::make_shared<memory::reference_with_value<long double>>(target_type, nullptr, cast_numeric_<long double>(runtime, *data));
+		value = std::make_shared<memory::reference_with_value<long double>>(target_type, nullptr, cast_numeric<long double>(runtime, *data));
+		break;
 	default:
 		break;
 	}
 
-	return nullptr;
+	if (value == nullptr)
+		return nullptr;
+
+	if (id_ == id_type::nan_)
+		value->add_attribute(runtime.global_storage->find_attribute("#NaN#", false));
+	else if (auto nan_attr = data->find_attribute("#NaN#", true, false); nan_attr != nullptr)
+		value->add_attribute(nan_attr);
+
+	return value;
 }
 
 bool cminus::type::primitive::is_same(const logic::naming::object &target) const{

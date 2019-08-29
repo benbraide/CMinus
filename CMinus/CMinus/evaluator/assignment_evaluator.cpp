@@ -14,14 +14,15 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
 
 	auto is_init = (left_value->find_attribute("#Init#", true, false) != nullptr);
-	auto is_ref = (is_init && left_value->find_attribute("Ref", true, false) != nullptr);
+	auto ref_left_value = dynamic_cast<memory::ref_reference *>(left_value.get());
+	auto is_ref = (is_init && ref_left_value != nullptr);
 
 	if (is_ref){//Copy reference
 		if (!right_value->is_lvalue())
 			throw logic::exception("Ref assignment requires an l-value source", 0u, 0u);
 
 		right_value->traverse_attributes(runtime, [&](std::shared_ptr<logic::attributes::object> attribute){
-			if (attribute->is_required_on_ref_destination(runtime) && left_value->find_attribute(attribute, true) == nullptr)
+			if (attribute->is_required_on_ref_destination(runtime) && left_value->find_attribute(attribute, false) == nullptr)
 				throw logic::exception("'" + attribute->get_qualified_naming_value() + "' is required on ref destination", 0u, 0u);
 		}, logic::attributes::object::stage_type::nil, true);
 	}
@@ -35,12 +36,13 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 		write_guard = std::make_shared<write_attribute_guard>(runtime, left_value, true);
 
 	read_attribute_guard read_guard(runtime, right_value, true);
-	switch (left_type->get_score(runtime, *right_type, is_ref)){
+	switch (right_type->get_score(runtime, *left_type, is_ref)){
 	case type::object::score_result_type::exact:
 	case type::object::score_result_type::assignable:
 		break;
 	case type::object::score_result_type::ancestor:
-		right_value = std::make_shared<memory::hard_reference>((right_value->get_address() + right_type->compute_base_offset(*left_type)), left_type, left_value->get_context());
+		right_value = std::make_shared<memory::hard_reference>(right_value, right_value->get_context(), right_type->compute_base_offset(*left_type));
+		right_value->set_type(left_type);
 		break;
 	case type::object::score_result_type::widened:
 	case type::object::score_result_type::too_widened:
@@ -59,21 +61,15 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 	if (right_value == nullptr)
 		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
 
-	if (is_ref && (left_value = assign_address_(runtime, left_value, right_value)) == nullptr)//Copy address
-		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
-	
-	if (!is_ref && (left_value = assign_(runtime, left_value, right_value)) == nullptr)
+	if (is_ref)//Copy address
+		ref_left_value->write_address(right_value->get_address());
+	else if (!is_ref && (left_value = assign_(runtime, left_value, right_value)) == nullptr)
 		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
 
 	if (is_init)
 		left_value->remove_attribute("#Init#", true);
 
 	return left_value;
-}
-
-std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::assign_address_(logic::runtime &runtime, std::shared_ptr<memory::reference> destination, std::shared_ptr<memory::reference> source) const{
-	destination->set_address(source->get_address());
-	return destination;
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::assign_(logic::runtime &runtime, std::shared_ptr<memory::reference> destination, std::shared_ptr<memory::reference> source) const{

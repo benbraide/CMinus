@@ -59,44 +59,56 @@ namespace cminus::type{
 
 		virtual bool is_floating_point() const;
 
+		template <typename target_type, typename runtime_type>
+		target_type cast_numeric(runtime_type &runtime, memory::reference &source) const{
+			switch (id_){
+			case id_type::float_:
+				return static_cast<target_type>(source.read_scalar<float>(runtime));
+			case id_type::double_:
+				return static_cast<target_type>(source.read_scalar<double>(runtime));
+			case id_type::ldouble:
+				return static_cast<target_type>(source.read_scalar<long double>(runtime));
+			default:
+				break;
+			}
+
+			return cast_integral<target_type>(runtime, source);
+		}
+
+		template <typename target_type, typename runtime_type>
+		target_type cast_integral(runtime_type &runtime, memory::reference &source) const{
+			switch (id_){
+			case id_type::int8_:
+				return static_cast<target_type>(source.read_scalar<__int8>(runtime));
+			case id_type::uint8_:
+				return static_cast<target_type>(source.read_scalar<unsigned __int8>(runtime));
+			case id_type::int16_:
+				return static_cast<target_type>(source.read_scalar<__int16>(runtime));
+			case id_type::uint16_:
+				return static_cast<target_type>(source.read_scalar<unsigned __int16>(runtime));
+			case id_type::int32_:
+				return static_cast<target_type>(source.read_scalar<__int32>(runtime));
+			case id_type::uint32_:
+				return static_cast<target_type>(source.read_scalar<unsigned __int32>(runtime));
+			case id_type::int64_:
+				return static_cast<target_type>(source.read_scalar<__int64>(runtime));
+			case id_type::uint64_:
+				return static_cast<target_type>(source.read_scalar<unsigned __int64>(runtime));
+			case id_type::nan_:
+				return static_cast<target_type>(0);
+			default:
+				break;
+			}
+
+			throw memory::exception(memory::error_code::incompatible_types, 0u);
+			return target_type();
+		}
+
 		static id_type convert_string_to_id(const std::string &value);
 
 		static std::string convert_id_to_string(id_type value);
 
 	protected:
-		template <typename target_type, typename runtime_type>
-		target_type cast_numeric_(runtime_type &runtime, memory::reference &source) const{
-			switch (id_){
-			case id_type::int8_:
-				return (target_type)source.read_scalar<__int8>(runtime);
-			case id_type::uint8_:
-				return (target_type)source.read_scalar<unsigned __int8>(runtime);
-			case id_type::int16_:
-				return (target_type)source.read_scalar<__int16>(runtime);
-			case id_type::uint16_:
-				return (target_type)source.read_scalar<unsigned __int16>(runtime);
-			case id_type::int32_:
-				return (target_type)source.read_scalar<__int32>(runtime);
-			case id_type::uint32_:
-				return (target_type)source.read_scalar<unsigned __int32>(runtime);
-			case id_type::int64_:
-				return (target_type)source.read_scalar<__int64>(runtime);
-			case id_type::uint64_:
-				return (target_type)source.read_scalar<unsigned __int64>(runtime);
-			case id_type::float_:
-				return (target_type)source.read_scalar<float>(runtime);
-			case id_type::double_:
-				return (target_type)source.read_scalar<double>(runtime);
-			case id_type::ldouble:
-				return (target_type)source.read_scalar<long double>(runtime);
-			default:
-				throw memory::exception(memory::error_code::incompatible_types, 0u);
-				break;
-			}
-
-			return target_type();
-		}
-
 		id_type id_;
 	};
 }
