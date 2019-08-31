@@ -318,48 +318,35 @@ std::byte *cminus::memory::lval_reference::get_data(logic::runtime &runtime) con
 }
 
 std::size_t cminus::memory::lval_reference::read(logic::runtime &runtime, std::byte *buffer, std::size_t size) const{
-	return runtime.memory_object.read(get_address(), buffer, size);
+	return runtime.memory_object.read(get_address(), buffer, ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::read(logic::runtime &runtime, io::binary_writer &buffer, std::size_t size) const{
-	return runtime.memory_object.read(get_address(), buffer, size);
+	return runtime.memory_object.read(get_address(), buffer, ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::read(logic::runtime &runtime, std::size_t buffer, std::size_t size) const{
-	return runtime.memory_object.read(get_address(), buffer, size);
+	return runtime.memory_object.read(get_address(), buffer, ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::read(logic::runtime &runtime, reference &buffer, std::size_t size) const{
-	auto my_size = ((type_ == nullptr) ? 0u : type_->get_size());
-	if (size == static_cast<std::size_t>(-1) || my_size < size)//Restrict size
-		size = my_size;
-
-	if (size == 0u)//Do nothing
-		return 0u;
-
-	return buffer.write(runtime, get_address(), size);
+	return buffer.write(runtime, get_address(), ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, const std::byte *buffer, std::size_t size){
-	return runtime.memory_object.write(get_address(), buffer, size);
+	return runtime.memory_object.write(get_address(), buffer, ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, const io::binary_reader &buffer, std::size_t size){
-	return runtime.memory_object.write(get_address(), buffer, size);
+	return runtime.memory_object.write(get_address(), buffer, ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, std::size_t buffer, std::size_t size){
-	return runtime.memory_object.write(buffer, get_address(), size);
+	return runtime.memory_object.write(buffer, get_address(), ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, const reference &buffer, std::size_t size){
-	if (auto address = buffer.get_address(); address != 0u)
-		return runtime.memory_object.write(address, get_address(), size);
-
-	if (auto data = buffer.get_data(runtime); data != nullptr)
-		return runtime.memory_object.write(get_address(), data, size);
-
-	return 0u;
+	return buffer.read(runtime, get_address(), ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, managed_object &object){
@@ -367,7 +354,7 @@ std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, manag
 }
 
 std::size_t cminus::memory::lval_reference::set(logic::runtime &runtime, std::byte value, std::size_t size){
-	return runtime.memory_object.set(get_address(), value, size);
+	return runtime.memory_object.set(get_address(), value, ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 void cminus::memory::lval_reference::allocate_memory_(logic::runtime &runtime, std::size_t size){

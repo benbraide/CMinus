@@ -220,7 +220,7 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::function_object::call_
 		throw exception("A member function requires a context", 0u, 0u);
 
 	std::shared_ptr<memory::reference> return_value;
-	storage::runtime_storage_guard guard(runtime, std::make_shared<storage::function>(context, dynamic_cast<storage::object *>(parent_)));
+	storage::runtime_storage_guard guard(runtime, std::make_shared<storage::function>(attributes_, context, dynamic_cast<storage::object *>(parent_)));
 
 	try{
 		copy_args_(runtime, args);

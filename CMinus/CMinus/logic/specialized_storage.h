@@ -52,7 +52,9 @@ namespace cminus::logic::storage{
 
 	class function : public specialized{
 	public:
-		explicit function(std::shared_ptr<memory::reference> context, object *parent = nullptr);
+		function(const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<memory::reference> context, object *parent = nullptr);
+
+		function(std::vector<std::shared_ptr<attributes::object>> &&attributes, std::shared_ptr<memory::reference> context, object *parent = nullptr);
 
 		virtual ~function();
 
@@ -66,6 +68,7 @@ namespace cminus::logic::storage{
 		virtual bool interrupt_is_valid_(interrupt_type value) const override;
 
 		std::shared_ptr<memory::reference> context_;
+		std::vector<std::shared_ptr<attributes::object>> attributes_;
 		std::unordered_map<memory::reference *, std::shared_ptr<memory::reference>> unnamed_entries_;
 	};
 

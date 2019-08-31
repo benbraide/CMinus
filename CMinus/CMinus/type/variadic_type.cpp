@@ -34,6 +34,11 @@ std::size_t cminus::type::variadic::get_size() const{
 	return 0u;
 }
 
+bool cminus::type::variadic::is_exact(logic::runtime &runtime, const type::object &target) const{
+	auto type_target = dynamic_cast<const variadic *>(&target);
+	return (type_target != nullptr && base_type_->is_exact(runtime, *type_target->base_type_));
+}
+
 cminus::type::object::score_result_type cminus::type::variadic::get_score(logic::runtime &runtime, const object &target, bool is_ref) const{
 	auto type_target = dynamic_cast<const variadic *>(&target);
 	if (type_target == nullptr)

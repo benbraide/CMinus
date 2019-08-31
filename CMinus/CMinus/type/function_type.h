@@ -38,6 +38,8 @@ namespace cminus::type{
 
 		virtual void traverse_parameter_types(const std::function<void(const type_info &)> &callback) const;
 
+		static std::shared_ptr<logic::attributes::object> find_attribute(const std::vector<std::shared_ptr<logic::attributes::object>> &attributes, const std::string &name);
+
 		static bool has_attribute(const std::vector<std::shared_ptr<logic::attributes::object>> &attributes, const std::string &name);
 
 		static bool has_attribute(const std::vector<std::shared_ptr<logic::attributes::object>> &attributes, std::shared_ptr<logic::naming::object> name);

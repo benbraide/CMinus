@@ -9,6 +9,7 @@ namespace cminus::type{
 	public:
 		enum class relationship_type{
 			nil,
+			self,
 			base,
 			ancestor,
 			inherited,
@@ -26,7 +27,7 @@ namespace cminus::type{
 			std::shared_ptr<type::object> value;
 		};
 
-		explicit class_(const std::string &name, logic::storage::object *parent = nullptr);
+		explicit class_(logic::runtime &runtime, const std::string &name, logic::storage::object *parent = nullptr);
 
 		virtual ~class_();
 
@@ -40,6 +41,8 @@ namespace cminus::type{
 
 		virtual std::size_t compute_base_offset(const type::object &target) const override;
 
+		virtual bool is_exact(logic::runtime &runtime, const type::object &target) const override;
+
 		virtual score_result_type get_score(logic::runtime &runtime, const type::object &target, bool is_ref) const override;
 
 		virtual std::shared_ptr<memory::reference> get_default_value(logic::runtime &runtime) const override;
@@ -48,16 +51,21 @@ namespace cminus::type{
 
 		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree, const storage_base_type **branch = nullptr) const override;
 
-		virtual bool add_base(access_type access, std::shared_ptr<type::object> value);
+		virtual bool add_base(logic::runtime &runtime, access_type access, std::shared_ptr<type::object> value);
 
-		virtual bool add_function(access_type access, std::shared_ptr<logic::function_object> value);
+		virtual bool add_function(logic::runtime &runtime, access_type access, std::shared_ptr<logic::function_object> value);
 
-		virtual bool add_declaration(access_type access, std::shared_ptr<logic::declaration> value);
+		virtual bool add_declaration(logic::runtime &runtime, access_type access, std::shared_ptr<logic::declaration> value);
 
 		virtual relationship_type get_relationship(const type::object &target) const;
+
+		virtual bool is_ancestor(const type::object &target) const;
+
+		virtual bool is_base(const type::object &target) const;
 
 	protected:
 		std::size_t size_ = sizeof(void *);
 		std::unordered_map<std::string, base_type_info> base_types_;
+		std::shared_ptr<logic::storage::object> this_storage_;
 	};
 }

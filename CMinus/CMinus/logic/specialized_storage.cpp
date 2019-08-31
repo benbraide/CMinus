@@ -1,3 +1,5 @@
+#include "../type/function_type.h"
+
 #include "specialized_storage.h"
 
 cminus::logic::storage::specialized::specialized(const std::string &name, object *parent)
@@ -83,8 +85,11 @@ void cminus::logic::storage::double_layer::invalid_interrupt_(interrupt_type typ
 	specialized::invalid_interrupt_(type, value);
 }
 
-cminus::logic::storage::function::function(std::shared_ptr<memory::reference> context, object *parent)
-	: specialized("", ((context_ == nullptr) ? parent : dynamic_cast<object *>(context_->get_type().get()))), context_(context){}
+cminus::logic::storage::function::function(const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<memory::reference> context, object *parent)
+	: specialized("", ((context_ == nullptr) ? parent : dynamic_cast<object *>(context_->get_type().get()))), context_(context), attributes_(attributes){}
+
+cminus::logic::storage::function::function(std::vector<std::shared_ptr<attributes::object>> &&attributes, std::shared_ptr<memory::reference> context, object *parent)
+	: specialized("", ((context_ == nullptr) ? parent : dynamic_cast<object *>(context_->get_type().get()))), context_(context), attributes_(std::move(attributes)){}
 
 cminus::logic::storage::function::~function() = default;
 
@@ -107,7 +112,18 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::fin
 	if (base_offset == static_cast<std::size_t>(-1))
 		throw logic::exception("A non-static member requires an object context with related types", 0u, 0u);
 
-	return placeholder_entry->create(runtime, context_, base_offset);
+	auto value = placeholder_entry->create(runtime, context_, base_offset);
+	if (value == nullptr)
+		return nullptr;
+
+	if (auto const_attr = type::function::find_attribute(attributes_, "ReadOnly"); const_attr != nullptr){
+		if (name == "this")//Add read-only to pointed object
+			value->add_attribute(std::make_shared<attributes::pointer_object>(const_attr));
+		else//Add read-only to object
+			value->add_attribute(const_attr);
+	}
+
+	return value;
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::get_context() const{

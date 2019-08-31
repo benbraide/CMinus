@@ -62,8 +62,11 @@ std::shared_ptr<cminus::memory::reference> cminus::type::function::get_default_v
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::type::function::cast(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<object> target_type, cast_type type) const{
+	if ((type == cast_type::ref_static || type == cast_type::rval_static) && is_exact(runtime, *target_type))//Same type
+		return ((type == cast_type::reinterpret) ? nullptr : data);
+
 	if (type != cast_type::reinterpret)
-		return nullptr;//Not supported
+		return nullptr;
 
 	auto primitive_target_type = dynamic_cast<const primitive *>(target_type.get());
 	if (primitive_target_type == nullptr)
@@ -126,16 +129,20 @@ void cminus::type::function::traverse_parameter_types(const std::function<void(c
 		callback(parameter_type);
 }
 
-bool cminus::type::function::has_attribute(const std::vector<std::shared_ptr<logic::attributes::object>> &attributes, const std::string &name){
+std::shared_ptr<cminus::logic::attributes::object> cminus::type::function::find_attribute(const std::vector<std::shared_ptr<logic::attributes::object>> &attributes, const std::string &name){
 	if (attributes.empty())
-		return false;
+		return nullptr;
 
 	for (auto attribute : attributes){
 		if (attribute->get_naming_parent() == nullptr && attribute->get_naming_value() == name)
-			return true;
+			return attribute;
 	}
 
-	return false;
+	return nullptr;
+}
+
+bool cminus::type::function::has_attribute(const std::vector<std::shared_ptr<logic::attributes::object>> &attributes, const std::string &name){
+	return (find_attribute(attributes, name) != nullptr);
 }
 
 bool cminus::type::function::has_attribute(const std::vector<std::shared_ptr<logic::attributes::object>> &attributes, std::shared_ptr<logic::naming::object> name){
@@ -156,7 +163,7 @@ cminus::type::object::score_result_type cminus::type::function::get_exact_score_
 			return score_result_type::nil;
 	}
 
-	return ((left.value->get_score(runtime, *right.value, false) == score_result_type::exact) ? score_result_type::exact : score_result_type::nil);
+	return (left.value->is_exact(runtime, *right.value) ? score_result_type::exact : score_result_type::nil);
 }
 
 void cminus::type::function::print_(logic::runtime &runtime, const type_info &info) const{

@@ -36,30 +36,8 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 		write_guard = std::make_shared<write_attribute_guard>(runtime, left_value, true);
 
 	read_attribute_guard read_guard(runtime, right_value, true);
-	switch (right_type->get_score(runtime, *left_type, is_ref)){
-	case type::object::score_result_type::exact:
-	case type::object::score_result_type::assignable:
-		break;
-	case type::object::score_result_type::ancestor:
-		right_value = std::make_shared<memory::lval_reference>((right_value->get_address() + right_type->compute_base_offset(*left_type)), nullptr, right_value->get_context());
-		right_value->set_type(left_type);
-		break;
-	case type::object::score_result_type::widened:
-	case type::object::score_result_type::too_widened:
-	case type::object::score_result_type::shortened:
-	case type::object::score_result_type::too_shortened:
-	case type::object::score_result_type::compatible:
-	case type::object::score_result_type::class_compatible:
-		if ((right_value = right_type->cast(runtime, right_value, left_type, (is_ref ? type::object::cast_type::ref_static : type::object::cast_type::static_))) == nullptr)
-			throw logic::exception("Cannot assign object to destination type", 0u, 0u);
-		break;
-	default:
+	if ((right_value = right_type->cast(runtime, right_value, left_type, (is_ref ? type::object::cast_type::ref_static : type::object::cast_type::rval_static))) == nullptr)
 		throw logic::exception("Cannot assign object to destination type", 0u, 0u);
-		break;
-	}
-
-	if (right_value == nullptr)
-		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
 
 	if (is_ref)//Copy address
 		ref_left_value->write_address(right_value->get_address());

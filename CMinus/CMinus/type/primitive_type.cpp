@@ -213,13 +213,13 @@ std::shared_ptr<cminus::memory::reference> cminus::type::primitive::get_default_
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::type::primitive::cast(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<type::object> target_type, cast_type type) const{
-	if (type != cast_type::static_ && type != cast_type::reinterpret)
+	if (type != cast_type::static_ && type != cast_type::ref_static && type != cast_type::rval_static && type != cast_type::reinterpret)
 		return nullptr;//Not supported
 
 	auto primitive_target_type = dynamic_cast<primitive *>(target_type.get());
 	if (primitive_target_type == nullptr){//Check for pointer or function
 		auto pointer_target_type = dynamic_cast<pointer *>(target_type.get());
-		if (id_ == id_type::nullptr_ && type == cast_type::static_ && pointer_target_type != nullptr)
+		if (id_ == id_type::nullptr_ && pointer_target_type != nullptr && (type == cast_type::static_ || type == cast_type::rval_static))
 			return std::make_shared<memory::scalar_reference<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
 
 		if (is_integral() && type == cast_type::reinterpret && (pointer_target_type != nullptr || dynamic_cast<function *>(target_type.get()) != nullptr)){
@@ -231,43 +231,62 @@ std::shared_ptr<cminus::memory::reference> cminus::type::primitive::cast(logic::
 		return nullptr;
 	}
 
+	if (type == cast_type::reinterpret)
+		return nullptr;
+
+	if (primitive_target_type->id_ == id_){//Same type
+		if (type != cast_type::static_)
+			return data;
+
+		auto copy = std::make_shared<memory::data_reference>(target_type, nullptr);
+		if (copy != nullptr)//Copy bytes
+			copy->write(runtime, *data, static_cast<std::size_t>(-1));
+
+		return copy;
+	}
+
 	std::shared_ptr<memory::reference> value;
-	switch (primitive_target_type->id_){
-	case id_type::int8_:
-		value = std::make_shared<memory::scalar_reference<__int8>>(target_type, nullptr, cast_numeric<__int8>(runtime, *data));
-		break;
-	case id_type::uint8_:
-		value = std::make_shared<memory::scalar_reference<unsigned __int8>>(target_type, nullptr, cast_numeric<unsigned __int8>(runtime, *data));
-		break;
-	case id_type::int16_:
-		value = std::make_shared<memory::scalar_reference<__int16>>(target_type, nullptr, cast_numeric<__int16>(runtime, *data));
-		break;
-	case id_type::uint16_:
-		value = std::make_shared<memory::scalar_reference<unsigned __int16>>(target_type, nullptr, cast_numeric<unsigned __int16>(runtime, *data));
-		break;
-	case id_type::int32_:
-		value = std::make_shared<memory::scalar_reference<__int32>>(target_type, nullptr, cast_numeric<__int32>(runtime, *data));
-		break;
-	case id_type::uint32_:
-		value = std::make_shared<memory::scalar_reference<unsigned __int32>>(target_type, nullptr, cast_numeric<unsigned __int32>(runtime, *data));
-		break;
-	case id_type::int64_:
-		value = std::make_shared<memory::scalar_reference<__int64>>(target_type, nullptr, cast_numeric<__int64>(runtime, *data));
-		break;
-	case id_type::uint64_:
-		value = std::make_shared<memory::scalar_reference<unsigned __int64>>(target_type, nullptr, cast_numeric<unsigned __int64>(runtime, *data));
-		break;
-	case id_type::float_:
-		value = std::make_shared<memory::scalar_reference<float>>(target_type, nullptr, cast_numeric<float>(runtime, *data));
-		break;
-	case id_type::double_:
-		value = std::make_shared<memory::scalar_reference<double>>(target_type, nullptr, cast_numeric<double>(runtime, *data));
-		break;
-	case id_type::ldouble:
-		value = std::make_shared<memory::scalar_reference<long double>>(target_type, nullptr, cast_numeric<long double>(runtime, *data));
-		break;
-	default:
-		break;
+	try{
+		switch (primitive_target_type->id_){
+		case id_type::int8_:
+			value = std::make_shared<memory::scalar_reference<__int8>>(target_type, nullptr, cast_numeric<__int8>(runtime, *data));
+			break;
+		case id_type::uint8_:
+			value = std::make_shared<memory::scalar_reference<unsigned __int8>>(target_type, nullptr, cast_numeric<unsigned __int8>(runtime, *data));
+			break;
+		case id_type::int16_:
+			value = std::make_shared<memory::scalar_reference<__int16>>(target_type, nullptr, cast_numeric<__int16>(runtime, *data));
+			break;
+		case id_type::uint16_:
+			value = std::make_shared<memory::scalar_reference<unsigned __int16>>(target_type, nullptr, cast_numeric<unsigned __int16>(runtime, *data));
+			break;
+		case id_type::int32_:
+			value = std::make_shared<memory::scalar_reference<__int32>>(target_type, nullptr, cast_numeric<__int32>(runtime, *data));
+			break;
+		case id_type::uint32_:
+			value = std::make_shared<memory::scalar_reference<unsigned __int32>>(target_type, nullptr, cast_numeric<unsigned __int32>(runtime, *data));
+			break;
+		case id_type::int64_:
+			value = std::make_shared<memory::scalar_reference<__int64>>(target_type, nullptr, cast_numeric<__int64>(runtime, *data));
+			break;
+		case id_type::uint64_:
+			value = std::make_shared<memory::scalar_reference<unsigned __int64>>(target_type, nullptr, cast_numeric<unsigned __int64>(runtime, *data));
+			break;
+		case id_type::float_:
+			value = std::make_shared<memory::scalar_reference<float>>(target_type, nullptr, cast_numeric<float>(runtime, *data));
+			break;
+		case id_type::double_:
+			value = std::make_shared<memory::scalar_reference<double>>(target_type, nullptr, cast_numeric<double>(runtime, *data));
+			break;
+		case id_type::ldouble:
+			value = std::make_shared<memory::scalar_reference<long double>>(target_type, nullptr, cast_numeric<long double>(runtime, *data));
+			break;
+		default:
+			break;
+		}
+	}
+	catch (...){
+		value = nullptr;
 	}
 
 	if (value == nullptr)
