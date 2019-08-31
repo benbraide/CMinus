@@ -13,7 +13,7 @@ cminus::logic::storage::object::object(const std::string &value, object *parent)
 cminus::logic::storage::object::~object() = default;
 
 void cminus::logic::storage::object::add(const std::string &name, std::shared_ptr<memory::reference> entry){
-	if (auto entry = find(name, false); entry != nullptr){
+	if (auto existing_entry = find_existing(name); existing_entry != nullptr){//Check if entry is a function collection
 		/*auto function_entry = dynamic_cast<function_type *>(entry.get());
 		if (function_entry == nullptr)
 			throw exception(error_code::duplicate_entry);
@@ -37,8 +37,8 @@ void cminus::logic::storage::object::remove(const std::string &name){
 		entries_.erase(name);
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(const std::string &name, bool search_tree, const object **branch) const{
-	if (!entries_.empty())
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch) const{
+	if (name.empty() || entries_.empty())
 		return nullptr;
 
 	if (auto it = entries_.find(name); it != entries_.end()){
@@ -51,19 +51,58 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(
 		return nullptr;
 
 	if (auto storage_parent = dynamic_cast<object *>(parent_); storage_parent != nullptr)
-		return storage_parent->find(name, true, branch);
+		return storage_parent->find(runtime, name, true, branch);
+
+	return nullptr;
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find_existing(const std::string &name) const{
+	if (name.empty() || entries_.empty())
+		return nullptr;
+
+	if (auto it = entries_.find(name); it != entries_.end())
+		return it->second;
 
 	return nullptr;
 }
 
 std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::object::find_attribute(const std::string &name, bool search_tree, const object **branch) const{
-	if (!attributes_.empty())
+	if (name.empty() || attributes_.empty())
 		return nullptr;
 
 	if (auto it = attributes_.find(name); it != attributes_.end())
 		return it->second;
 
 	return nullptr;
+}
+
+cminus::logic::storage::proxy::proxy(object &target)
+	: object(target.get_naming_value(), dynamic_cast<object *>(target.get_naming_parent())), target_(target){}
+
+cminus::logic::storage::proxy::~proxy() = default;
+
+void cminus::logic::storage::proxy::print(logic::runtime &runtime, bool is_qualified) const{
+	target_.print(runtime, is_qualified);
+}
+
+bool cminus::logic::storage::proxy::is_same(const naming::object &target) const{
+	return target_.is_same(target);
+}
+
+void cminus::logic::storage::proxy::add(const std::string &name, std::shared_ptr<memory::reference> entry){
+	target_.add(name, entry);
+}
+
+void cminus::logic::storage::proxy::remove(const std::string &name){
+	target_.remove(name);
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::proxy::find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch) const{
+	return target_.find(runtime, name, search_tree, branch);
+}
+
+std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::proxy::find_attribute(const std::string &name, bool search_tree, const object **branch) const{
+	return target_.find_attribute(name, search_tree, branch);
 }
 
 cminus::logic::storage::runtime_storage_guard::runtime_storage_guard(logic::runtime &runtime, std::shared_ptr<object> current)

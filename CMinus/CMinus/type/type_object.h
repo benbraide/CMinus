@@ -53,7 +53,7 @@ namespace cminus::type{
 
 		virtual std::size_t get_size() const = 0;
 
-		virtual std::size_t compute_base_offset(const object &target) const = 0;
+		virtual std::size_t compute_base_offset(const object &target) const;
 
 		virtual score_result_type get_score(logic::runtime &runtime, const object &target, bool is_ref) const = 0;
 

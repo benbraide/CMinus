@@ -11,6 +11,8 @@ namespace cminus::logic{
 
 		virtual void evaluate(logic::runtime &runtime, std::shared_ptr<memory::reference> value) const;
 
+		virtual std::shared_ptr<memory::reference> evaluate_class_member(logic::runtime &runtime, std::size_t relative_offset) const;
+
 		virtual void print(logic::runtime &runtime) const;
 
 		virtual const std::vector<std::shared_ptr<attributes::object>> &get_attributes() const;

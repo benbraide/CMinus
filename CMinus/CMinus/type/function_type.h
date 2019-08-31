@@ -22,8 +22,6 @@ namespace cminus::type{
 
 		virtual std::size_t get_size() const override;
 
-		virtual std::size_t compute_base_offset(const object &target) const override;
-
 		virtual score_result_type get_score(logic::runtime &runtime, const object &target, bool is_ref) const override;
 
 		virtual std::shared_ptr<memory::reference> get_default_value(logic::runtime &runtime) const override;

@@ -41,7 +41,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 	case type::object::score_result_type::assignable:
 		break;
 	case type::object::score_result_type::ancestor:
-		right_value = std::make_shared<memory::hard_reference>(right_value, right_value->get_context(), right_type->compute_base_offset(*left_type));
+		right_value = std::make_shared<memory::lval_reference>((right_value->get_address() + right_type->compute_base_offset(*left_type)), nullptr, right_value->get_context());
 		right_value->set_type(left_type);
 		break;
 	case type::object::score_result_type::widened:

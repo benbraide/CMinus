@@ -1,3 +1,4 @@
+#include "../type/function_type.h"
 #include "../evaluator/evaluator_object.h"
 
 #include "runtime.h"
@@ -40,11 +41,26 @@ void cminus::logic::declaration::evaluate(logic::runtime &runtime, std::shared_p
 			throw memory::exception(memory::error_code::allocation_failure, 0u);
 	}
 
-	reference->add_attribute(runtime.global_storage->find_attribute("#LVal#", false));
-	runtime.current_storage->add(name_, reference);
+	//reference->add_attribute(runtime.global_storage->find_attribute("#LVal#", false));
 
+	runtime.current_storage->add(name_, reference);
 	if (reference->find_attribute("Static", true, false) != nullptr)
 		static_value_ = reference;
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::declaration::evaluate_class_member(logic::runtime &runtime, std::size_t relative_offset) const{
+	if (name_.empty())
+		throw exception("Cannot evaluate an unnamed declaration", 0u, 0u);
+
+	if (static_value_ != nullptr)//Static entry found
+		return nullptr;
+
+	if (type::function::has_attribute(attributes_, "Static")){
+		evaluate(runtime, nullptr);
+		return nullptr;
+	}
+
+	return std::make_shared<memory::placeholder_reference>(relative_offset, type_, attributes_);
 }
 
 void cminus::logic::declaration::print(logic::runtime &runtime) const{
@@ -74,11 +90,18 @@ std::shared_ptr<cminus::node::object> cminus::logic::declaration::get_initializa
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::logic::declaration::allocate_memory(logic::runtime &runtime) const{
-	auto reference = std::make_shared<memory::hard_reference>(runtime, type_, attributes_, nullptr);
+	std::shared_ptr<memory::reference> reference;
+	auto is_ref = type::function::has_attribute(attributes_, "Ref");
+
+	if (is_ref)
+		reference = std::make_shared<memory::ref_reference>(type_, attributes_, nullptr);
+	else//Not a reference
+		reference = std::make_shared<memory::lval_reference>(runtime, type_, attributes_, nullptr);
+
 	if (reference == nullptr || reference->get_address() == 0u)
 		throw memory::exception(memory::error_code::allocation_failure, 0u);
 
-	if (reference->find_attribute("Ref", true, false) == nullptr)//Default construction
+	if (!is_ref)//Default construction
 		reference->get_type()->construct_default(runtime, reference);
 
 	return reference;
@@ -137,7 +160,7 @@ cminus::logic::contructed_declaration::contructed_declaration(const std::vector<
 cminus::logic::contructed_declaration::~contructed_declaration() = default;
 
 std::shared_ptr<cminus::memory::reference> cminus::logic::contructed_declaration::allocate_memory(logic::runtime &runtime) const{
-	auto reference = std::make_shared<memory::hard_reference>(runtime, type_, attributes_, nullptr);
+	auto reference = std::make_shared<memory::lval_reference>(runtime, type_, attributes_, nullptr);
 	if (reference == nullptr || reference->get_address() == 0u)
 		throw memory::exception(memory::error_code::allocation_failure, 0u);
 

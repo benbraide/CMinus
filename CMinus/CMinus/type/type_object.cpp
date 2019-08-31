@@ -26,6 +26,10 @@ void cminus::type::object::construct(logic::runtime &runtime, std::shared_ptr<me
 		construct_default(runtime, target);
 }
 
+std::size_t cminus::type::object::compute_base_offset(const object &target) const{
+	return static_cast<std::size_t>(-1);
+}
+
 int cminus::type::object::get_score_value(score_result_type score){
 	switch (score){
 	case score_result_type::exact:

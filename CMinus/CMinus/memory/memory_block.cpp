@@ -271,7 +271,7 @@ std::size_t cminus::memory::exclusive_block::compare(int &result, std::size_t of
 }
 
 std::size_t cminus::memory::exclusive_block::read(std::size_t offset, std::byte *buffer, std::size_t size) const{
-	if (size == static_cast<std::size_t>(-1))
+	if (size == static_cast<std::size_t>(-1) || (offset < size_ && (size_ - offset) < size))//Restrict size
 		size = ((size_ < offset) ? 0u : (size_ - offset));
 
 	if (size == 0u || size_ <= offset)
@@ -279,9 +279,6 @@ std::size_t cminus::memory::exclusive_block::read(std::size_t offset, std::byte 
 
 	if (is_access_protected())//Access protected
 		throw exception(error_code::access_protected, (address_ + offset));
-
-	if ((size_ - offset) < size)//Restrict size
-		size = (size_ - offset);
 
 	if (0u < size && size <= size_)
 		memcpy(buffer, (data_.get() + offset), size);
@@ -290,14 +287,14 @@ std::size_t cminus::memory::exclusive_block::read(std::size_t offset, std::byte 
 }
 
 std::size_t cminus::memory::exclusive_block::read(std::size_t offset, io::binary_writer &buffer, std::size_t size) const{
+	if (size == static_cast<std::size_t>(-1) || (offset < size_ && (size_ - offset) < size))//Restrict size
+		size = ((size_ < offset) ? 0u : (size_ - offset));
+
 	if (size == 0u || size_ <= offset)
 		return 0u;//Out of bounds
 
 	if (is_write_protected())//Write protected
 		throw exception(error_code::write_protected, (address_ + offset));
-
-	if ((size_ - offset) < size)//Restrict size
-		size = (size_ - offset);
 
 	if (0u < size && size <= size_)
 		size = buffer.write((data_.get() + offset), size);
@@ -306,7 +303,7 @@ std::size_t cminus::memory::exclusive_block::read(std::size_t offset, io::binary
 }
 
 std::size_t cminus::memory::exclusive_block::read(std::size_t offset, block &buffer, std::size_t size, std::size_t buffer_offset) const{
-	if (size == static_cast<std::size_t>(-1))
+	if (size == static_cast<std::size_t>(-1) || (offset < size_ && (size_ - offset) < size))//Restrict size
 		size = ((size_ < offset) ? 0u : (size_ - offset));
 
 	if (size == 0u || size_ <= offset)
@@ -315,24 +312,21 @@ std::size_t cminus::memory::exclusive_block::read(std::size_t offset, block &buf
 	if (is_access_protected())//Access protected
 		throw exception(error_code::access_protected, (address_ + offset));
 
-	if ((size_ - offset) < size)//Restrict size
-		size = (size_ - offset);
-
 	if (0u < size && size <= size_)
-		buffer.write(buffer_offset, (data_.get() + offset), size);
+		size = buffer.write(buffer_offset, (data_.get() + offset), size);
 
 	return ((size <= size_) ? size : 0u);
 }
 
 std::size_t cminus::memory::exclusive_block::write(std::size_t offset, const std::byte *buffer, std::size_t size){
+	if (size == static_cast<std::size_t>(-1) || (offset < size_ && (size_ - offset) < size))//Restrict size
+		size = ((size_ < offset) ? 0u : (size_ - offset));
+
 	if (size == 0u || size_ <= offset)
 		return 0u;//Out of bounds
 
 	if (is_write_protected())//Write protected
 		throw exception(error_code::write_protected, (address_ + offset));
-
-	if ((size_ - offset) < size)//Restrict size
-		size = (size_ - offset);
 
 	if (0u < size && size <= size_){
 		if (has_attributes(attribute_has_managed_object)){
@@ -346,14 +340,14 @@ std::size_t cminus::memory::exclusive_block::write(std::size_t offset, const std
 }
 
 std::size_t cminus::memory::exclusive_block::write(std::size_t offset, const io::binary_reader &buffer, std::size_t size){
+	if (size == static_cast<std::size_t>(-1) || (offset < size_ && (size_ - offset) < size))//Restrict size
+		size = ((size_ < offset) ? 0u : (size_ - offset));
+
 	if (size == 0u || size_ <= offset)
 		return 0u;//Out of bounds
 
 	if (is_write_protected())//Write protected
 		throw exception(error_code::write_protected, (address_ + offset));
-
-	if ((size_ - offset) < size)//Restrict size
-		size = (size_ - offset);
 
 	if (0u < size && size <= size_){
 		if (has_attributes(attribute_has_managed_object)){
@@ -367,6 +361,9 @@ std::size_t cminus::memory::exclusive_block::write(std::size_t offset, const io:
 }
 
 std::size_t cminus::memory::exclusive_block::write(std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset){
+	if (size == static_cast<std::size_t>(-1) || (offset < size_ && (size_ - offset) < size))//Restrict size
+		size = ((size_ < offset) ? 0u : (size_ - offset));
+
 	if (size == 0u || size_ <= offset)
 		return 0u;//Out of bounds
 
@@ -386,9 +383,6 @@ std::size_t cminus::memory::exclusive_block::write(std::size_t offset, const blo
 
 	if (is_write_protected())//Write protected
 		throw exception(error_code::write_protected, (address_ + offset));
-
-	if ((size_ - offset) < size)//Restrict size
-		size = (size_ - offset);
 
 	if (0u < size && size <= size_){
 		if (has_attributes(attribute_has_managed_object)){
@@ -430,308 +424,3 @@ std::size_t cminus::memory::exclusive_block::set(std::size_t offset, std::byte v
 
 	return ((size <= size_) ? size : 0u);
 }
-/*
-
-cminus::memory::inclusive_block::inclusive_block() = default;
-
-cminus::memory::inclusive_block::inclusive_block(composite_block *owner, std::size_t address, std::size_t size, unsigned int attributes)
-	: block(address, size, attributes), owner_(owner){}
-
-cminus::memory::inclusive_block::~inclusive_block() = default;
-
-std::byte *cminus::memory::inclusive_block::get_data(std::size_t offset) const{
-	return ((owner_->data_.get() == nullptr || size_ <= offset) ? nullptr : (owner_->data_.get() + (address_ - owner_->address_) + offset));
-}
-
-unsigned int cminus::memory::inclusive_block::get_attributes() const{
-	return (owner_->get_attributes() | block::get_attributes());
-}
-
-std::size_t cminus::memory::inclusive_block::read(std::size_t offset, std::byte *buffer, std::size_t size) const{
-	if (size == static_cast<std::size_t>(-1))
-		size = ((size_ < offset) ? 0u : (size_ - offset));
-
-	if (size == 0u || size_ <= offset)
-		return 0u;//Out of bounds
-
-	if (is_access_protected())//Access protected
-		throw exception(error_code::access_protected, (address_ + offset));
-
-	if ((size_ - offset) < size)//Restrict size
-		size = (size_ - offset);
-
-	if (0u < size && size <= size_)
-		memcpy(buffer, (owner_->data_.get() + (address_ - owner_->address_) + offset), size);
-
-	return ((size <= size_) ? size : 0u);
-}
-
-std::size_t cminus::memory::inclusive_block::read(std::size_t offset, io::binary_writer &buffer, std::size_t size) const{
-	if (size == 0u || size_ <= offset)
-		return 0u;//Out of bounds
-
-	if (is_write_protected())//Write protected
-		throw exception(error_code::write_protected, (address_ + offset));
-
-	if ((size_ - offset) < size)//Restrict size
-		size = (size_ - offset);
-
-	if (0u < size && size <= size_)
-		size = buffer.write((owner_->data_.get() + offset), size);
-
-	return ((size <= size_) ? size : 0u);
-}
-
-std::size_t cminus::memory::inclusive_block::read(std::size_t offset, block &buffer, std::size_t size, std::size_t buffer_offset) const{
-	if (size == static_cast<std::size_t>(-1))
-		size = ((size_ < offset) ? 0u : (size_ - offset));
-
-	if (size == 0u || size_ <= offset)
-		return 0u;//Out of bounds
-
-	if (is_access_protected())//Access protected
-		throw exception(error_code::access_protected, (address_ + offset));
-
-	if ((size_ - offset) < size)//Restrict size
-		size = (size_ - offset);
-
-	if (0u < size && size <= size_)
-		buffer.write(buffer_offset, (owner_->data_.get() + (address_ - owner_->address_) + offset), size);
-
-	return ((size <= size_) ? size : 0u);
-}
-
-std::size_t cminus::memory::inclusive_block::write(std::size_t offset, const std::byte *buffer, std::size_t size){
-	if (size == 0u || size_ <= offset)
-		return 0u;//Out of bounds
-
-	if (is_write_protected())//Write protected
-		throw exception(error_code::write_protected, (address_ + offset));
-
-	if ((size_ - offset) < size)//Restrict size
-		size = (size_ - offset);
-
-	if (0u < size && size <= size_)
-		memcpy((owner_->data_.get() + (address_ - owner_->address_) + offset), buffer, size);
-
-	return ((size <= size_) ? size : 0u);
-}
-
-std::size_t cminus::memory::inclusive_block::write(std::size_t offset, const io::binary_reader &buffer, std::size_t size){
-	if (size == 0u || size_ <= offset)
-		return 0u;//Out of bounds
-
-	if (is_write_protected())//Write protected
-		throw exception(error_code::write_protected, (address_ + offset));
-
-	if ((size_ - offset) < size)//Restrict size
-		size = (size_ - offset);
-
-	if (0u < size && size <= size_)
-		size = buffer.read((owner_->data_.get() + offset), size);
-
-	return ((size <= size_) ? size : 0u);
-}
-
-std::size_t cminus::memory::inclusive_block::write(std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset){
-	if (size == 0u || size_ <= offset)
-		return 0u;//Out of bounds
-
-	if (is_write_protected())//Write protected
-		throw exception(error_code::write_protected, (address_ + offset));
-
-	if ((size_ - offset) < size)//Restrict size
-		size = (size_ - offset);
-
-	if (0u < size && size <= size_)
-		buffer.read(buffer_offset, (owner_->data_.get() + (address_ - owner_->address_) + offset), size);
-
-	return ((size <= size_) ? size : 0u);
-}
-
-std::size_t cminus::memory::inclusive_block::set(std::size_t offset, std::byte value, std::size_t size){
-	if (size == 0u || size_ <= offset)
-		return 0u;//Out of bounds
-
-	if (is_write_protected())//Write protected
-		throw exception(error_code::write_protected, (address_ + offset));
-
-	if ((size_ - offset) < size)//Restrict size
-		size = (size_ - offset);
-
-	if (0u < size && size <= size_)
-		memset((owner_->data_.get() + (address_ - owner_->address_) + offset), static_cast<int>(value), size);
-
-	return ((size <= size_) ? size : 0u);
-}
-
-cminus::memory::composite_block::composite_block(std::size_t reserve_size){
-	if (reserve_size != 0u)
-		blocks_.reserve(reserve_size);
-}
-
-cminus::memory::composite_block::composite_block(std::size_t address, std::size_t size, unsigned int attributes, std::size_t reserve_size)
-	: block(address, size, attributes){
-	if (reserve_size != 0u)
-		blocks_.reserve(reserve_size);
-
-	if (0u < size_)
-		data_ = std::make_unique<std::byte[]>(size_);
-}
-
-cminus::memory::composite_block::~composite_block() = default;
-
-std::byte *cminus::memory::composite_block::get_data(std::size_t offset) const{
-	return ((data_.get() == nullptr || size_ <= offset) ? nullptr : (data_.get() + offset));
-}
-
-std::size_t cminus::memory::composite_block::read(std::size_t offset, std::byte *buffer, std::size_t size) const{
-	if (size == static_cast<std::size_t>(-1))
-		size = ((size_ < offset) ? 0u : (size_ - offset));
-
-	if (size == 0u || size_ <= offset || blocks_.empty())
-		return 0u;//Out of bounds
-
-	if (is_access_protected())//Access protected
-		throw exception(error_code::access_protected, (address_ + offset));
-
-	std::size_t read_size = 0u;
-	for (auto block : blocks_){
-		if (size <= (read_size += block->read(offset, (buffer + read_size), (size - read_size))))
-			break;//Read complete
-		offset = 0u;
-	}
-
-	return read_size;
-}
-
-std::size_t cminus::memory::composite_block::read(std::size_t offset, io::binary_writer &buffer, std::size_t size) const{
-	if (size == 0u || size_ <= offset || blocks_.empty())
-		return 0u;//Out of bounds
-
-	if (is_write_protected())//Write protected
-		throw exception(error_code::write_protected, (address_ + offset));
-
-	std::size_t write_size = 0u;
-	for (auto block : blocks_){
-		if (size <= (write_size += block->read(offset, buffer, (size - write_size))) || buffer.get_size() <= buffer.get_offset())
-			break;//Write complete
-		offset = 0u;
-	}
-
-	return write_size;
-}
-
-std::size_t cminus::memory::composite_block::read(std::size_t offset, block &buffer, std::size_t size, std::size_t buffer_offset) const{
-	if (size == static_cast<std::size_t>(-1))
-		size = ((size_ < offset) ? 0u : (size_ - offset));
-
-	if (size == 0u || size_ <= offset || blocks_.empty())
-		return 0u;//Out of bounds
-
-	if (is_access_protected())//Access protected
-		throw exception(error_code::access_protected, (address_ + offset));
-
-	std::size_t read_size = 0u;
-	for (auto block : blocks_){
-		if (size <= (read_size += buffer.write(offset, *block, (size - read_size), (buffer_offset + read_size))))
-			break;//Read complete
-		offset = 0u;
-	}
-
-	return read_size;
-}
-
-std::size_t cminus::memory::composite_block::write(std::size_t offset, const std::byte *buffer, std::size_t size){
-	if (size == 0u || size_ <= offset || blocks_.empty())
-		return 0u;//Out of bounds
-
-	if (is_write_protected())//Write protected
-		throw exception(error_code::write_protected, (address_ + offset));
-
-	std::size_t write_size = 0u;
-	for (auto block : blocks_){
-		if (size <= (write_size += block->write(offset, (buffer + write_size), (size - write_size))))
-			break;//Write complete
-		offset = 0u;
-	}
-
-	return write_size;
-}
-
-std::size_t cminus::memory::composite_block::write(std::size_t offset, const io::binary_reader &buffer, std::size_t size){
-	if (size == 0u || size_ <= offset || blocks_.empty())
-		return 0u;//Out of bounds
-
-	if (is_write_protected())//Write protected
-		throw exception(error_code::write_protected, (address_ + offset));
-
-	std::size_t write_size = 0u;
-	for (auto block : blocks_){
-		if (size <= (write_size += block->write(offset, buffer, (size - write_size))) || buffer.get_bytes_remaining() == 0u)
-			break;//Write complete
-		offset = 0u;
-	}
-
-	return write_size;
-}
-
-std::size_t cminus::memory::composite_block::write(std::size_t offset, const block &buffer, std::size_t size, std::size_t buffer_offset){
-	if (size == 0u || size_ <= offset || blocks_.empty())
-		return 0u;//Out of bounds
-
-	if (is_write_protected())//Write protected
-		throw exception(error_code::write_protected, (address_ + offset));
-
-	std::size_t write_size = 0u;
-	for (auto block : blocks_){
-		if (size <= (write_size += buffer.read(offset, *block, (size - write_size), (buffer_offset + write_size))))
-			break;//Write complete
-		offset = 0u;
-	}
-
-	return write_size;
-}
-
-std::size_t cminus::memory::composite_block::set(std::size_t offset, std::byte value, std::size_t size){
-	if (size == 0u || size_ <= offset || blocks_.empty())
-		return 0u;//Out of bounds
-
-	if (is_write_protected())//Write protected
-		throw exception(error_code::write_protected, (address_ + offset));
-
-	std::size_t set_size = 0u;
-	for (auto block : blocks_){
-		if (size <= (set_size += block->set(offset, value, (size - set_size))))
-			break;//Write complete
-		offset = 0u;
-	}
-
-	return set_size;
-}
-
-cminus::memory::block *cminus::memory::composite_block::append_block_(std::size_t size, unsigned int attributes){
-	if (!hit_test(next_block_offset_, size))
-		throw exception(error_code::allocation_failure, next_block_offset_);
-
-	auto block = std::make_shared<inclusive_block>(this, (address_ + next_block_offset_), size, attributes);
-	if (block != nullptr){
-		next_block_offset_ += block->size_;
-		blocks_.push_back(block);
-	}
-
-	return block.get();
-}
-
-cminus::memory::block *cminus::memory::composite_block::get_block_(std::size_t offset) const{
-	if (blocks_.empty())
-		return nullptr;
-
-	for (auto block : blocks_){
-		if (hit_test(address_ + offset))
-			return block.get();
-	}
-
-	return nullptr;
-}
-*/

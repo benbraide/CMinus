@@ -16,7 +16,7 @@ namespace cminus::evaluator{
 			case operator_id::minus:
 				if (value->is_nan())
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
-				return std::make_shared<memory::reference_with_value<value_type>>(value->get_type(), nullptr, static_cast<value_type>(-value->read_scalar<value_type>(runtime)));
+				return std::make_shared<memory::scalar_reference<value_type>>(value->get_type(), nullptr, static_cast<value_type>(-value->read_scalar<value_type>(runtime)));
 			default:
 				break;
 			}
@@ -30,7 +30,7 @@ namespace cminus::evaluator{
 			case operator_id::minus:
 				if (value->is_nan())
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
-				return std::make_shared<memory::reference_with_value<value_type>>(value->get_type(), nullptr, static_cast<value_type>(-value->read_scalar<value_type>(runtime)));
+				return std::make_shared<memory::scalar_reference<value_type>>(value->get_type(), nullptr, static_cast<value_type>(-value->read_scalar<value_type>(runtime)));
 			default:
 				break;
 			}
@@ -44,7 +44,7 @@ namespace cminus::evaluator{
 			case operator_id::plus:
 				if (value->is_nan())
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
-				return std::make_shared<memory::reference_with_value<value_type>>(value->get_type(), nullptr, value->read_scalar<value_type>(runtime));
+				return std::make_shared<memory::scalar_reference<value_type>>(value->get_type(), nullptr, value->read_scalar<value_type>(runtime));
 			default:
 				break;
 			}
@@ -79,7 +79,7 @@ namespace cminus::evaluator{
 				if (value->is_nan())
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
 
-				return std::make_shared<memory::reference_with_value<value_type>>(value->get_type(), nullptr, computed_value);
+				return std::make_shared<memory::scalar_reference<value_type>>(value->get_type(), nullptr, computed_value);
 			case operator_id::decrement:
 				computed_value = static_cast<value_type>(value->read_scalar<value_type>(runtime) - static_cast<value_type>(1));
 				value->write_scalar(runtime, computed_value);
@@ -87,7 +87,7 @@ namespace cminus::evaluator{
 				if (value->is_nan())
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
 
-				return std::make_shared<memory::reference_with_value<value_type>>(value->get_type(), nullptr, computed_value);
+				return std::make_shared<memory::scalar_reference<value_type>>(value->get_type(), nullptr, computed_value);
 			default:
 				break;
 			}
@@ -101,15 +101,15 @@ namespace cminus::evaluator{
 			case operator_id::plus:
 				if (left_value->is_nan() || right_value->is_nan())
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
-				return std::make_shared<memory::reference_with_value<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) + right_value->read_scalar<value_type>(runtime)));
+				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) + right_value->read_scalar<value_type>(runtime)));
 			case operator_id::minus:
 				if (left_value->is_nan() || right_value->is_nan())
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
-				return std::make_shared<memory::reference_with_value<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) - right_value->read_scalar<value_type>(runtime)));
+				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) - right_value->read_scalar<value_type>(runtime)));
 			case operator_id::times:
 				if (left_value->is_nan() || right_value->is_nan())
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
-				return std::make_shared<memory::reference_with_value<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) * right_value->read_scalar<value_type>(runtime)));
+				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) * right_value->read_scalar<value_type>(runtime)));
 			default:
 				break;
 			}
@@ -122,7 +122,7 @@ namespace cminus::evaluator{
 				if (right_scalar_value == static_cast<value_type>(0))//NaN
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
 
-				return std::make_shared<memory::reference_with_value<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) / right_value->read_scalar<value_type>(runtime)));
+				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) / right_value->read_scalar<value_type>(runtime)));
 			}
 
 			return nullptr;
@@ -134,15 +134,15 @@ namespace cminus::evaluator{
 			case operator_id::bitwise_and:
 				if (left_value->is_nan() || right_value->is_nan())
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
-				return std::make_shared<memory::reference_with_value<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) & right_value->read_scalar<value_type>(runtime)));
+				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) & right_value->read_scalar<value_type>(runtime)));
 			case operator_id::bitwise_or:
 				if (left_value->is_nan() || right_value->is_nan())
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
-				return std::make_shared<memory::reference_with_value<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) | right_value->read_scalar<value_type>(runtime)));
+				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) | right_value->read_scalar<value_type>(runtime)));
 			case operator_id::bitwise_xor:
 				if (left_value->is_nan() || right_value->is_nan())
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
-				return std::make_shared<memory::reference_with_value<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) ^ right_value->read_scalar<value_type>(runtime)));
+				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) ^ right_value->read_scalar<value_type>(runtime)));
 			default:
 				break;
 			}
@@ -155,7 +155,7 @@ namespace cminus::evaluator{
 				if (right_scalar_value == static_cast<value_type>(0))//NaN
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
 
-				return std::make_shared<memory::reference_with_value<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) % right_value->read_scalar<value_type>(runtime)));
+				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) % right_value->read_scalar<value_type>(runtime)));
 			}
 
 			return evaluate_binary_<value_type>(runtime, op, left_value, right_value);
@@ -197,25 +197,25 @@ namespace cminus::evaluator{
 			case operator_id::left_shift:
 				if (left_value->is_nan() || right_value->is_nan())
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
-				return std::make_shared<memory::reference_with_value<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) << right_value->read_scalar<shift_type>(runtime)));
+				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) << right_value->read_scalar<shift_type>(runtime)));
 			case operator_id::right_shift:
 				if (left_value->is_nan() || right_value->is_nan())
 					return runtime.global_storage->get_named_constant(node::named_constant::constant_type::nan_);
-				return std::make_shared<memory::reference_with_value<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) >> right_value->read_scalar<shift_type>(runtime)));
+				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) >> right_value->read_scalar<shift_type>(runtime)));
 			default:
 				break;
 			}
 
 			if (op == operator_id::index){//Get byte
 				if (left_value->is_nan() || right_value->is_nan())
-					return std::make_shared<memory::reference_with_value<std::byte>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::byte_), nullptr, static_cast<std::byte>(0));
+					return std::make_shared<memory::scalar_reference<std::byte>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::byte_), nullptr, static_cast<std::byte>(0));
 
 				auto index = static_cast<std::size_t>(right_value->read_scalar<shift_type>(runtime));
 				if (sizeof(value_type) <= index)//Out of bounds
-					return std::make_shared<memory::reference_with_value<std::byte>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::byte_), nullptr, static_cast<std::byte>(0));
+					return std::make_shared<memory::scalar_reference<std::byte>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::byte_), nullptr, static_cast<std::byte>(0));
 
 				auto value = left_value->read_scalar<value_type>(runtime);
-				return std::make_shared<memory::reference_with_value<std::byte>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::byte_), nullptr, reinterpret_cast<std::byte *>(&value)[index]);
+				return std::make_shared<memory::scalar_reference<std::byte>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::byte_), nullptr, reinterpret_cast<std::byte *>(&value)[index]);
 			}
 
 			return nullptr;

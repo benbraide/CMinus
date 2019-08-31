@@ -52,14 +52,20 @@ void cminus::logic::storage::double_layer::remove(const std::string &name){
 	specialized::remove(name);
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::storage::double_layer::find(const std::string &name, bool search_tree, const object **branch) const{
-	if (auto entry = ((inner_layer_ == nullptr) ? nullptr : inner_layer_->find(name, false, branch)); entry != nullptr){
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::double_layer::find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch) const{
+	if (auto entry = ((inner_layer_ == nullptr) ? nullptr : inner_layer_->find(runtime, name, false, nullptr)); entry != nullptr){
 		if (branch != nullptr)
 			*branch = this;
 		return entry;
 	}
 
-	return specialized::find(name, search_tree, branch);
+	return specialized::find(runtime, name, search_tree, branch);
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::double_layer::find_existing(const std::string &name) const{
+	if (auto entry = ((inner_layer_ == nullptr) ? nullptr : inner_layer_->find_existing(name)); entry != nullptr)
+		return entry;//Found inside inner layer
+	return specialized::find_existing(name);
 }
 
 void cminus::logic::storage::double_layer::refresh(){
@@ -82,23 +88,26 @@ cminus::logic::storage::function::function(std::shared_ptr<memory::reference> co
 
 cminus::logic::storage::function::~function() = default;
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::find(const std::string &name, bool search_tree, const object **branch) const{
-	const object *my_branch = nullptr;
-
-	auto entry = specialized::find(name, search_tree, &my_branch);
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch) const{
+	auto entry = specialized::find(runtime, name, search_tree, branch);
 	if (entry == nullptr)//Entry not found
 		return nullptr;
 
-	if (branch != nullptr)//Update branch
-		*branch = my_branch;
+	if (entry->find_attribute("Static", true, false) != nullptr)//Static entry
+		return entry;
 
-	if (my_branch != parent_ || entry->find_attribute("Static", true, false) != nullptr)//Branch is not context's type OR entry is static
+	auto placeholder_entry = dynamic_cast<memory::placeholder_reference *>(entry.get());
+	if (placeholder_entry == nullptr)//Not a class member
 		return entry;
 
 	if (context_ == nullptr)//Entry must be static
 		throw logic::exception("A non-static member requires an object context", 0u, 0u);
 
-	return std::make_shared<memory::hard_reference>(entry, context_, context_->get_address());
+	auto base_offset = context_->get_type()->compute_base_offset(*entry->get_type());
+	if (base_offset == static_cast<std::size_t>(-1))
+		throw logic::exception("A non-static member requires an object context with related types", 0u, 0u);
+
+	return placeholder_entry->create(runtime, context_, base_offset);
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::get_context() const{

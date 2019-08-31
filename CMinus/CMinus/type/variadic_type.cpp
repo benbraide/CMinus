@@ -11,7 +11,7 @@ void cminus::type::variadic::print(logic::runtime &runtime, bool is_qualified) c
 }
 
 void cminus::type::variadic::print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const{
-	auto variadic_data = dynamic_cast<memory::reference_with_value<std::vector<std::shared_ptr<memory::reference>>> *>(data.get());
+	auto variadic_data = dynamic_cast<memory::scalar_reference<std::vector<std::shared_ptr<memory::reference>>> *>(data.get());
 	if (variadic_data == nullptr)
 		return;
 
@@ -31,10 +31,6 @@ void cminus::type::variadic::print_value(logic::runtime &runtime, std::shared_pt
 }
 
 std::size_t cminus::type::variadic::get_size() const{
-	return 0u;
-}
-
-std::size_t cminus::type::variadic::compute_base_offset(const object &target) const{
 	return 0u;
 }
 

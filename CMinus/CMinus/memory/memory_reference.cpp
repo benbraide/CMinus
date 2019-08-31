@@ -2,34 +2,33 @@
 
 cminus::memory::reference::reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
 	: type_(type), context_(context){
+	if (type_ != nullptr)
+		size_ = type_->get_size();
+
 	for (auto attribute : attributes)
 		attributes_[attribute.get()] = attribute;
 }
 
 cminus::memory::reference::~reference() = default;
 
-std::shared_ptr<cminus::memory::reference> cminus::memory::reference::clone(const attribute_list_type &attributes, bool inherit_attributes) const{
-	if (!inherit_attributes)
-		return clone_(attributes);
-
-	attribute_list_type combined_attributes;
-	combined_attributes.reserve(attributes_.size() + attributes.size());
-
-	for (auto &attribute : attributes_)
-		combined_attributes.push_back(attribute.second);
-
-	for (auto &attribute : attributes)
-		combined_attributes.push_back(attribute);
-
-	return clone_(combined_attributes);
-}
-
 void cminus::memory::reference::set_type(std::shared_ptr<type::object> value){
 	type_ = value;
+	size_ = ((type_ == nullptr) ? 0u : type_->get_size());
 }
 
 std::shared_ptr<cminus::type::object> cminus::memory::reference::get_type() const{
 	return type_;
+}
+
+bool cminus::memory::reference::is_nan() const{
+	auto primitive_type = dynamic_cast<type::primitive *>(type_.get());
+	if (primitive_type == nullptr)
+		return false;
+
+	if (primitive_type->get_id() == type::primitive::id_type::nan_)
+		return true;
+
+	return (primitive_type->is_numeric() && find_attribute("#NaN#", true, false) != nullptr);
 }
 
 void cminus::memory::reference::set_context(std::shared_ptr<reference> value){
@@ -106,30 +105,6 @@ void cminus::memory::reference::traverse_attributes(logic::runtime &runtime, con
 		context_->traverse_attributes(runtime, callback, stage, true);
 }
 
-bool cminus::memory::reference::is_lvalue() const{
-	return (find_attribute("#LVal#", true, false) != nullptr && (context_ == nullptr || context_->is_lvalue()));
-}
-
-bool cminus::memory::reference::is_ref() const{
-	return false;
-}
-
-bool cminus::memory::reference::is_nan() const{
-	if (auto primitive_type = dynamic_cast<type::primitive *>(type_.get()); primitive_type != nullptr && primitive_type->get_id() == type::primitive::primitive::id_type::nan_)
-		return true;
-	return (find_attribute("#NaN#", true, false) != nullptr);
-}
-
-void cminus::memory::reference::set_address(std::size_t value){}
-
-std::size_t cminus::memory::reference::get_address() const{
-	return 0u;
-}
-
-const std::byte *cminus::memory::reference::get_data(logic::runtime &runtime) const{
-	return nullptr;
-}
-
 int cminus::memory::reference::compare(logic::runtime &runtime, const std::byte *buffer, std::size_t size) const{
 	if (buffer == nullptr || type_->get_size() != size)
 		return std::numeric_limits<int>::min();
@@ -180,46 +155,6 @@ int cminus::memory::reference::compare(logic::runtime &runtime, const reference 
 	return compare(runtime, buffer.get_data(runtime), size);
 }
 
-std::size_t cminus::memory::reference::read(logic::runtime &runtime, std::byte *buffer, std::size_t size) const{
-	return 0u;
-}
-
-std::size_t cminus::memory::reference::read(logic::runtime &runtime, io::binary_writer &buffer, std::size_t size) const{
-	return 0u;
-}
-
-std::size_t cminus::memory::reference::read(logic::runtime &runtime, std::size_t buffer, std::size_t size) const{
-	return 0u;
-}
-
-std::size_t cminus::memory::reference::read(logic::runtime &runtime, reference &buffer, std::size_t size) const{
-	return 0u;
-}
-
-std::size_t cminus::memory::reference::write(logic::runtime &runtime, const std::byte *buffer, std::size_t size){
-	return 0u;
-}
-
-std::size_t cminus::memory::reference::write(logic::runtime &runtime, const io::binary_reader &buffer, std::size_t size){
-	return 0u;
-}
-
-std::size_t cminus::memory::reference::write(logic::runtime &runtime, std::size_t buffer, std::size_t size){
-	return 0u;
-}
-
-std::size_t cminus::memory::reference::write(logic::runtime &runtime, const reference &buffer, std::size_t size){
-	return 0u;
-}
-
-std::size_t cminus::memory::reference::write(logic::runtime &runtime, managed_object &object){
-	return 0u;
-}
-
-std::size_t cminus::memory::reference::set(logic::runtime &runtime, std::byte value, std::size_t size){
-	return 0u;
-}
-
 void cminus::memory::reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args){
 	target->traverse_attributes(runtime, [&](std::shared_ptr<logic::attributes::object> attr){
 		attr->call(runtime, stage, target, args);
@@ -232,40 +167,125 @@ void cminus::memory::reference::call_attributes(logic::runtime &runtime, logic::
 	}, stage, include_context);
 }
 
-cminus::memory::hard_reference::hard_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+cminus::memory::placeholder_reference::placeholder_reference(std::size_t relative_offset, std::shared_ptr<type::object> type, const attribute_list_type &attributes)
+	: reference(type, attributes, nullptr), relative_offset_(relative_offset){}
+
+cminus::memory::placeholder_reference::placeholder_reference(std::size_t relative_offset, std::shared_ptr<type::object> type)
+	: placeholder_reference(relative_offset, type, attribute_list_type{}){}
+
+cminus::memory::placeholder_reference::~placeholder_reference() = default;
+
+std::shared_ptr<cminus::memory::reference> cminus::memory::placeholder_reference::apply_offset(std::size_t value) const{
+	attribute_list_type attributes;
+	if (!attributes_.empty()){
+		attributes.reserve(attributes_.size());
+		for (auto &attribute : attributes_)
+			attributes.push_back(attribute.second);
+	}
+
+	return std::make_shared<placeholder_reference>((relative_offset_ + value), type_, attributes);
+}
+
+bool cminus::memory::placeholder_reference::is_lvalue() const{
+	return true;
+}
+
+std::size_t cminus::memory::placeholder_reference::get_address() const{
+	return 0u;
+}
+
+std::byte *cminus::memory::placeholder_reference::get_data(logic::runtime &runtime) const{
+	return nullptr;
+}
+
+std::size_t cminus::memory::placeholder_reference::read(logic::runtime &runtime, std::byte *buffer, std::size_t size) const{
+	return 0u;
+}
+
+std::size_t cminus::memory::placeholder_reference::read(logic::runtime &runtime, io::binary_writer &buffer, std::size_t size) const{
+	return 0u;
+}
+
+std::size_t cminus::memory::placeholder_reference::read(logic::runtime &runtime, std::size_t buffer, std::size_t size) const{
+	return 0u;
+}
+
+std::size_t cminus::memory::placeholder_reference::read(logic::runtime &runtime, reference &buffer, std::size_t size) const{
+	return 0u;
+}
+
+std::size_t cminus::memory::placeholder_reference::write(logic::runtime &runtime, const std::byte *buffer, std::size_t size){
+	return 0u;
+}
+
+std::size_t cminus::memory::placeholder_reference::write(logic::runtime &runtime, const io::binary_reader &buffer, std::size_t size){
+	return 0u;
+}
+
+std::size_t cminus::memory::placeholder_reference::write(logic::runtime &runtime, std::size_t buffer, std::size_t size){
+	return 0u;
+}
+
+std::size_t cminus::memory::placeholder_reference::write(logic::runtime &runtime, const reference &buffer, std::size_t size){
+	return 0u;
+}
+
+std::size_t cminus::memory::placeholder_reference::write(logic::runtime &runtime, managed_object &object){
+	return 0u;
+}
+
+std::size_t cminus::memory::placeholder_reference::set(logic::runtime &runtime, std::byte value, std::size_t size){
+	return 0u;
+}
+
+void cminus::memory::placeholder_reference::set_relative_offset(std::size_t value){
+	relative_offset_ = value;
+}
+
+std::size_t cminus::memory::placeholder_reference::get_relative_offset() const{
+	return relative_offset_;
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::memory::placeholder_reference::create(logic::runtime &runtime, std::shared_ptr<reference> context, std::size_t offset) const{
+	attribute_list_type attributes;
+	if (!attributes_.empty()){
+		attributes.reserve(attributes_.size());
+		for (auto &attribute : attributes_)
+			attributes.push_back(attribute.second);
+	}
+
+	if (auto lval_context = dynamic_cast<const lval_reference *>(context.get()); lval_context != nullptr){
+		if (find_attribute("Ref", true, false) == nullptr)
+			return std::make_shared<lval_reference>((lval_context->get_address() + relative_offset_ + offset), type_, attributes, context);
+		return std::make_shared<ref_reference>(type_, attributes, context);
+	}
+
+	if (auto rval_context = dynamic_cast<const rval_reference *>(context.get()); rval_context != nullptr)
+		return std::make_shared<rval_reference>((rval_context->get_data(runtime) + (relative_offset_ + offset)), type_, attributes, context);
+
+	return nullptr;
+}
+
+cminus::memory::lval_reference::lval_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
 	: reference(type, attributes, context){
 	try{
-		if (find_attribute("Ref", true, false) == nullptr){//Destination address will be copied
-			if (auto block = runtime.memory_object.allocate_block(type->get_size(), memory::block::attribute_none); block != nullptr){
-				add_attribute(runtime.global_storage->find_attribute("#LVal", false));
-				address_ = block->get_address();
-				deallocator_ = [address = address_, &memory_object = runtime.memory_object](){
-					if (address != 0u)
-						memory_object.deallocate_block(address);
-				};
-			}
-		}
+		allocate_memory_(runtime, type_->get_size());
 	}
 	catch (...){
 		address_ = 0u;
 	}
 }
 
-cminus::memory::hard_reference::hard_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
-	: hard_reference(runtime, type, attribute_list_type{}, context){}
+cminus::memory::lval_reference::lval_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
+	: lval_reference(runtime, type, attribute_list_type{}, context){}
 
-cminus::memory::hard_reference::hard_reference(std::size_t address, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+cminus::memory::lval_reference::lval_reference(std::size_t address, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
 	: reference(type, attributes, context), address_(address){}
 
-cminus::memory::hard_reference::hard_reference(std::size_t address, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
-	: hard_reference(address, type, attribute_list_type{}, context){}
+cminus::memory::lval_reference::lval_reference(std::size_t address, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
+	: lval_reference(address, type, attribute_list_type{}, context){}
 
-cminus::memory::hard_reference::hard_reference(std::shared_ptr<reference> base, std::shared_ptr<reference> context, std::size_t address_offset)
-	: hard_reference((base->get_address() + address_offset), base->get_type(), attribute_list_type{}, context){
-	attributes_ = base->get_attributes();
-}
-
-cminus::memory::hard_reference::~hard_reference(){
+cminus::memory::lval_reference::~lval_reference(){
 	try{
 		if (deallocator_ != nullptr)
 			deallocator_();
@@ -273,55 +293,66 @@ cminus::memory::hard_reference::~hard_reference(){
 	catch (...){}
 }
 
-bool cminus::memory::hard_reference::is_ref() const{
-	return (address_ != 0u && deallocator_ == nullptr);
+std::shared_ptr<cminus::memory::reference> cminus::memory::lval_reference::apply_offset(std::size_t value) const{
+	attribute_list_type attributes;
+	if (!attributes_.empty()){
+		attributes.reserve(attributes_.size());
+		for (auto &attribute : attributes_)
+			attributes.push_back(attribute.second);
+	}
+
+	return std::make_shared<lval_reference>((address_ + value), type_, attributes, context_);
 }
 
-void cminus::memory::hard_reference::set_address(std::size_t value){
-	if (find_attribute("#Init#", true, false) != nullptr && find_attribute("Ref", true, false) != nullptr)
-		address_ = value;
+bool cminus::memory::lval_reference::is_lvalue() const{
+	return (true && (context_ == nullptr || context_->is_lvalue()));
 }
 
-std::size_t cminus::memory::hard_reference::get_address() const{
+std::size_t cminus::memory::lval_reference::get_address() const{
 	return address_;
 }
 
-const std::byte *cminus::memory::hard_reference::get_data(logic::runtime &runtime) const{
+std::byte *cminus::memory::lval_reference::get_data(logic::runtime &runtime) const{
 	auto block = runtime.memory_object.find_block(get_address());
 	return ((block == nullptr) ? nullptr : block->get_data());
 }
 
-std::size_t cminus::memory::hard_reference::read(logic::runtime &runtime, std::byte *buffer, std::size_t size) const{
+std::size_t cminus::memory::lval_reference::read(logic::runtime &runtime, std::byte *buffer, std::size_t size) const{
 	return runtime.memory_object.read(get_address(), buffer, size);
 }
 
-std::size_t cminus::memory::hard_reference::read(logic::runtime &runtime, io::binary_writer &buffer, std::size_t size) const{
+std::size_t cminus::memory::lval_reference::read(logic::runtime &runtime, io::binary_writer &buffer, std::size_t size) const{
 	return runtime.memory_object.read(get_address(), buffer, size);
 }
 
-std::size_t cminus::memory::hard_reference::read(logic::runtime &runtime, std::size_t buffer, std::size_t size) const{
+std::size_t cminus::memory::lval_reference::read(logic::runtime &runtime, std::size_t buffer, std::size_t size) const{
 	return runtime.memory_object.read(get_address(), buffer, size);
 }
 
-std::size_t cminus::memory::hard_reference::read(logic::runtime &runtime, reference &buffer, std::size_t size) const{
-	if (auto address = buffer.get_address(); address != 0u)
-		return runtime.memory_object.read(get_address(), address, size);
-	return 0u;
+std::size_t cminus::memory::lval_reference::read(logic::runtime &runtime, reference &buffer, std::size_t size) const{
+	auto my_size = ((type_ == nullptr) ? 0u : type_->get_size());
+	if (size == static_cast<std::size_t>(-1) || my_size < size)//Restrict size
+		size = my_size;
+
+	if (size == 0u)//Do nothing
+		return 0u;
+
+	return buffer.write(runtime, get_address(), size);
 }
 
-std::size_t cminus::memory::hard_reference::write(logic::runtime &runtime, const std::byte *buffer, std::size_t size){
+std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, const std::byte *buffer, std::size_t size){
 	return runtime.memory_object.write(get_address(), buffer, size);
 }
 
-std::size_t cminus::memory::hard_reference::write(logic::runtime &runtime, const io::binary_reader &buffer, std::size_t size){
+std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, const io::binary_reader &buffer, std::size_t size){
 	return runtime.memory_object.write(get_address(), buffer, size);
 }
 
-std::size_t cminus::memory::hard_reference::write(logic::runtime &runtime, std::size_t buffer, std::size_t size){
+std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, std::size_t buffer, std::size_t size){
 	return runtime.memory_object.write(buffer, get_address(), size);
 }
 
-std::size_t cminus::memory::hard_reference::write(logic::runtime &runtime, const reference &buffer, std::size_t size){
+std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, const reference &buffer, std::size_t size){
 	if (auto address = buffer.get_address(); address != 0u)
 		return runtime.memory_object.write(address, get_address(), size);
 
@@ -331,34 +362,200 @@ std::size_t cminus::memory::hard_reference::write(logic::runtime &runtime, const
 	return 0u;
 }
 
-std::size_t cminus::memory::hard_reference::write(logic::runtime &runtime, managed_object &object){
+std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, managed_object &object){
 	return runtime.memory_object.write(get_address(), object);
 }
 
-std::size_t cminus::memory::hard_reference::set(logic::runtime &runtime, std::byte value, std::size_t size){
+std::size_t cminus::memory::lval_reference::set(logic::runtime &runtime, std::byte value, std::size_t size){
 	return runtime.memory_object.set(get_address(), value, size);
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::memory::hard_reference::clone_(const attribute_list_type &attributes) const{
-	return std::make_shared<hard_reference>(get_address(), type_, attributes, context_);
+void cminus::memory::lval_reference::allocate_memory_(logic::runtime &runtime, std::size_t size){
+	auto block = runtime.memory_object.allocate_block(size, memory::block::attribute_none);
+	if (block == nullptr)
+		return;
+
+	add_attribute(runtime.global_storage->find_attribute("#LVal", false));
+	address_ = block->get_address();
+	deallocator_ = [address = address_, &memory_object = runtime.memory_object](){
+		if (address != 0u)
+			memory_object.deallocate_block(address);
+	};
 }
 
-cminus::memory::ref_reference::ref_reference(logic::runtime &runtime, std::size_t address, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: hard_reference(address, type, attributes, context), object_(runtime.memory_object){}
+cminus::memory::ref_reference::ref_reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: lval_reference(0u, type, attributes, context){}
 
-cminus::memory::ref_reference::ref_reference(logic::runtime &runtime, std::size_t address, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
-	: hard_reference(address, type, context), object_(runtime.memory_object){}
+cminus::memory::ref_reference::ref_reference(std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
+	: ref_reference(type, attribute_list_type{}, context){}
 
 cminus::memory::ref_reference::~ref_reference() = default;
 
-std::size_t cminus::memory::ref_reference::get_address() const{
-	return ((address_ == 0u) ? 0u : object_.read_scalar<std::size_t>(address_));
-}
-
-std::size_t cminus::memory::ref_reference::get_indirect_address() const{
-	return address_;
-}
-
 void cminus::memory::ref_reference::write_address(std::size_t value){
-	object_.write_scalar(address_, value);
+	address_ = value;
 }
+
+cminus::memory::rval_reference::rval_reference(std::byte *data, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: reference(type, attributes, context), data_(data){}
+
+cminus::memory::rval_reference::rval_reference(std::byte *data, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
+	: rval_reference(data, type, attribute_list_type{}, context){}
+
+cminus::memory::rval_reference::~rval_reference() = default;
+
+std::shared_ptr<cminus::memory::reference> cminus::memory::rval_reference::apply_offset(std::size_t value) const{
+	attribute_list_type attributes;
+	if (!attributes_.empty()){
+		attributes.reserve(attributes_.size());
+		for (auto &attribute : attributes_)
+			attributes.push_back(attribute.second);
+	}
+
+	return std::make_shared<rval_reference>((data_ + value), type_, attributes, context_);
+}
+
+bool cminus::memory::rval_reference::is_lvalue() const{
+	return false;
+}
+
+std::size_t cminus::memory::rval_reference::get_address() const{
+	return 0u;
+}
+
+std::byte *cminus::memory::rval_reference::get_data(logic::runtime &runtime) const{
+	return data_;
+}
+
+std::size_t cminus::memory::rval_reference::read(logic::runtime &runtime, std::byte *buffer, std::size_t size) const{
+	if (size == static_cast<std::size_t>(-1) || size_ < size)//Restrict size
+		size = size_;
+
+	if (size == 0u)//Do nothing
+		return 0u;
+
+	if (0u < size && size <= size_)
+		memcpy(buffer, data_, size);
+
+	return ((size <= size_) ? size : 0u);
+}
+
+std::size_t cminus::memory::rval_reference::read(logic::runtime &runtime, io::binary_writer &buffer, std::size_t size) const{
+	if (size == static_cast<std::size_t>(-1) || size_ < size)//Restrict size
+		size = size_;
+
+	if (size == 0u)//Do nothing
+		return 0u;
+
+	if (0u < size && size <= size_)
+		size = buffer.write(data_, size);
+
+	return ((size <= size_) ? size : 0u);
+}
+
+std::size_t cminus::memory::rval_reference::read(logic::runtime &runtime, std::size_t buffer, std::size_t size) const{
+	if (size == static_cast<std::size_t>(-1) || size_ < size)//Restrict size
+		size = size_;
+
+	if (size == 0u)//Do nothing
+		return 0u;
+
+	if (0u < size && size <= size_)
+		size = runtime.memory_object.write(buffer, data_, size);
+
+	return ((size <= size_) ? size : 0u);
+}
+
+std::size_t cminus::memory::rval_reference::read(logic::runtime &runtime, reference &buffer, std::size_t size) const{
+	if (size == static_cast<std::size_t>(-1) || size_ < size)//Restrict size
+		size = size_;
+
+	if (size == 0u)//Do nothing
+		return 0u;
+
+	if (0u < size && size <= size_)
+		size = buffer.write(runtime, data_, size);
+
+	return ((size <= size_) ? size : 0u);
+}
+
+std::size_t cminus::memory::rval_reference::write(logic::runtime &runtime, const std::byte *buffer, std::size_t size){
+	if (size == static_cast<std::size_t>(-1) || size_ < size)//Restrict size
+		size = size_;
+
+	if (size == 0u)//Do nothing
+		return 0u;
+
+	if (0u < size && size <= size_)
+		memcpy(data_, buffer, size);
+
+	return ((size <= size_) ? size : 0u);
+}
+
+std::size_t cminus::memory::rval_reference::write(logic::runtime &runtime, const io::binary_reader &buffer, std::size_t size){
+	if (size == static_cast<std::size_t>(-1) || size_ < size)//Restrict size
+		size = size_;
+
+	if (size == 0u)//Do nothing
+		return 0u;
+
+	if (0u < size && size <= size_)
+		size = buffer.read(data_, size);
+
+	return ((size <= size_) ? size : 0u);
+}
+
+std::size_t cminus::memory::rval_reference::write(logic::runtime &runtime, std::size_t buffer, std::size_t size){
+	if (size == static_cast<std::size_t>(-1) || size_ < size)//Restrict size
+		size = size_;
+
+	if (size == 0u)//Do nothing
+		return 0u;
+
+	if (0u < size && size <= size_)
+		size = runtime.memory_object.read(buffer, data_, size);
+
+	return ((size <= size_) ? size : 0u);
+}
+
+std::size_t cminus::memory::rval_reference::write(logic::runtime &runtime, const reference &buffer, std::size_t size){
+	if (size == static_cast<std::size_t>(-1) || size_ < size)//Restrict size
+		size = size_;
+
+	if (size == 0u)//Do nothing
+		return 0u;
+
+	if (0u < size && size <= size_)
+		size = buffer.read(runtime, data_, size);
+
+	return ((size <= size_) ? size : 0u);
+}
+
+std::size_t cminus::memory::rval_reference::write(logic::runtime &runtime, managed_object &object){
+	return 0u;
+}
+
+std::size_t cminus::memory::rval_reference::set(logic::runtime &runtime, std::byte value, std::size_t size){
+	if (size == static_cast<std::size_t>(-1) || size_ < size)//Restrict size
+		size = size_;
+
+	if (size == 0u)//Do nothing
+		return 0u;
+
+	if (0u < size && size <= size_)
+		memset(data_, static_cast<int>(value), size);
+
+	return ((size <= size_) ? size : 0u);
+}
+
+cminus::memory::data_reference::data_reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: rval_reference(nullptr, type, attributes, context){
+	if (0u < size_){
+		value_ = std::make_unique<std::byte[]>(size_);
+		data_ = value_.get();
+	}
+}
+
+cminus::memory::data_reference::data_reference(std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
+	: data_reference(type, attribute_list_type{}, context){}
+
+cminus::memory::data_reference::~data_reference() = default;
