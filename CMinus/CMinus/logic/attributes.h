@@ -55,6 +55,47 @@ namespace cminus::logic::attributes{
 		virtual void handle_before_ref_assign_(logic::runtime &runtime, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const;
 	};
 
+	class collection{
+	public:
+		using list_type = std::vector<std::shared_ptr<object>>;
+		using optimised_list_type = std::unordered_map<object *, std::shared_ptr<object>>;
+
+		collection();
+
+		explicit collection(const list_type &list);
+
+		explicit collection(const optimised_list_type &list);
+
+		explicit collection(optimised_list_type &&list);
+
+		void add(std::shared_ptr<object> value);
+
+		void remove(const std::string &name, bool global_only);
+
+		void remove(const logic::naming::object &name);
+
+		std::shared_ptr<object> find(const std::string &name, bool global_only) const;
+
+		std::shared_ptr<object> find(const logic::naming::object &name) const;
+
+		bool has(const std::string &name, bool global_only) const;
+
+		bool has(const naming::object &name) const;
+
+		const optimised_list_type &get_list() const;
+
+		void traverse(logic::runtime &runtime, const std::function<void(std::shared_ptr<object>)> &callback, object::stage_type stage) const;
+
+		void call(logic::runtime &runtime, object::stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const;
+
+		void call(logic::runtime &runtime, object::stage_type stage, std::shared_ptr<memory::reference> target) const;
+
+		void print(logic::runtime &runtime) const;
+
+	private:
+		optimised_list_type list_;
+	};
+
 	class pointer_object : public object{
 	public:
 		explicit pointer_object(std::shared_ptr<object> target);

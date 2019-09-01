@@ -2,8 +2,8 @@
 
 #include "runtime.h"
 
-namespace cminus::logic{
-	class function_object;
+namespace cminus::declaration{
+	class function_base;
 }
 
 namespace cminus::logic::storage{
@@ -40,7 +40,7 @@ namespace cminus::logic::storage{
 
 		virtual void add(logic::runtime &runtime, const std::string &name, std::shared_ptr<memory::reference> entry) override;
 
-		virtual void add_function(logic::runtime &runtime, std::shared_ptr<logic::function_object> entry) override;
+		virtual void add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry) override;
 
 		virtual void remove(const std::string &name) override;
 
@@ -58,7 +58,7 @@ namespace cminus::logic::storage{
 
 	class function : public specialized{
 	public:
-		function(const logic::function_object &owner, std::shared_ptr<memory::reference> context, object *parent = nullptr);
+		function(const declaration::function_base &owner, std::shared_ptr<memory::reference> context, object *parent = nullptr);
 
 		virtual ~function();
 
@@ -68,12 +68,12 @@ namespace cminus::logic::storage{
 
 		virtual void add_unnamed(std::shared_ptr<memory::reference> entry);
 
-		virtual const logic::function_object &get_owner() const;
+		virtual const declaration::function_base &get_owner() const;
 
 	protected:
 		virtual bool interrupt_is_valid_(interrupt_type value) const override;
 
-		const logic::function_object &owner_;
+		const declaration::function_base &owner_;
 		std::shared_ptr<memory::reference> context_;
 		std::unordered_map<memory::reference *, std::shared_ptr<memory::reference>> unnamed_entries_;
 	};

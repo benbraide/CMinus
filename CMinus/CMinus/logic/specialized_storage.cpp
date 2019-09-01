@@ -1,7 +1,6 @@
 #include "../type/class_type.h"
-#include "../type/function_type.h"
 
-#include "function_group.h"
+#include "../declaration/function_declaration_group.h"
 
 cminus::logic::storage::specialized::specialized(const std::string &name, object *parent)
 	: object(name, parent){}
@@ -49,7 +48,7 @@ void cminus::logic::storage::double_layer::add(logic::runtime &runtime, const st
 		inner_layer_->add(runtime, name, entry);
 }
 
-void cminus::logic::storage::double_layer::add_function(logic::runtime &runtime, std::shared_ptr<logic::function_object> entry){
+void cminus::logic::storage::double_layer::add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry){
 	if (inner_layer_ == nullptr)
 		specialized::add_function(runtime, entry);
 	else//Use inner layer
@@ -91,7 +90,7 @@ void cminus::logic::storage::double_layer::invalid_interrupt_(interrupt_type typ
 	specialized::invalid_interrupt_(type, value);
 }
 
-cminus::logic::storage::function::function(const logic::function_object &owner, std::shared_ptr<memory::reference> context, object *parent)
+cminus::logic::storage::function::function(const declaration::function_base &owner, std::shared_ptr<memory::reference> context, object *parent)
 	: specialized("", ((context_ == nullptr) ? parent : dynamic_cast<object *>(context_->get_type().get()))), context_(context), owner_(owner){}
 
 cminus::logic::storage::function::~function() = default;
@@ -113,7 +112,7 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::fin
 		if (primitive_type == nullptr || primitive_type->get_id() != type::primitive::id_type::function)
 			return entry;
 
-		auto group = entry->read_scalar<logic::function_group *>(runtime);
+		auto group = entry->read_scalar<declaration::function_group_base *>(runtime);
 		if (group == nullptr)
 			return entry;
 
@@ -121,7 +120,7 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::fin
 			auto base_offset = context_->get_type()->compute_base_offset(*group_class_parent);
 			if (base_offset != static_cast<std::size_t>(-1)){//Member function
 				entry->set_context(context_->apply_offset(base_offset));
-				if (type::function::find_attribute(owner_.get_attributes(), "ReadOnlyContext") != nullptr)
+				if (owner_.get_attributes().has("ReadOnlyContext", true))
 					entry->get_context()->add_attribute(runtime.global_storage->find_attribute("ReadOnly", false));
 			}
 		}
@@ -140,7 +139,7 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::fin
 	if (value == nullptr)
 		return nullptr;
 
-	if (type::function::find_attribute(owner_.get_attributes(), "ReadOnlyContext") != nullptr){
+	if (owner_.get_attributes().has("ReadOnlyContext", true)){
 		entry->get_context()->add_attribute(runtime.global_storage->find_attribute("ReadOnly", false));
 		if (name == "this")//Add read-only to pointed object
 			value->add_attribute(std::make_shared<attributes::pointer_object>(runtime.global_storage->find_attribute("ReadOnly", false)));
@@ -157,7 +156,7 @@ void cminus::logic::storage::function::add_unnamed(std::shared_ptr<memory::refer
 	unnamed_entries_[entry.get()] = entry;
 }
 
-const cminus::logic::function_object &cminus::logic::storage::function::get_owner() const{
+const cminus::declaration::function_base &cminus::logic::storage::function::get_owner() const{
 	return owner_;
 }
 

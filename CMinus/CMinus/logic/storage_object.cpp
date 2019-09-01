@@ -1,4 +1,4 @@
-#include "function_group.h"
+#include "../declaration/function_declaration_group.h"
 
 cminus::logic::storage::exception::exception(error_code code)
 	: base_type("Storage Exception"), code_(code){}
@@ -19,7 +19,7 @@ void cminus::logic::storage::object::add(logic::runtime &runtime, const std::str
 		throw exception(error_code::duplicate_entry);
 }
 
-void cminus::logic::storage::object::add_function(logic::runtime &runtime, std::shared_ptr<logic::function_object> entry){
+void cminus::logic::storage::object::add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry){
 	if (!validate_(*entry))
 		throw logic::exception("Cannot add function of unrelated storage", 0u, 0u);
 
@@ -32,11 +32,11 @@ void cminus::logic::storage::object::add_function(logic::runtime &runtime, std::
 		if (block == nullptr || block->get_address() == 0u)
 			throw memory::exception(memory::error_code::allocation_failure, 0u);
 
-		auto group = std::make_shared<logic::function_group>(name, this);
+		auto group = std::make_shared<declaration::function_group>(name, this);
 		if (group == nullptr)
 			throw memory::exception(memory::error_code::allocation_failure, 0u);
 
-		block->write_scalar<logic::function_group_base *>(0u, group.get());
+		block->write_scalar<declaration::function_group_base *>(0u, group.get());
 		block->set_attributes(block->get_attributes() | memory::block::attribute_write_protected);
 
 		group->add(entry);
@@ -99,13 +99,12 @@ std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::objec
 	return nullptr;
 }
 
-bool cminus::logic::storage::object::validate_(const logic::function_object &target) const{
+bool cminus::logic::storage::object::validate_(const declaration::function_base &target) const{
 	return (target.get_naming_parent() == this);
 }
 
-void cminus::logic::storage::object::extend_function_group_(logic::runtime &runtime, logic::function_group &group, std::shared_ptr<logic::function_object> entry){
-	auto function_type = entry->get_computed_type();
-	if (auto existing_function = group.find(runtime, *function_type); existing_function != nullptr){//Function previously declared or defined
+void cminus::logic::storage::object::extend_function_group_(logic::runtime &runtime, declaration::function_group_base &group, std::shared_ptr<declaration::function_base> entry){
+	if (auto existing_function = group.find(runtime, *entry); existing_function != nullptr){//Function previously declared or defined
 		if (!existing_function->is_defined() && entry->is_defined())
 			existing_function->define(entry->get_body());
 		else//Duplicate declaration or definition
@@ -132,7 +131,7 @@ void cminus::logic::storage::proxy::add(logic::runtime &runtime, const std::stri
 	target_.add(runtime, name, entry);
 }
 
-void cminus::logic::storage::proxy::add_function(logic::runtime &runtime, std::shared_ptr<logic::function_object> entry){
+void cminus::logic::storage::proxy::add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry){
 	target_.add_function(runtime, entry);
 }
 

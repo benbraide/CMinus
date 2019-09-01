@@ -12,10 +12,14 @@
 namespace cminus::memory{
 	class reference{
 	public:
-		using attribute_list_type = std::vector<std::shared_ptr<logic::attributes::object>>;
-		using optimised_attribute_list_type = std::unordered_map<logic::attributes::object *, std::shared_ptr<logic::attributes::object>>;
+		using attribute_list_type = logic::attributes::collection::list_type;
+		using optimised_attribute_list_type = logic::attributes::collection::optimised_list_type;
 
 		reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		reference(std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		reference(std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context);
 
 		virtual ~reference();
 
@@ -39,11 +43,11 @@ namespace cminus::memory{
 
 		virtual std::shared_ptr<logic::attributes::object> find_attribute(const logic::naming::object &name, bool include_context) const;
 
-		virtual const optimised_attribute_list_type get_attributes() const;
-
 		virtual bool has_attribute(const std::string &name, bool global_only, bool include_context) const;
 
 		virtual bool has_attribute(const logic::naming::object &name, bool include_context) const;
+
+		virtual const logic::attributes::collection &get_attributes() const;
 
 		virtual void traverse_attributes(logic::runtime &runtime, const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage, bool include_context) const;
 
@@ -115,7 +119,7 @@ namespace cminus::memory{
 
 	protected:
 		std::shared_ptr<type::object> type_;
-		optimised_attribute_list_type attributes_;
+		logic::attributes::collection attributes_;
 		std::shared_ptr<reference> context_;
 		std::size_t size_ = 0u;
 	};
@@ -123,6 +127,10 @@ namespace cminus::memory{
 	class placeholder_reference : public reference{
 	public:
 		placeholder_reference(std::size_t relative_offset, std::shared_ptr<type::object> type, const attribute_list_type &attributes);
+
+		placeholder_reference(std::size_t relative_offset, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes);
+
+		placeholder_reference(std::size_t relative_offset, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes);
 
 		placeholder_reference(std::size_t relative_offset, std::shared_ptr<type::object> type);
 
@@ -170,9 +178,17 @@ namespace cminus::memory{
 	public:
 		lval_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
 
+		lval_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		lval_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context);
+
 		lval_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, std::shared_ptr<reference> context);
 
 		lval_reference(std::size_t address, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		lval_reference(std::size_t address, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		lval_reference(std::size_t address, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context);
 
 		lval_reference(std::size_t address, std::shared_ptr<type::object> type, std::shared_ptr<reference> context);
 
@@ -217,6 +233,10 @@ namespace cminus::memory{
 	public:
 		ref_reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
 
+		ref_reference(std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		ref_reference(std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context);
+
 		ref_reference(std::shared_ptr<type::object> type, std::shared_ptr<reference> context);
 
 		virtual ~ref_reference();
@@ -227,6 +247,10 @@ namespace cminus::memory{
 	class rval_reference : public reference{
 	public:
 		rval_reference(std::byte *data, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		rval_reference(std::byte *data, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		rval_reference(std::byte *data, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context);
 
 		rval_reference(std::byte *data, std::shared_ptr<type::object> type, std::shared_ptr<reference> context);
 
@@ -268,6 +292,10 @@ namespace cminus::memory{
 	public:
 		data_reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
 
+		data_reference(std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		data_reference(std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context);
+
 		data_reference(std::shared_ptr<type::object> type, std::shared_ptr<reference> context);
 
 		virtual ~data_reference();
@@ -284,10 +312,22 @@ namespace cminus::memory{
 		scalar_reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context, const m_value_type &value)
 			: rval_reference(reinterpret_cast<std::byte *>(&value_), type, attributes, context), value_(value){}
 
+		scalar_reference(std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context, const m_value_type &value)
+			: rval_reference(reinterpret_cast<std::byte *>(&value_), type, attributes, context), value_(value){}
+
+		scalar_reference(std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context, const m_value_type &value)
+			: rval_reference(reinterpret_cast<std::byte *>(&value_), type, attributes, context), value_(value){}
+
 		scalar_reference(std::shared_ptr<type::object> type, std::shared_ptr<reference> context, const m_value_type &value)
 			: scalar_reference(type, attribute_list_type{}, context, value){}
 
 		scalar_reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context, m_value_type &&value)
+			: rval_reference(reinterpret_cast<std::byte *>(&value_), type, attributes, context), value_(std::move(value)){}
+
+		scalar_reference(std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context, m_value_type &&value)
+			: rval_reference(reinterpret_cast<std::byte *>(&value_), type, attributes, context), value_(std::move(value)){}
+
+		scalar_reference(std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context, m_value_type &&value)
 			: rval_reference(reinterpret_cast<std::byte *>(&value_), type, attributes, context), value_(std::move(value)){}
 
 		scalar_reference(std::shared_ptr<type::object> type, std::shared_ptr<reference> context, m_value_type &&value)

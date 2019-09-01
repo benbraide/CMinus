@@ -1,5 +1,4 @@
 #include "pointer_type.h"
-#include "function_type.h"
 #include "primitive_type.h"
 #include "class_type.h"
 

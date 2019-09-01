@@ -3,9 +3,9 @@
 #include "../node/node_object.h"
 #include "../memory/memory_reference.h"
 
-namespace cminus::logic{
-	class function_object;
-	class function_group;
+namespace cminus::declaration{
+	class function_base;
+	class function_group_base;
 }
 
 namespace cminus::logic::storage{
@@ -33,7 +33,7 @@ namespace cminus::logic::storage{
 
 		struct function_group_info{
 			std::size_t address;
-			std::shared_ptr<logic::function_group> value;
+			std::shared_ptr<declaration::function_group_base> value;
 		};
 
 		explicit object(const std::string &value, object *parent = nullptr);
@@ -42,7 +42,7 @@ namespace cminus::logic::storage{
 
 		virtual void add(logic::runtime &runtime, const std::string &name, std::shared_ptr<memory::reference> entry);
 
-		virtual void add_function(logic::runtime &runtime, std::shared_ptr<logic::function_object> entry);
+		virtual void add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry);
 
 		virtual void remove(const std::string &name);
 
@@ -53,9 +53,9 @@ namespace cminus::logic::storage{
 		virtual std::shared_ptr<attributes::object> find_attribute(const std::string &name, bool search_tree, const object **branch = nullptr) const;
 
 	protected:
-		virtual bool validate_(const logic::function_object &target) const;
+		virtual bool validate_(const declaration::function_base &target) const;
 
-		virtual void extend_function_group_(logic::runtime &runtime, logic::function_group &group, std::shared_ptr<logic::function_object> entry);
+		virtual void extend_function_group_(logic::runtime &runtime, declaration::function_group_base &group, std::shared_ptr<declaration::function_base> entry);
 
 		std::unordered_map<std::string, std::shared_ptr<memory::reference>> entries_;
 		std::unordered_map<std::string, function_group_info> function_groups_;
@@ -74,7 +74,7 @@ namespace cminus::logic::storage{
 
 		virtual void add(logic::runtime &runtime, const std::string &name, std::shared_ptr<memory::reference> entry) override;
 
-		virtual void add_function(logic::runtime &runtime, std::shared_ptr<logic::function_object> entry) override;
+		virtual void add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry) override;
 
 		virtual void remove(const std::string &name) override;
 

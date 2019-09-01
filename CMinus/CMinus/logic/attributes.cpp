@@ -62,6 +62,120 @@ void cminus::logic::attributes::object::handle_before_ref_assign_(logic::runtime
 		throw logic::exception(("'" + get_qualified_naming_value() + "' attribute is required on reference destination!"), 0u, 0u);
 }
 
+cminus::logic::attributes::collection::collection() = default;
+
+cminus::logic::attributes::collection::collection(const list_type &list){
+	for (auto entry : list)
+		list_[entry.get()] = entry;
+}
+
+cminus::logic::attributes::collection::collection(const optimised_list_type &list)
+	: list_(list){}
+
+cminus::logic::attributes::collection::collection(optimised_list_type &&list)
+	: list_(std::move(list)){}
+
+void cminus::logic::attributes::collection::add(std::shared_ptr<object> value){
+	list_[value.get()] = value;
+}
+
+void cminus::logic::attributes::collection::remove(const std::string &name, bool global_only){
+	if (list_.empty())
+		return;
+
+	for (auto it = list_.begin(); it != list_.end(); ++it){
+		if ((it->first->get_naming_parent() == nullptr) == global_only && it->first->get_naming_value() == name){
+			list_.erase(it);
+			break;
+		}
+	}
+}
+
+void cminus::logic::attributes::collection::remove(const logic::naming::object &name){
+	if (list_.empty())
+		return;
+
+	for (auto it = list_.begin(); it != list_.end(); ++it){
+		if (it->first->is_same(name)){
+			list_.erase(it);
+			break;
+		}
+	}
+}
+
+std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::collection::find(const std::string &name, bool global_only) const{
+	if (list_.empty())
+		return nullptr;
+
+	for (auto &entry : list_){
+		if ((entry.first->get_naming_parent() == nullptr) == global_only && entry.first->get_naming_value() == name)
+			return entry.second;
+	}
+
+	return nullptr;
+}
+
+std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::collection::find(const logic::naming::object &name) const{
+	if (list_.empty())
+		return nullptr;
+
+	for (auto &entry : list_){
+		if (entry.first->is_same(name))
+			return entry.second;
+	}
+
+	return nullptr;
+}
+
+bool cminus::logic::attributes::collection::has(const std::string &name, bool global_only) const{
+	return (find(name, global_only) != nullptr);
+}
+
+bool cminus::logic::attributes::collection::has(const naming::object &name) const{
+	return (find(name) != nullptr);
+}
+
+const cminus::logic::attributes::collection::optimised_list_type &cminus::logic::attributes::collection::get_list() const{
+	return list_;
+}
+
+void cminus::logic::attributes::collection::traverse(logic::runtime &runtime, const std::function<void(std::shared_ptr<object>)> &callback, object::stage_type stage) const{
+	for (auto &entry : list_){
+		if (stage == logic::attributes::object::stage_type::nil || entry.first->handles_stage(runtime, stage))
+			callback(entry.second);
+	}
+}
+
+void cminus::logic::attributes::collection::call(logic::runtime &runtime, object::stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	for (auto &entry : list_){
+		if (stage == logic::attributes::object::stage_type::nil || entry.first->handles_stage(runtime, stage))
+			entry.second->call(runtime, stage, target, args);
+	}
+}
+
+void cminus::logic::attributes::collection::call(logic::runtime &runtime, object::stage_type stage, std::shared_ptr<memory::reference> target) const{
+	call(runtime, stage, target, std::vector<std::shared_ptr<memory::reference>>{});
+}
+
+void cminus::logic::attributes::collection::print(logic::runtime &runtime) const{
+	if (list_.empty())
+		return;
+
+	runtime.writer.write_scalar('[');
+	auto is_first = true;
+
+	for (auto &entry : list_){
+		if (!is_first)
+			runtime.writer.write_scalar(', ');
+		else
+			is_first = false;
+
+		entry.second->print(runtime, true);
+	}
+
+	runtime.writer.write_scalar(']');
+}
+
 cminus::logic::attributes::pointer_object::pointer_object(std::shared_ptr<object> target)
 	: object(("&" + target->get_naming_value()), target->get_naming_parent()), target_(target){}
 

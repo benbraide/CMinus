@@ -1,7 +1,6 @@
-#include "../logic/function_group.h"
+#include "../declaration/function_declaration_group.h"
 
 #include "pointer_type.h"
-#include "function_type.h"
 
 cminus::type::primitive::primitive(id_type id)
 	: named_object(convert_id_to_string(id), nullptr), id_(id){}
@@ -136,9 +135,6 @@ cminus::type::object::score_result_type cminus::type::primitive::get_score(logic
 
 		if (id_ == id_type::nullptr_ && dynamic_cast<const pointer *>(&target) != nullptr)
 			return score_result_type::assignable;
-
-		if (id_ == id_type::function && dynamic_cast<const function *>(&target) != nullptr)
-			return score_result_type::assignable;
 	}
 
 	if (type_target->id_ == id_)
@@ -229,18 +225,7 @@ std::shared_ptr<cminus::memory::reference> cminus::type::primitive::cast(logic::
 		if (id_ == id_type::nullptr_ && pointer_target_type != nullptr && (type == cast_type::static_ || type == cast_type::rval_static))
 			return std::make_shared<memory::scalar_reference<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
 
-		if (id_ == id_type::function && (type == cast_type::static_ || type == cast_type::rval_static)){
-			if (dynamic_cast<const function *>(target_type.get()) == nullptr)
-				return nullptr;
-
-			auto entry = data->read_scalar<logic::function_object *>(runtime)->find(runtime, *target_type);
-			if (entry == nullptr)//Entry not found
-				return nullptr;
-
-			return std::make_shared<memory::scalar_reference<logic::function_group_base *>>(target_type, nullptr, entry.get());
-		}
-
-		if (is_integral() && type == cast_type::reinterpret && (pointer_target_type != nullptr || dynamic_cast<function *>(target_type.get()) != nullptr)){
+		if (type == cast_type::reinterpret && pointer_target_type != nullptr && is_integral()){
 			if (data->find_attribute("#NaN#", true, false) != nullptr)
 				return std::make_shared<memory::scalar_reference<unsigned __int64>>(target_type, nullptr, 0ui64);
 			return std::make_shared<memory::scalar_reference<unsigned __int64>>(target_type, nullptr, cast_integral<unsigned __int64>(runtime, *data));
