@@ -3,6 +3,11 @@
 #include "../node/node_object.h"
 #include "../memory/memory_reference.h"
 
+namespace cminus::logic{
+	class function_object;
+	class function_group;
+}
+
 namespace cminus::logic::storage{
 	enum class error_code{
 		nil,
@@ -26,22 +31,34 @@ namespace cminus::logic::storage{
 	public:
 		using parent_base_type = naming::parent;
 
+		struct function_group_info{
+			std::size_t address;
+			std::shared_ptr<logic::function_group> value;
+		};
+
 		explicit object(const std::string &value, object *parent = nullptr);
 
 		virtual ~object();
 
-		virtual void add(const std::string &name, std::shared_ptr<memory::reference> entry);
+		virtual void add(logic::runtime &runtime, const std::string &name, std::shared_ptr<memory::reference> entry);
+
+		virtual void add_function(logic::runtime &runtime, std::shared_ptr<logic::function_object> entry);
 
 		virtual void remove(const std::string &name);
 
-		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch = nullptr) const;
+		virtual bool exists(const std::string &name) const;
 
-		virtual std::shared_ptr<memory::reference> find_existing(const std::string &name) const;
+		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch = nullptr) const;
 
 		virtual std::shared_ptr<attributes::object> find_attribute(const std::string &name, bool search_tree, const object **branch = nullptr) const;
 
 	protected:
+		virtual bool validate_(const logic::function_object &target) const;
+
+		virtual void extend_function_group_(logic::runtime &runtime, logic::function_group &group, std::shared_ptr<logic::function_object> entry);
+
 		std::unordered_map<std::string, std::shared_ptr<memory::reference>> entries_;
+		std::unordered_map<std::string, function_group_info> function_groups_;
 		std::unordered_map<std::string, std::shared_ptr<attributes::object>> attributes_;
 	};
 
@@ -55,9 +72,13 @@ namespace cminus::logic::storage{
 
 		virtual bool is_same(const naming::object &target) const override;
 
-		virtual void add(const std::string &name, std::shared_ptr<memory::reference> entry) override;
+		virtual void add(logic::runtime &runtime, const std::string &name, std::shared_ptr<memory::reference> entry) override;
+
+		virtual void add_function(logic::runtime &runtime, std::shared_ptr<logic::function_object> entry) override;
 
 		virtual void remove(const std::string &name) override;
+
+		virtual bool exists(const std::string &name) const override;
 
 		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch = nullptr) const override;
 

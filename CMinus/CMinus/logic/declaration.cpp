@@ -43,7 +43,7 @@ void cminus::logic::declaration::evaluate(logic::runtime &runtime, std::shared_p
 
 	//reference->add_attribute(runtime.global_storage->find_attribute("#LVal#", false));
 
-	runtime.current_storage->add(name_, reference);
+	runtime.current_storage->add(runtime, name_, reference);
 	if (reference->find_attribute("Static", true, false) != nullptr)
 		static_value_ = reference;
 }

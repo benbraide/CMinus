@@ -2,6 +2,10 @@
 
 #include "runtime.h"
 
+namespace cminus::logic{
+	class function_object;
+}
+
 namespace cminus::logic::storage{
 	class specialized : public object{
 	public:
@@ -34,13 +38,15 @@ namespace cminus::logic::storage{
 
 		virtual ~double_layer();
 
-		virtual void add(const std::string &name, std::shared_ptr<memory::reference> entry) override;
+		virtual void add(logic::runtime &runtime, const std::string &name, std::shared_ptr<memory::reference> entry) override;
+
+		virtual void add_function(logic::runtime &runtime, std::shared_ptr<logic::function_object> entry) override;
 
 		virtual void remove(const std::string &name) override;
 
-		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch = nullptr) const override;
+		virtual bool exists(const std::string &name) const override;
 
-		virtual std::shared_ptr<memory::reference> find_existing(const std::string &name) const;
+		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch = nullptr) const override;
 
 		virtual void refresh();
 
@@ -52,9 +58,7 @@ namespace cminus::logic::storage{
 
 	class function : public specialized{
 	public:
-		function(const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<memory::reference> context, object *parent = nullptr);
-
-		function(std::vector<std::shared_ptr<attributes::object>> &&attributes, std::shared_ptr<memory::reference> context, object *parent = nullptr);
+		function(const logic::function_object &owner, std::shared_ptr<memory::reference> context, object *parent = nullptr);
 
 		virtual ~function();
 
@@ -64,11 +68,13 @@ namespace cminus::logic::storage{
 
 		virtual void add_unnamed(std::shared_ptr<memory::reference> entry);
 
+		virtual const logic::function_object &get_owner() const;
+
 	protected:
 		virtual bool interrupt_is_valid_(interrupt_type value) const override;
 
+		const logic::function_object &owner_;
 		std::shared_ptr<memory::reference> context_;
-		std::vector<std::shared_ptr<attributes::object>> attributes_;
 		std::unordered_map<memory::reference *, std::shared_ptr<memory::reference>> unnamed_entries_;
 	};
 

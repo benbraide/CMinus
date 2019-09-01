@@ -7,7 +7,22 @@
 #include "specialized_storage.h"
 
 namespace cminus::logic{
-	class function_object : public naming::single{
+	class function_group_base{
+	public:
+		virtual ~function_group_base() = default;
+
+		virtual void add(std::shared_ptr<function_object> value) = 0;
+
+		virtual void replace(function_object &existing_entry, std::shared_ptr<function_object> new_entry) = 0;
+
+		virtual std::shared_ptr<function_object> find(logic::runtime &runtime, const type::object &type) const = 0;
+
+		virtual std::shared_ptr<function_object> get_highest_ranked(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const = 0;
+
+		virtual std::shared_ptr<memory::reference> call(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const = 0;
+	};
+
+	class function_object : public naming::single, public function_group_base, public std::enable_shared_from_this<function_object>{
 	public:
 		function_object(std::string name, naming::parent *parent, const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<declaration> return_declaration, const std::vector<std::shared_ptr<declaration>> &params, std::shared_ptr<node::object> body);
 
@@ -15,9 +30,17 @@ namespace cminus::logic{
 
 		virtual ~function_object();
 
-		virtual type::object::score_result_type get_rank(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const;
+		virtual void add(std::shared_ptr<function_object> value) override;
 
-		virtual std::shared_ptr<memory::reference> call(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const;
+		virtual void replace(function_object &existing_entry, std::shared_ptr<function_object> new_entry) override;
+
+		virtual std::shared_ptr<function_object> find(logic::runtime &runtime, const type::object &type) const override;
+
+		virtual std::shared_ptr<function_object> get_highest_ranked(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const override;
+
+		virtual std::shared_ptr<memory::reference> call(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const override;
+
+		virtual type::object::score_result_type get_rank(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const;
 
 		virtual void print(logic::runtime &runtime) const;
 
@@ -40,6 +63,8 @@ namespace cminus::logic{
 		virtual std::size_t get_max_arg_count() const;
 
 	protected:
+		friend class function_group;
+
 		void compute_values_();
 
 		virtual void print_attributes_(logic::runtime &runtime) const;

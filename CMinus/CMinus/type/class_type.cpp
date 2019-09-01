@@ -139,10 +139,6 @@ bool cminus::type::class_::add_base(logic::runtime &runtime, access_type access,
 	return true;
 }
 
-bool cminus::type::class_::add_function(logic::runtime &runtime, access_type access, std::shared_ptr<logic::function_object> value){
-	return false;
-}
-
 bool cminus::type::class_::add_declaration(logic::runtime &runtime, access_type access, std::shared_ptr<logic::declaration> value){
 	if (entries_.find(value->get_name()) != entries_.end())
 		return false;
@@ -198,4 +194,28 @@ bool cminus::type::class_::is_base(const type::object &target) const{
 	}
 
 	return false;
+}
+
+bool cminus::type::class_::validate_(const logic::function_object &target) const{
+	if (with_storage::validate_(target))
+		return true;
+
+	if (auto class_parent = dynamic_cast<class_ *>(target.get_naming_parent()); class_parent != nullptr && is_ancestor(*class_parent))
+		return true;
+
+	return false;
+}
+
+void cminus::type::class_::extend_function_group_(logic::runtime &runtime, logic::function_group &group, std::shared_ptr<logic::function_object> entry){
+	auto function_type = entry->get_computed_type();
+	if (auto existing_function = group.find(runtime, *function_type); existing_function != nullptr){//Function previously declared or defined
+		if (auto class_parent = dynamic_cast<class_ *>(existing_function->get_naming_parent()); class_parent != nullptr && is_ancestor(*class_parent))//Override
+			group.replace(*existing_function, entry);
+		else if (!existing_function->is_defined() && entry->is_defined())
+			existing_function->define(entry->get_body());
+		else//Duplicate declaration or definition
+			throw logic::storage::exception(logic::storage::error_code::duplicate_entry);
+	}
+	else//New entry
+		group.add(entry);
 }

@@ -1,4 +1,4 @@
-#include "function.h"
+#include "function_object.h"
 
 cminus::logic::function_object::function_object(std::string name, naming::parent *parent, const std::vector<std::shared_ptr<attributes::object>> &attributes, std::shared_ptr<declaration> return_declaration, const std::vector<std::shared_ptr<declaration>> &params, std::shared_ptr<node::object> body)
 	: single(name, parent), attributes_(attributes), return_declaration_(return_declaration), params_(params), body_(body){
@@ -11,6 +11,26 @@ cminus::logic::function_object::function_object(std::string name, naming::parent
 }
 
 cminus::logic::function_object::~function_object() = default;
+
+void cminus::logic::function_object::add(std::shared_ptr<function_object> value){
+	throw logic::exception("Cannot add function to a non-group object", 0u, 0u);
+}
+
+void cminus::logic::function_object::replace(function_object &existing_entry, std::shared_ptr<function_object> new_entry){}
+
+std::shared_ptr<cminus::logic::function_object> cminus::logic::function_object::find(logic::runtime &runtime, const type::object &type) const{
+	return (computed_type_->is_exact(runtime, type) ? const_cast<function_object *>(this)->shared_from_this() : nullptr);
+}
+
+std::shared_ptr<cminus::logic::function_object> cminus::logic::function_object::get_highest_ranked(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	return ((get_rank(runtime, args) == type::object::score_result_type::nil) ? nullptr : const_cast<function_object *>(this)->shared_from_this());
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::function_object::call(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	if (get_rank(runtime, args) == type::object::score_result_type::nil)
+		throw exception("Function does not take the specified arguments", 0u, 0u);
+	return call_(runtime, context, args);
+}
 
 cminus::type::object::score_result_type cminus::logic::function_object::get_rank(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const{
 	if (args.size() < min_arg_count_ || max_arg_count_ < args.size())
@@ -67,12 +87,6 @@ cminus::type::object::score_result_type cminus::logic::function_object::get_rank
 		return type::object::score_result_type::nil;
 
 	return lowest_rank;
-}
-
-std::shared_ptr<cminus::memory::reference> cminus::logic::function_object::call(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const{
-	if (get_rank(runtime, args) == type::object::score_result_type::nil)
-		throw exception("Function does not take the specified arguments", 0u, 0u);
-	return call_(runtime, context, args);
 }
 
 void cminus::logic::function_object::print(logic::runtime &runtime) const{
@@ -220,7 +234,7 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::function_object::call_
 		throw exception("A member function requires a context", 0u, 0u);
 
 	std::shared_ptr<memory::reference> return_value;
-	storage::runtime_storage_guard guard(runtime, std::make_shared<storage::function>(attributes_, context, dynamic_cast<storage::object *>(parent_)));
+	storage::runtime_storage_guard guard(runtime, std::make_shared<storage::function>(*this, context, dynamic_cast<storage::object *>(parent_)));
 
 	try{
 		copy_args_(runtime, args);

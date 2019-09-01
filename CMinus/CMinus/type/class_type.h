@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../logic/function.h"
+#include "../logic/function_group.h"
 
 #include "type_with_storage.h"
 
@@ -53,8 +53,6 @@ namespace cminus::type{
 
 		virtual bool add_base(logic::runtime &runtime, access_type access, std::shared_ptr<type::object> value);
 
-		virtual bool add_function(logic::runtime &runtime, access_type access, std::shared_ptr<logic::function_object> value);
-
 		virtual bool add_declaration(logic::runtime &runtime, access_type access, std::shared_ptr<logic::declaration> value);
 
 		virtual relationship_type get_relationship(const type::object &target) const;
@@ -64,6 +62,10 @@ namespace cminus::type{
 		virtual bool is_base(const type::object &target) const;
 
 	protected:
+		virtual bool validate_(const logic::function_object &target) const override;
+
+		virtual void extend_function_group_(logic::runtime &runtime, logic::function_group &group, std::shared_ptr<logic::function_object> entry) override;
+
 		std::size_t size_ = sizeof(void *);
 		std::unordered_map<std::string, base_type_info> base_types_;
 		std::shared_ptr<logic::storage::object> this_storage_;
