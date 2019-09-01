@@ -1,4 +1,4 @@
-#include "../logic/runtime.h"
+#include "../logic/function_group.h"
 
 #include "pointer_type.h"
 #include "function_type.h"
@@ -7,6 +7,10 @@ cminus::type::primitive::primitive(id_type id)
 	: named_object(convert_id_to_string(id), nullptr), id_(id){}
 
 cminus::type::primitive::~primitive() = default;
+
+bool cminus::type::primitive::is_auto() const{
+	return (id_ == id_type::auto_);
+}
 
 void cminus::type::primitive::print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const{
 	if ((is_integral() || is_floating_point()) && data->find_attribute("#NaN#", true, false) != nullptr){
@@ -132,6 +136,9 @@ cminus::type::object::score_result_type cminus::type::primitive::get_score(logic
 
 		if (id_ == id_type::nullptr_ && dynamic_cast<const pointer *>(&target) != nullptr)
 			return score_result_type::assignable;
+
+		if (id_ == id_type::function && dynamic_cast<const function *>(&target) != nullptr)
+			return score_result_type::assignable;
 	}
 
 	if (type_target->id_ == id_)
@@ -222,6 +229,17 @@ std::shared_ptr<cminus::memory::reference> cminus::type::primitive::cast(logic::
 		if (id_ == id_type::nullptr_ && pointer_target_type != nullptr && (type == cast_type::static_ || type == cast_type::rval_static))
 			return std::make_shared<memory::scalar_reference<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
 
+		if (id_ == id_type::function && (type == cast_type::static_ || type == cast_type::rval_static)){
+			if (dynamic_cast<const function *>(target_type.get()) == nullptr)
+				return nullptr;
+
+			auto entry = data->read_scalar<logic::function_object *>(runtime)->find(runtime, *target_type);
+			if (entry == nullptr)//Entry not found
+				return nullptr;
+
+			return std::make_shared<memory::scalar_reference<logic::function_group_base *>>(target_type, nullptr, entry.get());
+		}
+
 		if (is_integral() && type == cast_type::reinterpret && (pointer_target_type != nullptr || dynamic_cast<function *>(target_type.get()) != nullptr)){
 			if (data->find_attribute("#NaN#", true, false) != nullptr)
 				return std::make_shared<memory::scalar_reference<unsigned __int64>>(target_type, nullptr, 0ui64);
@@ -231,8 +249,40 @@ std::shared_ptr<cminus::memory::reference> cminus::type::primitive::cast(logic::
 		return nullptr;
 	}
 
-	if (type == cast_type::reinterpret)
+	if (type == cast_type::reinterpret){
+		if (id_ == id_type::function){
+			switch (primitive_target_type->id_){
+			case id_type::int8_:
+				return std::make_shared<memory::scalar_reference<__int8>>(target_type, nullptr, static_cast<__int8>(data->read_scalar<unsigned __int64>(runtime)));
+			case id_type::uint8_:
+				return std::make_shared<memory::scalar_reference<unsigned __int8>>(target_type, nullptr, static_cast<unsigned __int8>(data->read_scalar<unsigned __int64>(runtime)));
+			case id_type::int16_:
+				return std::make_shared<memory::scalar_reference<__int16>>(target_type, nullptr, static_cast<__int16>(data->read_scalar<unsigned __int64>(runtime)));
+			case id_type::uint16_:
+				return std::make_shared<memory::scalar_reference<unsigned __int16>>(target_type, nullptr, static_cast<unsigned __int16>(data->read_scalar<unsigned __int64>(runtime)));
+			case id_type::int32_:
+				return std::make_shared<memory::scalar_reference<__int32>>(target_type, nullptr, static_cast<__int32>(data->read_scalar<unsigned __int64>(runtime)));
+			case id_type::uint32_:
+				return std::make_shared<memory::scalar_reference<unsigned __int32>>(target_type, nullptr, static_cast<unsigned __int32>(data->read_scalar<unsigned __int64>(runtime)));
+			case id_type::int64_:
+				return std::make_shared<memory::scalar_reference<__int64>>(target_type, nullptr, static_cast<__int64>(data->read_scalar<unsigned __int64>(runtime)));
+			case id_type::uint64_:
+				return std::make_shared<memory::scalar_reference<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
+			default:
+				break;
+			}
+			
+			return nullptr;
+		}
+
+		if (is_integral() && primitive_target_type->id_ == id_type::function){
+			if (data->find_attribute("#NaN#", true, false) != nullptr)
+				return std::make_shared<memory::scalar_reference<unsigned __int64>>(target_type, nullptr, 0ui64);
+			return std::make_shared<memory::scalar_reference<unsigned __int64>>(target_type, nullptr, cast_integral<unsigned __int64>(runtime, *data));
+		}
+
 		return nullptr;
+	}
 
 	if (primitive_target_type->id_ == id_){//Same type
 		if (type != cast_type::static_)
@@ -285,8 +335,11 @@ std::shared_ptr<cminus::memory::reference> cminus::type::primitive::cast(logic::
 			break;
 		}
 	}
-	catch (...){
-		value = nullptr;
+	catch (const memory::exception &e){
+		if (e.get_code() == memory::error_code::incompatible_types)
+			value = nullptr;
+		else//Forward
+			throw;
 	}
 
 	if (value == nullptr)
@@ -397,6 +450,12 @@ cminus::type::primitive::id_type cminus::type::primitive::convert_string_to_id(c
 	if (value == "void")
 		return id_type::void_;
 
+	if (value == "function_t")
+		return id_type::function;
+
+	if (value == "auto")
+		return id_type::auto_;
+
 	return id_type::nil;
 }
 
@@ -442,6 +501,10 @@ std::string cminus::type::primitive::convert_id_to_string(id_type value){
 		return "nan_t";
 	case id_type::void_:
 		return "void";
+	case id_type::function:
+		return "function_t";
+	case id_type::auto_:
+		return "auto";
 	default:
 		break;
 	}

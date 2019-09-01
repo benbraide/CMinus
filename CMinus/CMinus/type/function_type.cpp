@@ -1,4 +1,4 @@
-#include "function_type.h"
+#include "../logic/function_group.h"
 
 cminus::type::function::function(const type_info &return_type, const std::vector<type_info> &parameter_types)
 	: return_type_(return_type), parameter_types_(parameter_types){}
@@ -37,8 +37,11 @@ std::size_t cminus::type::function::get_size() const{
 
 cminus::type::object::score_result_type cminus::type::function::get_score(logic::runtime &runtime, const object &target, bool is_ref) const{
 	auto type_target = dynamic_cast<const function *>(&target);
-	if (type_target == nullptr)//Check for pointer
+	if (type_target == nullptr){//Check for pointer
+		if (auto primitive_target_type = dynamic_cast<const primitive *>(&target); primitive_target_type != nullptr && primitive_target_type->get_id() == primitive::id_type::function)
+			return score_result_type::assignable;
 		return score_result_type::nil;
+	}
 
 	if ((return_type_.value == nullptr) != (type_target->return_type_.value == nullptr))
 		return score_result_type::nil;
@@ -62,14 +65,38 @@ std::shared_ptr<cminus::memory::reference> cminus::type::function::get_default_v
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::type::function::cast(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<object> target_type, cast_type type) const{
-	if ((type == cast_type::ref_static || type == cast_type::rval_static) && is_exact(runtime, *target_type))//Same type
-		return ((type == cast_type::reinterpret) ? nullptr : data);
+	if (type != cast_type::static_ && type != cast_type::ref_static && type != cast_type::rval_static && type != cast_type::reinterpret)
+		return nullptr;//Not supported
 
-	if (type != cast_type::reinterpret)
-		return nullptr;
+	auto function_target_type = dynamic_cast<function *>(target_type.get());
+	if (function_target_type != nullptr){
+		if (type == cast_type::reinterpret || !is_exact(runtime, *target_type))
+			return nullptr;
+
+		if (type == cast_type::static_)
+			return std::make_shared<memory::scalar_reference<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
+
+		return data;
+	}
 
 	auto primitive_target_type = dynamic_cast<const primitive *>(target_type.get());
 	if (primitive_target_type == nullptr)
+		return nullptr;
+
+	if (primitive_target_type->get_id() == primitive::id_type::function){
+		if (type == cast_type::reinterpret)
+			return nullptr;
+
+		if (type == cast_type::static_)
+			return std::make_shared<memory::scalar_reference<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
+
+		if ((data = data->apply_offset(0u)) != nullptr)
+			data->set_type(target_type);
+
+		return data;
+	}
+
+	if (type != cast_type::reinterpret)
 		return nullptr;
 
 	switch (primitive_target_type->get_id()){

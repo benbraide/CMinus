@@ -55,12 +55,12 @@ void cminus::memory::reference::remove_attribute(const std::string &name, bool g
 	}
 }
 
-void cminus::memory::reference::remove_attribute(std::shared_ptr<logic::naming::object> name){
+void cminus::memory::reference::remove_attribute(const logic::naming::object &name){
 	if (attributes_.empty())
 		return;
 
 	for (auto it = attributes_.begin(); it != attributes_.end(); ++it){
-		if (it->first->is_same(*name)){
+		if (it->first->is_same(name)){
 			attributes_.erase(it);
 			break;
 		}
@@ -79,12 +79,12 @@ std::shared_ptr<cminus::logic::attributes::object> cminus::memory::reference::fi
 	return ((include_context && context_ != nullptr) ? context_->find_attribute(name, global_only, true) : nullptr);
 }
 
-std::shared_ptr<cminus::logic::attributes::object> cminus::memory::reference::find_attribute(std::shared_ptr<logic::naming::object> name, bool include_context) const{
+std::shared_ptr<cminus::logic::attributes::object> cminus::memory::reference::find_attribute(const logic::naming::object &name, bool include_context) const{
 	if (attributes_.empty())
 		return nullptr;
 
 	for (auto &attribute : attributes_){
-		if (attribute.first->is_same(*name))
+		if (attribute.first->is_same(name))
 			return attribute.second;
 	}
 
@@ -93,6 +93,14 @@ std::shared_ptr<cminus::logic::attributes::object> cminus::memory::reference::fi
 
 const cminus::memory::reference::optimised_attribute_list_type cminus::memory::reference::get_attributes() const{
 	return attributes_;
+}
+
+bool cminus::memory::reference::has_attribute(const std::string &name, bool global_only, bool include_context) const{
+	return (find_attribute(name, global_only, include_context) != nullptr);
+}
+
+bool cminus::memory::reference::has_attribute(const logic::naming::object &name, bool include_context) const{
+	return (find_attribute(name, include_context) != nullptr);
 }
 
 void cminus::memory::reference::traverse_attributes(logic::runtime &runtime, const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage, bool include_context) const{

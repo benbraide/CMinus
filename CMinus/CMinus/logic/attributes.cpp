@@ -1,4 +1,4 @@
-#include "runtime.h"
+#include "../type/pointer_type.h"
 
 cminus::logic::attributes::object::object(const std::string &name, naming::parent *parent)
 	: single(name, parent){}
@@ -13,10 +13,6 @@ std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::ob
 	return nullptr;
 }
 
-bool cminus::logic::attributes::object::is_required_on_ref_destination(logic::runtime &runtime) const{
-	return false;
-}
-
 bool cminus::logic::attributes::object::is_included_in_comparison(logic::runtime &runtime) const{
 	return false;
 }
@@ -27,6 +23,43 @@ void cminus::logic::attributes::object::call(logic::runtime &runtime, stage_type
 
 void cminus::logic::attributes::object::call(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const{
 	return call_(runtime, stage, target, std::vector<std::shared_ptr<memory::reference>>{});
+}
+
+bool cminus::logic::attributes::object::prohibits_stage_(stage_type value) const{
+	return false;
+}
+
+std::string cminus::logic::attributes::object::get_default_message_() const{
+	return "Attribute error!";
+}
+
+void cminus::logic::attributes::object::throw_error_(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args, std::size_t message_index) const{
+	if (message_index < args.size()/* && args[message_index].IsStringType()*/)
+		throw logic::exception(""/*args[message_index].ReadString()*/, 0u, 0u);
+	else//Default message
+		throw logic::exception(get_default_message_(), 0u, 0u);
+}
+
+void cminus::logic::attributes::object::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	switch (stage){
+	case stage_type::before_ref_assign:
+		handle_before_ref_assign_(runtime, target, args);
+		break;
+	default:
+		handle_stage_(runtime, stage, target, args);
+		break;
+	}
+	
+}
+
+void cminus::logic::attributes::object::handle_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	if (prohibits_stage_(stage))
+		throw_error_(runtime, args, 0u);
+}
+
+void cminus::logic::attributes::object::handle_before_ref_assign_(logic::runtime &runtime, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	if (!args.empty() && handles_stage(runtime, stage_type::before_ref_assign) && !args[0]->has_attribute(*this, false))
+		throw logic::exception(("'" + get_qualified_naming_value() + "' attribute is required on reference destination!"), 0u, 0u);
 }
 
 cminus::logic::attributes::pointer_object::pointer_object(std::shared_ptr<object> target)
@@ -45,10 +78,6 @@ std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::po
 }
 
 bool cminus::logic::attributes::pointer_object::handles_stage(logic::runtime &runtime, stage_type value) const{
-	return false;
-}
-
-bool cminus::logic::attributes::pointer_object::is_required_on_ref_destination(logic::runtime &runtime) const{
 	return false;
 }
 
@@ -74,10 +103,6 @@ bool cminus::logic::attributes::bound_object::handles_stage(logic::runtime &runt
 	return target_->handles_stage(runtime, value);
 }
 
-bool cminus::logic::attributes::bound_object::is_required_on_ref_destination(logic::runtime &runtime) const{
-	return target_->is_required_on_ref_destination(runtime);
-}
-
 bool cminus::logic::attributes::bound_object::is_included_in_comparison(logic::runtime &runtime) const{
 	return target_->is_included_in_comparison(runtime);
 }
@@ -97,10 +122,10 @@ void cminus::logic::attributes::bound_object::call_(logic::runtime &runtime, sta
 	std::vector<std::shared_ptr<memory::reference>> combined_args;
 	combined_args.reserve(args_.size() + args.size());
 
-	for (auto arg : args_)
+	for (auto arg : args)
 		combined_args.push_back(arg);
 
-	for (auto arg : args)
+	for (auto arg : args_)
 		combined_args.push_back(arg);
 
 	return target_->call(runtime, stage, target, combined_args);
@@ -117,25 +142,19 @@ cminus::logic::attributes::read_only::read_only()
 cminus::logic::attributes::read_only::~read_only() = default;
 
 bool cminus::logic::attributes::read_only::handles_stage(logic::runtime &runtime, stage_type value) const{
-	return (value == stage_type::before_write);
-}
-
-bool cminus::logic::attributes::read_only::is_required_on_ref_destination(logic::runtime &runtime) const{
-	return true;
+	return (value == stage_type::before_ref_assign || value == stage_type::before_write);
 }
 
 bool cminus::logic::attributes::read_only::is_included_in_comparison(logic::runtime &runtime) const{
 	return true;
 }
 
-void cminus::logic::attributes::read_only::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
-	if (stage != stage_type::before_write)
-		return;
-	
-	if (args.size() == 1u/* && args[0].IsStringType()*/)
-		throw logic::exception(""/*args[0].ReadString()*/, 0u, 0u);
-	else//Default message
-		throw logic::exception("Cannot write to object. Object is read-only!", 0u, 0u);
+bool cminus::logic::attributes::read_only::prohibits_stage_(stage_type value) const{
+	return (value == stage_type::before_write);
+}
+
+std::string cminus::logic::attributes::read_only::get_default_message_() const{
+	return "Cannot write to object. Object is read-only!";
 }
 
 cminus::logic::attributes::write_only::write_only()
@@ -144,25 +163,19 @@ cminus::logic::attributes::write_only::write_only()
 cminus::logic::attributes::write_only::~write_only() = default;
 
 bool cminus::logic::attributes::write_only::handles_stage(logic::runtime &runtime, stage_type value) const{
-	return (value == stage_type::before_read);
-}
-
-bool cminus::logic::attributes::write_only::is_required_on_ref_destination(logic::runtime &runtime) const{
-	return true;
+	return (value == stage_type::before_ref_assign || value == stage_type::before_read);
 }
 
 bool cminus::logic::attributes::write_only::is_included_in_comparison(logic::runtime &runtime) const{
 	return true;
 }
 
-void cminus::logic::attributes::write_only::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
-	if (stage != stage_type::before_read)
-		return;
+bool cminus::logic::attributes::write_only::prohibits_stage_(stage_type value) const{
+	return (value == stage_type::before_read);
+}
 
-	if (args.size() == 1u/* && args[0].IsStringType()*/)
-		throw logic::exception(""/*args[0].ReadString()*/, 0u, 0u);
-	else//Default message
-		throw logic::exception("Cannot read to object. Object is write-only!", 0u, 0u);
+std::string cminus::logic::attributes::write_only::get_default_message_() const{
+	return "Cannot read to object. Object is write-only!";
 }
 
 cminus::logic::attributes::not_null::not_null()
@@ -171,23 +184,24 @@ cminus::logic::attributes::not_null::not_null()
 cminus::logic::attributes::not_null::~not_null() = default;
 
 bool cminus::logic::attributes::not_null::handles_stage(logic::runtime &runtime, stage_type value) const{
-	return (value == stage_type::before_write);
-}
-
-bool cminus::logic::attributes::not_null::is_required_on_ref_destination(logic::runtime &runtime) const{
-	return true;
+	return (value == stage_type::after_uninitialized_declaration || value == stage_type::before_ref_assign || value == stage_type::after_write);
 }
 
 bool cminus::logic::attributes::not_null::is_included_in_comparison(logic::runtime &runtime) const{
 	return true;
 }
 
-void cminus::logic::attributes::not_null::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
-	if (stage != stage_type::before_write || args.size() < 1u/* || !target->get_type()->IsPointer() || !args[0]->IsNull*/)
-		return;
+bool cminus::logic::attributes::not_null::prohibits_stage_(stage_type value) const{
+	return (value == stage_type::after_uninitialized_declaration);
+}
 
-	if (args.size() == 2u/* && args[1].IsStringType()*/)
-		throw logic::exception(""/*args[1].ReadString()*/, 0u, 0u);
-	else//Default message
-		throw logic::exception("Cannot write null value to object!", 0u, 0u);
+std::string cminus::logic::attributes::not_null::get_default_message_() const{
+	return "Cannot write null value to object!";
+}
+
+void cminus::logic::attributes::not_null::handle_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	if (stage == stage_type::after_write && dynamic_cast<type::pointer *>(target->get_type().get()) != nullptr && target->read_scalar<unsigned __int64>(runtime) == 0u)
+		throw_error_(runtime, args, 0u);
+	else
+		external::handle_stage_(runtime, stage, target, args);
 }

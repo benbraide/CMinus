@@ -44,6 +44,8 @@ namespace cminus::type{
 
 		virtual ~object();
 
+		virtual bool is_auto() const;
+
 		virtual void construct_default(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const;
 
 		virtual void construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> initialization) const;

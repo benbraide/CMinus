@@ -18,13 +18,10 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 	auto is_ref = (is_init && ref_left_value != nullptr);
 
 	if (is_ref){//Copy reference
-		if (!right_value->is_lvalue())
+		if (right_value->is_lvalue())
+			memory::reference::call_attributes(runtime, logic::attributes::object::stage_type::before_ref_assign, true, right_value, std::vector<std::shared_ptr<memory::reference>>{ left_value });
+		else
 			throw logic::exception("Ref assignment requires an l-value source", 0u, 0u);
-
-		right_value->traverse_attributes(runtime, [&](std::shared_ptr<logic::attributes::object> attribute){
-			if (attribute->is_required_on_ref_destination(runtime) && left_value->find_attribute(attribute, false) == nullptr)
-				throw logic::exception("'" + attribute->get_qualified_naming_value() + "' is required on ref destination", 0u, 0u);
-		}, logic::attributes::object::stage_type::nil, true);
 	}
 
 	auto left_type = left_value->get_type(), right_type = right_value->get_type();

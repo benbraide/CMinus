@@ -4,6 +4,10 @@
 
 cminus::type::object::~object() = default;
 
+bool cminus::type::object::is_auto() const{
+	return false;
+}
+
 void cminus::type::object::construct_default(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const{
 	if (auto default_value = get_default_value(runtime); default_value != nullptr){
 		target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));

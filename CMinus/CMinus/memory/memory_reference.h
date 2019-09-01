@@ -33,13 +33,17 @@ namespace cminus::memory{
 
 		virtual void remove_attribute(const std::string &name, bool global_only);
 
-		virtual void remove_attribute(std::shared_ptr<logic::naming::object> name);
+		virtual void remove_attribute(const logic::naming::object &name);
 
 		virtual std::shared_ptr<logic::attributes::object> find_attribute(const std::string &name, bool global_only, bool include_context) const;
 
-		virtual std::shared_ptr<logic::attributes::object> find_attribute(std::shared_ptr<logic::naming::object> name, bool include_context) const;
+		virtual std::shared_ptr<logic::attributes::object> find_attribute(const logic::naming::object &name, bool include_context) const;
 
 		virtual const optimised_attribute_list_type get_attributes() const;
+
+		virtual bool has_attribute(const std::string &name, bool global_only, bool include_context) const;
+
+		virtual bool has_attribute(const logic::naming::object &name, bool include_context) const;
 
 		virtual void traverse_attributes(logic::runtime &runtime, const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage, bool include_context) const;
 

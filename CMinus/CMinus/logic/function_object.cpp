@@ -69,7 +69,7 @@ cminus::type::object::score_result_type cminus::logic::function_object::get_rank
 
 			attributes_mismatch = false;
 			(*arg_it)->traverse_attributes(runtime, [&](std::shared_ptr<attributes::object> attribute){
-				if (!attributes_mismatch && attribute->is_required_on_ref_destination(runtime) && !type::function::has_attribute((*param_it)->get_attributes(), attribute))
+				if (!attributes_mismatch && attribute->handles_stage(runtime, attributes::object::stage_type::before_ref_assign) && !type::function::has_attribute((*param_it)->get_attributes(), attribute))
 					attributes_mismatch = true;
 			}, attributes::object::stage_type::nil, false);
 

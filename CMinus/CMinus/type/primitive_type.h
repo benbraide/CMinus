@@ -30,11 +30,14 @@ namespace cminus::type{
 			nan_,
 			void_,
 			function,
+			auto_,
 		};
 
 		explicit primitive(id_type id);
 
 		virtual ~primitive();
+
+		virtual bool is_auto() const override;
 
 		virtual void print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const override;
 

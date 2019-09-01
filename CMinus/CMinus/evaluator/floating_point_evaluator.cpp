@@ -97,7 +97,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::as
 			destination->add_attribute(runtime.global_storage->find_attribute("#NaN#", false));
 	}
 	else if ((destination = assignment::assign_(runtime, destination, source)) != nullptr && destination->is_nan())
-		destination->remove_attribute(runtime.global_storage->find_attribute("#NaN#", false));
+		destination->remove_attribute(*runtime.global_storage->find_attribute("#NaN#", false));
 
 	return destination;
 }
