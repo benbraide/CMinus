@@ -79,12 +79,7 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(
 		if (branch != nullptr)
 			*branch = this;
 
-		return std::make_shared<memory::lval_reference>(
-			it->second.address,
-			runtime.global_storage->get_primitve_type(type::primitive::id_type::function),
-			memory::reference::attribute_list_type{ runtime.global_storage->find_attribute("ReadOnly", false) },
-			nullptr
-		);
+		return std::make_shared<memory::function_reference>(runtime, it->second.address, it->second.value.get());
 	}
 
 	if (!search_tree)

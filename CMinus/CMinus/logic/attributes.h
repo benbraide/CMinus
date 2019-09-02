@@ -55,6 +55,26 @@ namespace cminus::logic::attributes{
 		virtual void handle_before_ref_assign_(logic::runtime &runtime, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const;
 	};
 
+	class read_guard{
+	public:
+		read_guard(logic::runtime &runtime, memory::reference *target, bool include_context);
+
+		~read_guard();
+
+	private:
+		std::function<void()> callback_;
+	};
+
+	class write_guard{
+	public:
+		write_guard(logic::runtime &runtime, memory::reference *target, bool include_context);
+
+		~write_guard();
+
+	private:
+		std::function<void()> callback_;
+	};
+
 	class collection{
 	public:
 		using list_type = std::vector<std::shared_ptr<object>>;
@@ -196,5 +216,14 @@ namespace cminus::logic::attributes{
 		virtual std::string get_default_message_() const override;
 
 		virtual void handle_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const override;
+	};
+
+	class nan : public external{
+	public:
+		nan();
+
+		virtual ~nan();
+
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 	};
 }

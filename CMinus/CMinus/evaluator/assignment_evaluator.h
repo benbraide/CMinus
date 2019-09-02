@@ -10,7 +10,7 @@ namespace cminus::evaluator{
 	protected:
 		virtual std::shared_ptr<memory::reference> evaluate_(logic::runtime &runtime, const object::operator_type &op, std::shared_ptr<memory::reference> left_value, const object::operand_type &right) const;
 
-		virtual std::shared_ptr<memory::reference> assign_(logic::runtime &runtime, std::shared_ptr<memory::reference> destination, std::shared_ptr<memory::reference> source) const;
+		virtual void after_value_copy_(logic::runtime &runtime, std::shared_ptr<memory::reference> left_value, std::shared_ptr<memory::reference> right_value) const;
 	};
 
 	class compound_assignment{

@@ -62,6 +62,36 @@ void cminus::logic::attributes::object::handle_before_ref_assign_(logic::runtime
 		throw logic::exception(("'" + get_qualified_naming_value() + "' attribute is required on reference destination!"), 0u, 0u);
 }
 
+cminus::logic::attributes::read_guard::read_guard(logic::runtime &runtime, memory::reference *target, bool include_context){
+	target->call_attributes(runtime, object::stage_type::before_read, include_context);
+	callback_ = [&runtime, target, include_context]{
+		target->call_attributes(runtime, object::stage_type::after_read, include_context);
+	};
+}
+
+cminus::logic::attributes::read_guard::~read_guard(){
+	try{
+		if (callback_ != nullptr)
+			callback_();
+	}
+	catch (...){}
+}
+
+cminus::logic::attributes::write_guard::write_guard(logic::runtime &runtime, memory::reference *target, bool include_context){
+	target->call_attributes(runtime, object::stage_type::before_write, include_context);
+	callback_ = [&runtime, target, include_context]{
+		target->call_attributes(runtime, object::stage_type::after_write, include_context);
+	};
+}
+
+cminus::logic::attributes::write_guard::~write_guard(){
+	try{
+		if (callback_ != nullptr)
+			callback_();
+	}
+	catch (...){}
+}
+
 cminus::logic::attributes::collection::collection() = default;
 
 cminus::logic::attributes::collection::collection(const list_type &list){
@@ -318,4 +348,13 @@ void cminus::logic::attributes::not_null::handle_stage_(logic::runtime &runtime,
 		throw_error_(runtime, args, 0u);
 	else
 		external::handle_stage_(runtime, stage, target, args);
+}
+
+cminus::logic::attributes::nan::nan()
+	: external("#NaN#"){}
+
+cminus::logic::attributes::nan::~nan() = default;
+
+bool cminus::logic::attributes::nan::handles_stage(logic::runtime &runtime, stage_type value) const{
+	return false;
 }

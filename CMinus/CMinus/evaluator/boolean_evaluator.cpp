@@ -12,11 +12,10 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::boolean::evaluate_
 	if (primitive_type == nullptr || primitive_type->get_id() != type::primitive::id_type::bool_)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
-	read_attribute_guard read_guard(runtime, target, true);
-	if (target->read_scalar<constant_type>(runtime) != constant_type::true_)
-		return runtime.global_storage->get_named_constant(constant_type::true_);
+	if (target->read_scalar<constant_type>(runtime) == constant_type::true_)
+		return runtime.global_storage->get_named_constant(constant_type::false_);
 
-	return runtime.global_storage->get_named_constant(constant_type::false_);
+	return runtime.global_storage->get_named_constant(constant_type::true_);
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::evaluator::boolean::evaluate_unary_right(logic::runtime &runtime, const operator_type &op, std::shared_ptr<memory::reference> target) const{

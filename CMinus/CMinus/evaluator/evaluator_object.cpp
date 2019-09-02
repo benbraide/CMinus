@@ -220,33 +220,3 @@ bool cminus::evaluator::object::operator_is_integral(operator_id id){
 std::shared_ptr<cminus::memory::reference> cminus::evaluator::object::convert_operand_to_memory_reference(logic::runtime &runtime, const operand_type &value){
 	return value->evaluate(runtime);
 }
-
-cminus::evaluator::write_attribute_guard::write_attribute_guard(logic::runtime &runtime, std::shared_ptr<memory::reference> target, bool include_context){
-	memory::reference::call_attributes(runtime, logic::attributes::object::stage_type::before_write, include_context, target);
-	callback_ = [&runtime, target, include_context]{
-		memory::reference::call_attributes(runtime, logic::attributes::object::stage_type::after_write, include_context, target);
-	};
-}
-
-cminus::evaluator::write_attribute_guard::~write_attribute_guard(){
-	try{
-		if (callback_ != nullptr)
-			callback_();
-	}
-	catch (...){}
-}
-
-cminus::evaluator::read_attribute_guard::read_attribute_guard(logic::runtime &runtime, std::shared_ptr<memory::reference> target, bool include_context){
-	memory::reference::call_attributes(runtime, logic::attributes::object::stage_type::before_read, include_context, target);
-	callback_ = [&runtime, target, include_context]{
-		memory::reference::call_attributes(runtime, logic::attributes::object::stage_type::after_read, include_context, target);
-	};
-}
-
-cminus::evaluator::read_attribute_guard::~read_attribute_guard(){
-	try{
-		if (callback_ != nullptr)
-			callback_();
-	}
-	catch (...){}
-}

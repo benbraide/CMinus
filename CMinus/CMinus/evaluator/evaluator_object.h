@@ -40,24 +40,4 @@ namespace cminus::evaluator{
 
 		static std::shared_ptr<memory::reference> convert_operand_to_memory_reference(logic::runtime &runtime, const operand_type &value);
 	};
-
-	class write_attribute_guard{
-	public:
-		write_attribute_guard(logic::runtime &runtime, std::shared_ptr<memory::reference> target, bool include_context);
-
-		~write_attribute_guard();
-
-	private:
-		std::function<void()> callback_;
-	};
-
-	class read_attribute_guard{
-	public:
-		read_attribute_guard(logic::runtime &runtime, std::shared_ptr<memory::reference> target, bool include_context);
-
-		~read_attribute_guard();
-
-	private:
-		std::function<void()> callback_;
-	};
 }

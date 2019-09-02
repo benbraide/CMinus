@@ -18,11 +18,9 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 			throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 	}
 
-	std::shared_ptr<write_attribute_guard> write_guard;
-	if (will_write)
-		write_guard = std::make_shared<write_attribute_guard>(runtime, target, true);
+	if (will_write && !target->is_lvalue())
+		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' requires an l-value operand", 0u, 0u);
 
-	read_attribute_guard read_guard(runtime, target, true);
 	switch (primitive_type->get_id()){
 	case type::primitive::id_type::int8_:
 		return arithmetic::evaluate_integral_unary_left_<__int8>(runtime, std::get<operator_id>(op), target);
@@ -61,8 +59,8 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 	if (std::get<operator_id>(op) != operator_id::increment && std::get<operator_id>(op) != operator_id::decrement)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
-	write_attribute_guard write_guard(runtime, target, true);
-	read_attribute_guard read_guard(runtime, target, true);
+	if (!target->is_lvalue())
+		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' requires an l-value operand", 0u, 0u);
 
 	switch (primitive_type->get_id()){
 	case type::primitive::id_type::int8_:
@@ -115,9 +113,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
 	if (object::operator_is_shift(std::get<operator_id>(op), true)){
-		read_attribute_guard left_read_guard(runtime, left_value, true);
-		read_attribute_guard right_read_guard(runtime, right_value, true);
-
 		std::shared_ptr<memory::reference> result;
 		switch (left_primitive_type->get_id()){
 		case type::primitive::id_type::int8_:
@@ -171,9 +166,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 	if (left_value == nullptr || right_value == nullptr)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
-	read_attribute_guard left_read_guard(runtime, left_value_copy, true);
-	read_attribute_guard right_read_guard(runtime, right_value_copy, true);
-
 	switch (left_primitive_type->get_id()){
 	case type::primitive::id_type::int8_:
 		return evaluate_binary_<__int8>(runtime, std::get<operator_id>(op), left_value, right_value);
@@ -199,13 +191,10 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 	return nullptr;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::assign_(logic::runtime &runtime, std::shared_ptr<memory::reference> destination, std::shared_ptr<memory::reference> source) const{
-	if (source->is_nan()){//Set 'NaN attribute
-		if (!destination->is_nan())
-			destination->add_attribute(runtime.global_storage->find_attribute("#NaN#", false));
-	}
-	else if ((destination = assignment::assign_(runtime, destination, source)) != nullptr && destination->is_nan())
-		destination->remove_attribute(*runtime.global_storage->find_attribute("#NaN#", false));
-
-	return destination;
+void cminus::evaluator::integral::after_value_copy_(logic::runtime &runtime, std::shared_ptr<memory::reference> left_value, std::shared_ptr<memory::reference> right_value) const{
+	assignment::after_value_copy_(runtime, left_value, right_value);
+	if (right_value->is_nan())
+		left_value->add_attribute(runtime.global_storage->find_attribute("#NaN#", false));
+	else
+		left_value->remove_attribute("#NaN#", true);
 }

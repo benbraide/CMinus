@@ -15,7 +15,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 	if (primitive_type == nullptr || !primitive_type->is_floating_point())
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
-	read_attribute_guard left_read_guard(runtime, target, true);
 	switch (primitive_type->get_id()){
 	case type::primitive::id_type::float_:
 		return arithmetic::evaluate_unary_left_<float>(runtime, std::get<operator_id>(op), target);
@@ -73,9 +72,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 	if (left_value == nullptr || right_value == nullptr)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
-	read_attribute_guard left_read_guard(runtime, left_value_copy, true);
-	read_attribute_guard right_read_guard(runtime, right_value_copy, true);
-
 	switch (left_primitive_type->get_id()){
 	case type::primitive::id_type::float_:
 		return evaluate_binary_<float>(runtime, std::get<operator_id>(op), left_value, right_value);
@@ -91,13 +87,10 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 	return nullptr;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::assign_(logic::runtime &runtime, std::shared_ptr<memory::reference> destination, std::shared_ptr<memory::reference> source) const{
-	if (source->is_nan()){//Set 'NaN attribute
-		if (!destination->is_nan())
-			destination->add_attribute(runtime.global_storage->find_attribute("#NaN#", false));
-	}
-	else if ((destination = assignment::assign_(runtime, destination, source)) != nullptr && destination->is_nan())
-		destination->remove_attribute(*runtime.global_storage->find_attribute("#NaN#", false));
-
-	return destination;
+void cminus::evaluator::floating_point::after_value_copy_(logic::runtime &runtime, std::shared_ptr<memory::reference> left_value, std::shared_ptr<memory::reference> right_value) const{
+	assignment::after_value_copy_(runtime, left_value, right_value);
+	if (right_value->is_nan())
+		left_value->add_attribute(runtime.global_storage->find_attribute("#NaN#", false));
+	else
+		left_value->remove_attribute("#NaN#", true);
 }

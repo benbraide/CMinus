@@ -12,7 +12,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::byte::evaluate_una
 	if (primitive_type == nullptr || primitive_type->get_id() != type::primitive::id_type::bool_)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
-	read_attribute_guard read_guard(runtime, target, true);
 	return evaluate_unary_left_<std::byte>(runtime, std::get<operator_id>(op), target);
 }
 
@@ -44,9 +43,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::byte::evaluate_bin
 	auto left_type = left_value->get_type(), right_type = right_value->get_type();
 	if (left_type == nullptr || left_type->get_score(runtime, *right_type, false) != type::object::score_result_type::exact)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
-
-	read_attribute_guard left_read_guard(runtime, left_value, true);
-	read_attribute_guard right_read_guard(runtime, right_value, true);
 
 	auto result = evaluate_binary_<std::byte>(runtime, std::get<operator_id>(op), left_value, right_value);
 	if (result == nullptr && (result = boolean::evaluate_<std::byte>(runtime, std::get<operator_id>(op), left_value, right_value)) == nullptr)

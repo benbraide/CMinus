@@ -48,6 +48,9 @@ namespace cminus::evaluator{
 
 		template <typename value_type>
 		std::shared_ptr<memory::reference> evaluate_shift_(logic::runtime &runtime, operator_id op, std::shared_ptr<memory::reference> left_value, std::shared_ptr<memory::reference> right_value) const{
+			if (right_value->is_nan())
+				return nullptr;
+
 			auto right_type = right_value->get_type();
 			if (auto right_primitive_type = dynamic_cast<type::primitive *>(right_type.get()); right_primitive_type != nullptr){
 				switch (right_primitive_type->get_id()){

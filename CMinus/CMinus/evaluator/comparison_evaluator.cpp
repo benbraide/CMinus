@@ -46,9 +46,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::equality_compariso
 	if (left_type == nullptr || right_type == nullptr || left_type->get_score(runtime, *right_type, false) != type::object::score_result_type::exact)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
-	read_attribute_guard left_read_guard(runtime, left_value, true);
-	read_attribute_guard right_read_guard(runtime, right_value, true);
-
 	auto result = left_value->compare(runtime, *right_value, left_type->get_size());
 	if (result == std::numeric_limits<int>::min())
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);

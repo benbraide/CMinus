@@ -81,52 +81,25 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::fin
 	if (entry == nullptr)//Entry not found
 		return nullptr;
 
-	if (entry->find_attribute("Static", true, false) != nullptr)//Static entry
+	if (context_ == nullptr || entry->find_attribute("Static", true, false) != nullptr)//Static entry
 		return entry;
-
-	auto placeholder_entry = dynamic_cast<memory::placeholder_reference *>(entry.get());
-	if (placeholder_entry == nullptr){//Not a class member
-		if (context_ == nullptr)
-			return entry;
-
-		auto primitive_type = dynamic_cast<type::primitive *>(entry->get_type().get());
-		if (primitive_type == nullptr || primitive_type->get_id() != type::primitive::id_type::function)
-			return entry;
-
-		auto group = entry->read_scalar<declaration::function_group_base *>(runtime);
-		if (group == nullptr)
-			return entry;
-
-		if (auto group_class_parent = dynamic_cast<type::class_ *>(group->get_naming_parent()); group_class_parent != nullptr){
-			auto base_offset = context_->get_type()->compute_base_offset(*group_class_parent);
-			if (base_offset != static_cast<std::size_t>(-1)){//Member function
-				entry->set_context(context_->apply_offset(base_offset));
-				if (owner_.get_attributes().has("ReadOnlyContext", true))
-					entry->get_context()->add_attribute(runtime.global_storage->find_attribute("ReadOnly", false));
-			}
-		}
-
-		return entry;
-	}
-
-	if (context_ == nullptr)//Entry must be static
-		throw logic::exception("A non-static member requires an object context", 0u, 0u);
 
 	auto base_offset = context_->get_type()->compute_base_offset(*entry->get_type());
 	if (base_offset == static_cast<std::size_t>(-1))
 		throw logic::exception("A non-static member requires an object context with related types", 0u, 0u);
 
-	auto value = placeholder_entry->create(runtime, context_->apply_offset(0u), base_offset);
-	if (value == nullptr)
-		return nullptr;
+	auto context = context_->apply_offset(base_offset);
+	if (auto bound_entry = entry->bound_context(runtime, context, base_offset); bound_entry != nullptr){
+		if (owner_.get_attributes().has("ReadOnlyContext", true)){
+			context->add_attribute(runtime.global_storage->find_attribute("ReadOnly", false));
+			if (name == "this")//Add read-only to pointed object
+				bound_entry->add_attribute(std::make_shared<attributes::pointer_object>(runtime.global_storage->find_attribute("ReadOnly", false)));
+		}
 
-	if (owner_.get_attributes().has("ReadOnlyContext", true)){
-		entry->get_context()->add_attribute(runtime.global_storage->find_attribute("ReadOnly", false));
-		if (name == "this")//Add read-only to pointed object
-			value->add_attribute(std::make_shared<attributes::pointer_object>(runtime.global_storage->find_attribute("ReadOnly", false)));
+		return bound_entry;
 	}
 
-	return value;
+	return entry;
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::get_context() const{

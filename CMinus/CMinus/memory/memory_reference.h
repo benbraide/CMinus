@@ -9,6 +9,10 @@
 
 #include "memory_object.h"
 
+namespace cminus::declaration{
+	class function_group_base;
+}
+
 namespace cminus::memory{
 	class reference{
 	public:
@@ -31,6 +35,8 @@ namespace cminus::memory{
 
 		virtual void set_context(std::shared_ptr<reference> value);
 
+		virtual std::shared_ptr<reference> bound_context(logic::runtime &runtime, std::shared_ptr<reference> value, std::size_t offset) const;
+
 		virtual std::shared_ptr<reference> get_context() const;
 
 		virtual void add_attribute(std::shared_ptr<logic::attributes::object> value);
@@ -50,6 +56,10 @@ namespace cminus::memory{
 		virtual const logic::attributes::collection &get_attributes() const;
 
 		virtual void traverse_attributes(logic::runtime &runtime, const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage, bool include_context) const;
+
+		virtual void call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, const std::vector<std::shared_ptr<memory::reference>> &args) const;
+
+		virtual void call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context) const;
 
 		virtual std::shared_ptr<reference> apply_offset(std::size_t value) const = 0;
 
@@ -87,7 +97,7 @@ namespace cminus::memory{
 
 		template <typename target_type>
 		bool can_read_scalar() const{
-			return (sizeof(target_type) <= type_->get_size());
+			return (sizeof(target_type) <= get_type()->get_size());
 		}
 
 		template <typename target_type>
@@ -113,10 +123,6 @@ namespace cminus::memory{
 			return write(runtime, reinterpret_cast<const std::byte *>(buffer), (sizeof(target_type) * size));
 		}
 
-		static void call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args);
-
-		static void call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, std::shared_ptr<memory::reference> target);
-
 	protected:
 		std::shared_ptr<type::object> type_;
 		logic::attributes::collection attributes_;
@@ -135,6 +141,8 @@ namespace cminus::memory{
 		placeholder_reference(std::size_t relative_offset, std::shared_ptr<type::object> type);
 
 		virtual ~placeholder_reference();
+
+		virtual std::shared_ptr<reference> bound_context(logic::runtime &runtime, std::shared_ptr<reference> value, std::size_t offset) const override;
 
 		virtual std::shared_ptr<reference> apply_offset(std::size_t value) const override;
 
@@ -168,10 +176,88 @@ namespace cminus::memory{
 
 		virtual std::size_t get_relative_offset() const;
 
-		virtual std::shared_ptr<reference> create(logic::runtime &runtime, std::shared_ptr<reference> context, std::size_t offset = 0u) const;
-
 	protected:
 		std::size_t relative_offset_;
+	};
+
+	class raw_reference : public reference{
+	public:
+		explicit raw_reference(reference *target);
+
+		virtual ~raw_reference();
+
+		virtual void set_type(std::shared_ptr<type::object> value) override;
+
+		virtual std::shared_ptr<type::object> get_type() const override;
+
+		virtual bool is_nan() const override;
+
+		virtual void set_context(std::shared_ptr<reference> value) override;
+
+		virtual std::shared_ptr<reference> bound_context(logic::runtime &runtime, std::shared_ptr<reference> value, std::size_t offset) const override;
+
+		virtual std::shared_ptr<reference> get_context() const override;
+
+		virtual void add_attribute(std::shared_ptr<logic::attributes::object> value) override;
+
+		virtual void remove_attribute(const std::string &name, bool global_only) override;
+
+		virtual void remove_attribute(const logic::naming::object &name) override;
+
+		virtual std::shared_ptr<logic::attributes::object> find_attribute(const std::string &name, bool global_only, bool include_context) const override;
+
+		virtual std::shared_ptr<logic::attributes::object> find_attribute(const logic::naming::object &name, bool include_context) const override;
+
+		virtual bool has_attribute(const std::string &name, bool global_only, bool include_context) const override;
+
+		virtual bool has_attribute(const logic::naming::object &name, bool include_context) const override;
+
+		virtual const logic::attributes::collection &get_attributes() const override;
+
+		virtual void traverse_attributes(logic::runtime &runtime, const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage, bool include_context) const override;
+
+		virtual void call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, const std::vector<std::shared_ptr<memory::reference>> &args) const;
+
+		virtual void call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context) const;
+
+		virtual std::shared_ptr<reference> apply_offset(std::size_t value) const override;
+
+		virtual bool is_lvalue() const override;
+
+		virtual std::size_t get_address() const override;
+
+		virtual std::byte *get_data(logic::runtime &runtime) const override;
+
+		virtual std::size_t read(logic::runtime &runtime, std::byte *buffer, std::size_t size) const override;
+
+		virtual std::size_t read(logic::runtime &runtime, io::binary_writer &buffer, std::size_t size) const override;
+
+		virtual std::size_t read(logic::runtime &runtime, std::size_t buffer, std::size_t size) const override;
+
+		virtual std::size_t read(logic::runtime &runtime, reference &buffer, std::size_t size) const override;
+
+		virtual std::size_t write(logic::runtime &runtime, const std::byte *buffer, std::size_t size) override;
+
+		virtual std::size_t write(logic::runtime &runtime, const io::binary_reader &buffer, std::size_t size) override;
+
+		virtual std::size_t write(logic::runtime &runtime, std::size_t buffer, std::size_t size) override;
+
+		virtual std::size_t write(logic::runtime &runtime, const reference &buffer, std::size_t size) override;
+
+		virtual std::size_t write(logic::runtime &runtime, managed_object &object) override;
+
+		virtual std::size_t set(logic::runtime &runtime, std::byte value, std::size_t size) override;
+
+		virtual int compare(logic::runtime &runtime, const std::byte *buffer, std::size_t size) const override;
+
+		virtual int compare(logic::runtime &runtime, std::size_t buffer, std::size_t size) const override;
+
+		virtual int compare(logic::runtime &runtime, const reference &buffer, std::size_t size) const override;
+
+		virtual reference *get_target() const;
+
+	protected:
+		reference *target_;
 	};
 
 	class lval_reference : public reference{
@@ -244,6 +330,28 @@ namespace cminus::memory{
 		virtual void write_address(std::size_t value);
 	};
 
+	class function_reference : public lval_reference{
+	public:
+		function_reference(logic::runtime &runtime, std::size_t address, declaration::function_group_base *value);
+
+		function_reference(std::size_t address, std::shared_ptr<type::object> type, declaration::function_group_base *value, const attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		function_reference(std::size_t address, std::shared_ptr<type::object> type, declaration::function_group_base *value, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		function_reference(std::size_t address, std::shared_ptr<type::object> type, declaration::function_group_base *value, const logic::attributes::collection &attributes, std::shared_ptr<reference> context);
+
+		virtual ~function_reference();
+
+		virtual std::shared_ptr<reference> bound_context(logic::runtime &runtime, std::shared_ptr<reference> value, std::size_t offset) const override;
+
+		virtual std::shared_ptr<reference> apply_offset(std::size_t value) const override;
+
+		virtual declaration::function_group_base *get_value() const;
+
+	protected:
+		declaration::function_group_base *value_;
+	};
+
 	class rval_reference : public reference{
 	public:
 		rval_reference(std::byte *data, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
@@ -300,6 +408,8 @@ namespace cminus::memory{
 
 		virtual ~data_reference();
 
+		virtual std::shared_ptr<reference> apply_offset(std::size_t value) const override;
+
 	protected:
 		std::unique_ptr<std::byte[]> value_;
 	};
@@ -335,6 +445,10 @@ namespace cminus::memory{
 
 		virtual ~scalar_reference() = default;
 
+		virtual std::shared_ptr<reference> apply_offset(std::size_t value) const override{
+			return ((value == 0u) ? std::make_shared<scalar_reference>(type_, attributes_, context_, value_) : rval_reference::apply_offset(value));
+		}
+
 		virtual void set_value(const m_value_type &value){
 			value_ = value;
 		}
@@ -349,5 +463,17 @@ namespace cminus::memory{
 
 	protected:
 		m_value_type value_;
+	};
+
+	template <class value_type>
+	class nan_scalar_reference : public scalar_reference<value_type>{
+	public:
+		using base_type = scalar_reference<value_type>;
+
+		template <typename runtime_type, typename... args_types>
+		explicit nan_scalar_reference(runtime_type &runtime, args_types &&... args)
+			: base_type(std::forward<args_types>(args)...){
+			base_type::template add_attribute(runtime.global_storage->find_attribute("#NaN#", false));
+		}
 	};
 }

@@ -5,7 +5,6 @@
 
 namespace cminus::declaration{
 	class function_base;
-	class function_group_base;
 }
 
 namespace cminus::logic::storage{
