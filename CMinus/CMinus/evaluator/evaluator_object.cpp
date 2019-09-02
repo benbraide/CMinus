@@ -218,9 +218,7 @@ bool cminus::evaluator::object::operator_is_integral(operator_id id){
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::evaluator::object::convert_operand_to_memory_reference(logic::runtime &runtime, const operand_type &value){
-	if (std::holds_alternative<std::shared_ptr<memory::reference>>(value))
-		return std::get<std::shared_ptr<memory::reference>>(value);
-	return std::get<std::shared_ptr<node::object>>(value)->evaluate(runtime);
+	return value->evaluate(runtime);
 }
 
 cminus::evaluator::write_attribute_guard::write_attribute_guard(logic::runtime &runtime, std::shared_ptr<memory::reference> target, bool include_context){

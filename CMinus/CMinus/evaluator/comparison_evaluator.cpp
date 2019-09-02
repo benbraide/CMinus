@@ -1,4 +1,5 @@
 #include "../node/named_constant_node.h"
+#include "../node/memory_reference_node.h"
 
 #include "comparison_evaluator.h"
 
@@ -24,7 +25,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::explicit_compariso
 	if (comparison_evaluator == nullptr && (comparison_evaluator = left_type->get_evaluator(runtime).get()) == nullptr)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
-	if (auto result = comparison_evaluator->evaluate_binary(runtime, (is_equal ? operator_id::equality : operator_id::inverse_equality), left_value, right_value); result != nullptr)
+	if (auto result = comparison_evaluator->evaluate_binary(runtime, (is_equal ? operator_id::equality : operator_id::inverse_equality), left_value, std::make_shared<node::memory_reference>(nullptr, right_value)); result != nullptr)
 		return result;
 
 	throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);

@@ -1,3 +1,4 @@
+#include "../node/memory_reference_node.h"
 #include "../evaluator/evaluator_object.h"
 
 #include "../logic/runtime.h"
@@ -11,7 +12,7 @@ bool cminus::type::object::is_auto() const{
 void cminus::type::object::construct_default(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const{
 	if (auto default_value = get_default_value(runtime); default_value != nullptr){
 		target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
-		get_evaluator(runtime)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, default_value);
+		get_evaluator(runtime)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, std::make_shared<node::memory_reference>(nullptr, default_value));
 	}
 	else//Zero memory
 		target->set(runtime, static_cast<std::byte>(0), get_size());
@@ -21,7 +22,7 @@ void cminus::type::object::construct(logic::runtime &runtime, std::shared_ptr<me
 	if (initialization != nullptr){
 		if (auto value = initialization->evaluate(runtime); value != nullptr){
 			target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
-			get_evaluator(runtime)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, value);
+			get_evaluator(runtime)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, std::make_shared<node::memory_reference>(nullptr, value));
 		}
 		else
 			throw logic::exception("Failed to evaluate initialization", 0u, 0u);

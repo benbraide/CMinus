@@ -1,3 +1,4 @@
+#include "../node/memory_reference_node.h"
 #include "../evaluator/evaluator_object.h"
 
 #include "variable_declaration.h"
@@ -121,7 +122,7 @@ void cminus::declaration::variable::initialize_memory(logic::runtime &runtime, s
 
 	if (value != nullptr){
 		target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
-		type_->get_evaluator(runtime)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, value);
+		type_->get_evaluator(runtime)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, std::make_shared<node::memory_reference>(nullptr, value));
 	}
 	else if (target->find_attribute("Ref", true, false) == nullptr)
 		target->get_attributes().call(runtime, logic::attributes::object::stage_type::after_uninitialized_declaration, target);

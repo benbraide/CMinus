@@ -10,7 +10,7 @@ namespace cminus::evaluator{
 	class object{
 	public:
 		using operator_type = std::variant<operator_id, std::string>;
-		using operand_type = std::variant<std::shared_ptr<memory::reference>, std::shared_ptr<node::object>>;
+		using operand_type = std::shared_ptr<node::object>;
 
 		virtual ~object();
 
