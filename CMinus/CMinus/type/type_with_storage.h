@@ -13,5 +13,7 @@ namespace cminus::type{
 		explicit with_storage(const std::string &name, logic::storage::object *parent = nullptr);
 
 		virtual ~with_storage();
+
+		virtual void print(logic::runtime &runtime, bool is_qualified) const override;
 	};
 }

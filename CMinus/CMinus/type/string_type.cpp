@@ -1,8 +1,8 @@
 #include "pointer_type.h"
 #include "string_type.h"
 
-cminus::type::string::string(logic::runtime &runtime, logic::storage::object *parent)
-	: class_(runtime, "string", parent){
+cminus::type::string::string(logic::runtime &runtime)
+	: class_(runtime, "string", nullptr){
 	declaration::variable::attribute_list_type attributes{
 		runtime.global_storage->find_attribute("Private", false)
 	};
@@ -36,3 +36,11 @@ cminus::type::string::string(logic::runtime &runtime, logic::storage::object *pa
 }
 
 cminus::type::string::~string() = default;
+
+void cminus::type::string::print(logic::runtime &runtime, bool is_qualified) const{
+	runtime.writer.write_buffer("string", 6u);
+}
+
+std::shared_ptr<cminus::evaluator::object> cminus::type::string::get_evaluator(logic::runtime &runtime) const{
+	return nullptr;
+}

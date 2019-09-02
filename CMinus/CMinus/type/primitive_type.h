@@ -31,6 +31,7 @@ namespace cminus::type{
 			void_,
 			function,
 			auto_,
+			string,
 		};
 
 		explicit primitive(id_type id);
@@ -48,6 +49,8 @@ namespace cminus::type{
 		virtual std::shared_ptr<memory::reference> get_default_value(logic::runtime &runtime) const override;
 
 		virtual std::shared_ptr<memory::reference> cast(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<type::object> target_type, cast_type type) const override;
+
+		virtual std::shared_ptr<evaluator::object> get_evaluator(logic::runtime &runtime) const override;
 
 		virtual bool is_same(const logic::naming::object &target) const override;
 

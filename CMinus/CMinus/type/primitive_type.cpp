@@ -338,6 +338,10 @@ std::shared_ptr<cminus::memory::reference> cminus::type::primitive::cast(logic::
 	return value;
 }
 
+std::shared_ptr<cminus::evaluator::object> cminus::type::primitive::get_evaluator(logic::runtime &runtime) const{
+	return nullptr;
+}
+
 bool cminus::type::primitive::is_same(const logic::naming::object &target) const{
 	auto type_target = dynamic_cast<const primitive *>(&target);
 	return (type_target != nullptr && type_target->id_ == id_);

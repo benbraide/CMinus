@@ -49,6 +49,8 @@ namespace cminus::type{
 
 		virtual std::shared_ptr<memory::reference> cast(logic::runtime &runtime, std::shared_ptr<memory::reference> data, std::shared_ptr<type::object> target_type, cast_type type) const override;
 
+		virtual std::shared_ptr<evaluator::object> get_evaluator(logic::runtime &runtime) const override;
+
 		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree, const storage_base_type **branch = nullptr) const override;
 
 		virtual bool add_base(logic::runtime &runtime, access_type access, std::shared_ptr<type::object> value);

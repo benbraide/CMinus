@@ -105,6 +105,10 @@ std::shared_ptr<cminus::memory::reference> cminus::type::class_::cast(logic::run
 	return nullptr;
 }
 
+std::shared_ptr<cminus::evaluator::object> cminus::type::class_::get_evaluator(logic::runtime &runtime) const{
+	return nullptr;
+}
+
 std::shared_ptr<cminus::memory::reference> cminus::type::class_::find(logic::runtime &runtime, const std::string &name, bool search_tree, const storage_base_type **branch) const{
 	if (base_types_.empty())
 		return with_storage::find(runtime, name, search_tree, branch);
