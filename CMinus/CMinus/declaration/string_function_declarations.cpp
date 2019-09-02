@@ -2,6 +2,31 @@
 #include "../type/pointer_type.h"
 #include "../node/memory_reference_node.h"
 
+cminus::declaration::string::empty::empty(logic::runtime &runtime, logic::naming::parent *parent)
+	: function("empty", parent){
+	return_declaration_ = std::make_shared<variable>(
+		attribute_list_type{},															//Attributes
+		runtime.global_storage->get_primitve_type(type::primitive::id_type::bool_),		//Type
+		"",																				//Name
+		nullptr																			//Initialization
+	);
+
+	attributes_.add(runtime.global_storage->find_attribute("ReadOnlyContext", false));
+}
+
+cminus::declaration::string::empty::~empty() = default;
+
+bool cminus::declaration::string::empty::is_defined() const{
+	return true;
+}
+
+void cminus::declaration::string::empty::evaluate_body_(logic::runtime &runtime) const{
+	if (runtime.current_storage->find(runtime, "size_", true)->read_scalar<std::size_t>(runtime) == 0u)
+		runtime.current_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, runtime.global_storage->get_named_constant(node::named_constant::constant_type::true_));
+	else//Not empty
+		runtime.current_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, runtime.global_storage->get_named_constant(node::named_constant::constant_type::false_));
+}
+
 cminus::declaration::string::size::size(logic::runtime &runtime, logic::naming::parent *parent)
 	: function("size", parent){
 	return_declaration_ = std::make_shared<variable>(

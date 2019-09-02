@@ -3,6 +3,18 @@
 #include "function_declaration.h"
 
 namespace cminus::declaration::string{
+	class empty : public function{
+	public:
+		explicit empty(logic::runtime &runtime, logic::naming::parent *parent);
+
+		virtual ~empty();
+
+		virtual bool is_defined() const override;
+
+	protected:
+		virtual void evaluate_body_(logic::runtime &runtime) const override;
+	};
+
 	class size : public function{
 	public:
 		explicit size(logic::runtime &runtime, logic::naming::parent *parent);
