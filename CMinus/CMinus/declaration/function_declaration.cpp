@@ -1,9 +1,14 @@
+#include "../type/class_type.h"
+
 #include "function_declaration.h"
 
 cminus::declaration::function::function(std::string name, logic::naming::parent *parent, const attribute_list_type &attributes, std::shared_ptr<variable> return_declaration, const std::vector<std::shared_ptr<variable>> &params, std::shared_ptr<node::object> body)
 	: function_base(name, parent, attributes), return_declaration_(return_declaration), params_(params), body_(body){
 	compute_values_();
 }
+
+cminus::declaration::function::function(std::string name, logic::naming::parent *parent)
+	: function_base(name, parent, attribute_list_type{}){}
 
 cminus::declaration::function::~function() = default;
 
@@ -203,15 +208,17 @@ void cminus::declaration::function::print_body_(logic::runtime &runtime) const{
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::declaration::function::call_(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const{
-	if (body_ == nullptr)
+	if (!is_defined())
 		throw logic::exception("Undefined function called", 0u, 0u);
-
-	if (context != nullptr && dynamic_cast<type::object *>(context->get_type().get()) != dynamic_cast<type::object *>(parent_))
-		throw logic::exception("Function context is invalid", 0u, 0u);
 
 	if (attributes_.has("Static", true))
 		context = nullptr;//Ignore context
-	else if (context == nullptr)
+	else if (context != nullptr){
+		auto type_parent = dynamic_cast<type::object *>(parent_);
+		if (type_parent == nullptr || context->get_type()->compute_base_offset(*type_parent) == static_cast<std::size_t>(-1))
+			throw logic::exception("A member function requires a context of related type", 0u, 0u);
+	}
+	else if (dynamic_cast<type::class_ *>(parent_) != nullptr)
 		throw logic::exception("A member function requires a context", 0u, 0u);
 
 	std::shared_ptr<memory::reference> return_value;
@@ -219,6 +226,7 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::function::call_(
 
 	try{
 		copy_args_(runtime, args);
+		evaluate_body_(runtime);
 		copy_return_value_(runtime, nullptr);
 	}
 	catch (logic::storage::specialized::interrupt_type e){//Check for value return
@@ -304,6 +312,10 @@ void cminus::declaration::function::copy_args_(logic::runtime &runtime, const st
 	if (variadic_it != params_.end()){//Add variadic entry
 		variadic_declaration = std::make_shared<variable>((*param_it)->get_attributes(), (*variadic_it)->get_type(), (*variadic_it)->get_name(), nullptr);
 	}
+}
+
+void cminus::declaration::function::evaluate_body_(logic::runtime &runtime) const{
+
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::declaration::function::copy_return_value_(logic::runtime &runtime, std::shared_ptr<memory::reference> value) const{

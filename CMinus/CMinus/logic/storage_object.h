@@ -52,6 +52,17 @@ namespace cminus::logic::storage{
 
 		virtual std::shared_ptr<attributes::object> find_attribute(const std::string &name, bool search_tree, const object **branch = nullptr) const;
 
+		template <typename target_type>
+		target_type *get_first_of_type() const{
+			if (auto this_target = dynamic_cast<target_type *>(const_cast<object *>(this)); this_target != nullptr)
+				return this_target;
+
+			if (auto object_parent = dynamic_cast<object *>(parent_); object_parent != nullptr)
+				return object_parent->get_first_of_type<target_type>();
+
+			return nullptr;
+		}
+
 	protected:
 		virtual bool validate_(const declaration::function_base &target) const;
 

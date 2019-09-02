@@ -32,6 +32,8 @@ namespace cminus::declaration{
 		virtual std::size_t get_max_arg_count() const override;
 
 	protected:
+		function(std::string name, logic::naming::parent *parent);
+
 		virtual std::shared_ptr<memory::reference> call_(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const override;
 
 		virtual void compute_values_();
@@ -47,6 +49,8 @@ namespace cminus::declaration{
 		virtual void print_body_(logic::runtime &runtime) const;
 
 		virtual void copy_args_(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const;
+
+		virtual void evaluate_body_(logic::runtime &runtime) const;
 
 		virtual std::shared_ptr<memory::reference> copy_return_value_(logic::runtime &runtime, std::shared_ptr<memory::reference> value) const;
 

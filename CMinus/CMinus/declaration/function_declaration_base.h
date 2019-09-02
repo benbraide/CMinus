@@ -20,7 +20,7 @@ namespace cminus::declaration{
 
 		virtual std::shared_ptr<function_base> find(logic::runtime &runtime, const function_base &tmpl) const = 0;
 
-		virtual std::shared_ptr<function_base> get_highest_ranked(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const = 0;
+		virtual std::shared_ptr<function_base> get_highest_ranked(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const = 0;
 
 		virtual std::shared_ptr<memory::reference> call(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const = 0;
 	};

@@ -28,15 +28,19 @@ std::shared_ptr<cminus::declaration::function_base> cminus::declaration::functio
 	return nullptr;
 }
 
-std::shared_ptr<cminus::declaration::function_base> cminus::declaration::function_group::get_highest_ranked(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+std::shared_ptr<cminus::declaration::function_base> cminus::declaration::function_group::get_highest_ranked(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const{
 	if (list_.empty())
 		return nullptr;
 
-	std::shared_ptr<function_base> highest_ranked;
+	auto is_const = (context != nullptr && context->has_attribute("ReadOnly", true, true)), is_const_ctx = false;
 	int highest_rank_score = type::object::get_score_value(type::object::score_result_type::nil), current_rank_score;
 
+	std::shared_ptr<function_base> highest_ranked;
 	for (auto &item : list_){
-		if (highest_rank_score < (current_rank_score = type::object::get_score_value(item.first->get_rank(runtime, args)))){
+		if (is_const && !(is_const_ctx = item.first->get_attributes().has("ReadOnlyContext", true)))
+			continue;
+
+		if (highest_rank_score < (current_rank_score = (type::object::get_score_value(item.first->get_rank(runtime, args)) - ((is_const_ctx == is_const) ? 0 : 1)))){
 			highest_rank_score = current_rank_score;
 			highest_ranked = item.second;
 		}
@@ -46,7 +50,7 @@ std::shared_ptr<cminus::declaration::function_base> cminus::declaration::functio
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::declaration::function_group::call(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const{
-	auto highest_ranked = get_highest_ranked(runtime, args);
+	auto highest_ranked = get_highest_ranked(runtime, context, args);
 	if (highest_ranked == nullptr)
 		throw logic::exception("Function does not take the specified arguments", 0u, 0u);
 
