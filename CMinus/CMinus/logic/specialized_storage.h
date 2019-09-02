@@ -9,13 +9,6 @@ namespace cminus::declaration{
 namespace cminus::logic::storage{
 	class specialized : public object{
 	public:
-		enum class interrupt_type{
-			nil,
-			return_,
-			break_,
-			continue_,
-		};
-
 		explicit specialized(const std::string &name, object *parent = nullptr);
 
 		virtual ~specialized();
@@ -26,8 +19,6 @@ namespace cminus::logic::storage{
 
 	protected:
 		virtual bool interrupt_is_valid_(interrupt_type value) const = 0;
-
-		virtual void invalid_interrupt_(interrupt_type type, std::shared_ptr<memory::reference> value);
 
 		std::shared_ptr<memory::reference> interrupt_value_;
 	};

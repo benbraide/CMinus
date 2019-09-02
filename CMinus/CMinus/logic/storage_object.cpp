@@ -12,6 +12,13 @@ cminus::logic::storage::object::object(const std::string &value, object *parent)
 
 cminus::logic::storage::object::~object() = default;
 
+void cminus::logic::storage::object::raise_interrupt(interrupt_type type, std::shared_ptr<memory::reference> value){
+	if (auto object_parent = dynamic_cast<object *>(parent_); object_parent != nullptr)
+		object_parent->raise_interrupt(type, value);
+	else
+		invalid_interrupt_(type, value);
+}
+
 void cminus::logic::storage::object::add(logic::runtime &runtime, const std::string &name, std::shared_ptr<memory::reference> entry){
 	if (!exists(name))
 		entries_[name] = entry;
@@ -97,6 +104,22 @@ std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::objec
 		return it->second;
 
 	return nullptr;
+}
+
+void cminus::logic::storage::object::invalid_interrupt_(interrupt_type type, std::shared_ptr<memory::reference> value){
+	switch (type){
+	case interrupt_type::return_:
+		throw logic::exception("A 'return' statement requires a function scope", 0u, 0u);
+		break;
+	case interrupt_type::break_:
+		throw logic::exception("A 'return' statement requires a loop or switch scope", 0u, 0u);
+		break;
+	case interrupt_type::continue_:
+		throw logic::exception("A 'return' statement requires a loop scope", 0u, 0u);
+		break;
+	default:
+		break;
+	}
 }
 
 bool cminus::logic::storage::object::validate_(const declaration::function_base &target) const{

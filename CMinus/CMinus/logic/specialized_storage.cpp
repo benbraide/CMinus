@@ -20,22 +20,6 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::specialized::
 	return interrupt_value_;
 }
 
-void cminus::logic::storage::specialized::invalid_interrupt_(interrupt_type type, std::shared_ptr<memory::reference> value){
-	switch (type){
-	case interrupt_type::return_:
-		throw logic::exception("A 'return' statement requires a function scope", 0u, 0u);
-		break;
-	case interrupt_type::break_:
-		throw logic::exception("A 'return' statement requires a loop or switch scope", 0u, 0u);
-		break;
-	case interrupt_type::continue_:
-		throw logic::exception("A 'return' statement requires a loop scope", 0u, 0u);
-		break;
-	default:
-		break;
-	}
-}
-
 cminus::logic::storage::double_layer::double_layer(const std::string &name, object *parent)
 	: specialized(name, parent){}
 
@@ -80,14 +64,11 @@ void cminus::logic::storage::double_layer::refresh(){
 }
 
 void cminus::logic::storage::double_layer::invalid_interrupt_(interrupt_type type, std::shared_ptr<memory::reference> value){
-	for (auto ancestor = parent_; ancestor != nullptr; ancestor = ancestor->get_naming_parent()){//Get next specialized ancestor
-		if (auto specialized_ancestor = dynamic_cast<specialized *>(ancestor); specialized_ancestor != nullptr){
-			specialized_ancestor->raise_interrupt(type, value);
-			return;
-		}
-	}
-
-	specialized::invalid_interrupt_(type, value);
+	auto object_parent = dynamic_cast<object *>(parent_);
+	if (auto specialized_ancestor = ((object_parent == nullptr) ? nullptr : object_parent->get_first_of_type<specialized>()); specialized_ancestor != nullptr)
+		specialized_ancestor->raise_interrupt(type, value);
+	else
+		specialized::invalid_interrupt_(type, value);
 }
 
 cminus::logic::storage::function::function(const declaration::function_base &owner, std::shared_ptr<memory::reference> context, object *parent)

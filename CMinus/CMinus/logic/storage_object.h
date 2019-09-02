@@ -31,6 +31,13 @@ namespace cminus::logic::storage{
 	public:
 		using parent_base_type = naming::parent;
 
+		enum class interrupt_type{
+			nil,
+			return_,
+			break_,
+			continue_,
+		};
+
 		struct function_group_info{
 			std::size_t address;
 			std::shared_ptr<declaration::function_group_base> value;
@@ -39,6 +46,8 @@ namespace cminus::logic::storage{
 		explicit object(const std::string &value, object *parent = nullptr);
 
 		virtual ~object();
+
+		virtual void raise_interrupt(interrupt_type type, std::shared_ptr<memory::reference> value);
 
 		virtual void add(logic::runtime &runtime, const std::string &name, std::shared_ptr<memory::reference> entry);
 
@@ -64,6 +73,8 @@ namespace cminus::logic::storage{
 		}
 
 	protected:
+		virtual void invalid_interrupt_(interrupt_type type, std::shared_ptr<memory::reference> value);
+
 		virtual bool validate_(const declaration::function_base &target) const;
 
 		virtual void extend_function_group_(logic::runtime &runtime, declaration::function_group_base &group, std::shared_ptr<declaration::function_base> entry);

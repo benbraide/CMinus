@@ -21,14 +21,7 @@ bool cminus::declaration::string::size::is_defined() const{
 }
 
 void cminus::declaration::string::size::evaluate_body_(logic::runtime &runtime) const{
-	auto function_storage = runtime.current_storage->get_first_of_type<logic::storage::function>();
-	if (function_storage == nullptr)
-		throw logic::exception("Function call requires a function storage context", 0u, 0u);
-
-	if (function_storage->get_first_of_type<type::string>() != nullptr)
-		function_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, function_storage->find(runtime, "size_", true));
-	else
-		throw logic::exception("A member function requires a context of related type", 0u, 0u);
+	runtime.current_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, runtime.current_storage->find(runtime, "size_", true));
 }
 
 cminus::declaration::string::data::data(logic::runtime &runtime, bool read_only, logic::naming::parent *parent)
@@ -63,14 +56,7 @@ bool cminus::declaration::string::data::is_defined() const{
 }
 
 void cminus::declaration::string::data::evaluate_body_(logic::runtime &runtime) const{
-	auto function_storage = runtime.current_storage->get_first_of_type<logic::storage::function>();
-	if (function_storage == nullptr)
-		throw logic::exception("Function call requires a function storage context", 0u, 0u);
-
-	if (function_storage->get_first_of_type<type::string>() != nullptr)
-		function_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, function_storage->find(runtime, "data_", true));
-	else
-		throw logic::exception("A member function requires a context of related type", 0u, 0u);
+	runtime.current_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, runtime.current_storage->find(runtime, "data_", true));
 }
 
 cminus::declaration::string::resize::resize(logic::runtime &runtime, logic::naming::parent *parent)
@@ -104,15 +90,8 @@ bool cminus::declaration::string::resize::is_defined() const{
 }
 
 void cminus::declaration::string::resize::evaluate_body_(logic::runtime &runtime) const{
-	auto function_storage = runtime.current_storage->get_first_of_type<logic::storage::function>();
-	if (function_storage == nullptr)
-		throw logic::exception("Function call requires a function storage context", 0u, 0u);
-
-	if (function_storage->get_first_of_type<type::string>() == nullptr)
-		throw logic::exception("A member function requires a context of related type", 0u, 0u);
-
-	auto size = function_storage->find(runtime, "size_", true);
-	auto value = function_storage->find(runtime, "value", true)->read_scalar<unsigned __int64>(runtime);
+	auto size = runtime.current_storage->find(runtime, "size_", true);
+	auto value = runtime.current_storage->find(runtime, "value", true)->read_scalar<unsigned __int64>(runtime);
 
 	auto size_value = size->read_scalar<unsigned __int64>(runtime);
 	if (size_value != value){//Allocate new block
@@ -124,14 +103,14 @@ void cminus::declaration::string::resize::evaluate_body_(logic::runtime &runtime
 		if (new_data_address == 0u)
 			throw memory::exception(memory::error_code::allocation_failure, 0u);
 
-		auto data = function_storage->find(runtime, "data_", true);
+		auto data = runtime.current_storage->find(runtime, "data_", true);
 		if (auto data_address = data->read_scalar<unsigned __int64>(runtime); data_address != 0u){//Copy and free
 			runtime.memory_object.write(data_address, new_data_address, ((size_value < value) ? size_value : value));
 			runtime.memory_object.deallocate_block(data_address);
 		}
 
 		if (size_value < value)//Fill
-			runtime.memory_object.set((new_data_address + size_value), function_storage->find(runtime, "fill", true)->read_scalar<std::byte>(runtime), ((value - size_value) + 1u));
+			runtime.memory_object.set((new_data_address + size_value), runtime.current_storage->find(runtime, "fill", true)->read_scalar<std::byte>(runtime), ((value - size_value) + 1u));
 		else//Null terminate
 			runtime.memory_object.write_scalar((new_data_address + value), '\0');
 
@@ -139,7 +118,7 @@ void cminus::declaration::string::resize::evaluate_body_(logic::runtime &runtime
 		size->write_scalar(runtime, value);//Update size
 	}
 
-	function_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, nullptr);
+	runtime.current_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, nullptr);
 }
 
 cminus::declaration::string::clear::clear(logic::runtime &runtime, logic::naming::parent *parent)
@@ -155,14 +134,7 @@ bool cminus::declaration::string::clear::is_defined() const{
 }
 
 void cminus::declaration::string::clear::evaluate_body_(logic::runtime &runtime) const{
-	auto function_storage = runtime.current_storage->get_first_of_type<logic::storage::function>();
-	if (function_storage == nullptr)
-		throw logic::exception("Function call requires a function storage context", 0u, 0u);
-
-	if (function_storage->get_first_of_type<type::string>() == nullptr)
-		throw logic::exception("A member function requires a context of related type", 0u, 0u);
-
-	auto size = function_storage->find(runtime, "size_", true);
+	auto size = runtime.current_storage->find(runtime, "size_", true);
 	if (0u < size->read_scalar<unsigned __int64>(runtime)){
 		auto new_data_block = runtime.memory_object.allocate_block(1u, 0u);
 		if (new_data_block == nullptr)
@@ -172,7 +144,7 @@ void cminus::declaration::string::clear::evaluate_body_(logic::runtime &runtime)
 		if (new_data_address == 0u)
 			throw memory::exception(memory::error_code::allocation_failure, 0u);
 
-		auto data = function_storage->find(runtime, "data_", true);
+		auto data = runtime.current_storage->find(runtime, "data_", true);
 		if (auto data_address = data->read_scalar<unsigned __int64>(runtime); data_address != 0u)//Free
 			runtime.memory_object.deallocate_block(data_address);
 
@@ -181,5 +153,5 @@ void cminus::declaration::string::clear::evaluate_body_(logic::runtime &runtime)
 		size->write_scalar(runtime, 0ui64);//Update size
 	}
 
-	function_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, nullptr);
+	runtime.current_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, nullptr);
 }
