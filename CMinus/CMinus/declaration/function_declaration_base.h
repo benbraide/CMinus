@@ -50,6 +50,8 @@ namespace cminus::declaration{
 
 		virtual bool is_defined() const = 0;
 
+		virtual bool supports_return_statement() const = 0;
+
 		virtual void traverse_params(const std::function<void(std::shared_ptr<variable>)> &callback) const = 0;
 
 		virtual std::shared_ptr<type::object> get_return_type() const = 0;

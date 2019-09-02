@@ -2,6 +2,62 @@
 #include "../type/pointer_type.h"
 #include "../node/memory_reference_node.h"
 
+cminus::declaration::string::default_constructor::default_constructor(logic::runtime &runtime, logic::naming::parent *parent)
+	: function("string", parent){}
+
+cminus::declaration::string::default_constructor::~default_constructor() = default;
+
+bool cminus::declaration::string::default_constructor::is_defined() const{
+	return true;
+}
+
+bool cminus::declaration::string::default_constructor::supports_return_statement() const{
+	return false;
+}
+
+void cminus::declaration::string::default_constructor::print_return_(logic::runtime &runtime) const{}
+
+void cminus::declaration::string::default_constructor::evaluate_body_(logic::runtime &runtime) const{
+	auto data = runtime.current_storage->find(runtime, "data_", true);
+	auto new_data_block = runtime.memory_object.allocate_block(1u, 0u);
+
+	if (new_data_block == nullptr)
+		throw memory::exception(memory::error_code::allocation_failure, 0u);
+
+	auto new_data_address = new_data_block->get_address();
+	if (new_data_address == 0u)
+		throw memory::exception(memory::error_code::allocation_failure, 0u);
+
+	runtime.memory_object.write_scalar(new_data_address, '\0');//Null terminate
+	data->write_scalar(runtime, new_data_address);//Copy new address
+}
+
+cminus::declaration::string::destructor::destructor(logic::runtime &runtime, logic::naming::parent *parent)
+	: function("~string", parent){}
+
+cminus::declaration::string::destructor::~destructor() = default;
+
+bool cminus::declaration::string::destructor::is_defined() const{
+	return true;
+}
+
+bool cminus::declaration::string::destructor::supports_return_statement() const{
+	return false;
+}
+
+void cminus::declaration::string::destructor::print_return_(logic::runtime &runtime) const{}
+
+void cminus::declaration::string::destructor::evaluate_body_(logic::runtime &runtime) const{
+	auto size = runtime.current_storage->find(runtime, "size_", true);
+	auto data = runtime.current_storage->find(runtime, "data_", true);
+
+	size->write_scalar(runtime, 0ui64);//Update size
+	if (auto data_address = data->read_scalar<unsigned __int64>(runtime); data_address != 0u){//Free
+		runtime.memory_object.deallocate_block(data_address);
+		data->write_scalar(runtime, 0ui64);//Update address
+	}
+}
+
 cminus::declaration::string::empty::empty(logic::runtime &runtime, logic::naming::parent *parent)
 	: function("empty", parent){
 	return_declaration_ = std::make_shared<variable>(
@@ -71,7 +127,6 @@ cminus::declaration::string::data::data(logic::runtime &runtime, bool read_only,
 			nullptr																			//Initialization
 		);
 	}
-	
 }
 
 cminus::declaration::string::data::~data() = default;
@@ -86,7 +141,6 @@ void cminus::declaration::string::data::evaluate_body_(logic::runtime &runtime) 
 
 cminus::declaration::string::resize::resize(logic::runtime &runtime, logic::naming::parent *parent)
 	: function("resize", parent){
-	return_declaration_ = nullptr;//Void return
 	params_.push_back(std::make_shared<variable>(
 		attribute_list_type{},															//Attributes
 		runtime.global_storage->get_primitve_type(type::primitive::id_type::uint64_),	//Type
@@ -147,10 +201,7 @@ void cminus::declaration::string::resize::evaluate_body_(logic::runtime &runtime
 }
 
 cminus::declaration::string::clear::clear(logic::runtime &runtime, logic::naming::parent *parent)
-	: function("clear", parent){
-	return_declaration_ = nullptr;//Void return
-	min_arg_count_ = max_arg_count_ = 0u;
-}
+	: function("clear", parent){}
 
 cminus::declaration::string::clear::~clear() = default;
 

@@ -21,6 +21,8 @@ namespace cminus::declaration{
 
 		virtual bool is_defined() const override;
 
+		virtual bool supports_return_statement() const override;
+
 		virtual void traverse_params(const std::function<void(std::shared_ptr<variable>)> &callback) const override;
 
 		virtual std::shared_ptr<type::object> get_return_type() const override;
@@ -41,6 +43,8 @@ namespace cminus::declaration{
 		virtual bool is_exact_(logic::runtime &runtime, std::shared_ptr<variable> first, std::shared_ptr<variable> second) const;
 
 		virtual void print_attributes_(logic::runtime &runtime) const;
+
+		virtual void print_return_(logic::runtime &runtime) const;
 
 		virtual void print_name_(logic::runtime &runtime) const;
 

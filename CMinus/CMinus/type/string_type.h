@@ -7,6 +7,8 @@
 namespace cminus::type{
 	class string : public class_{
 	public:
+		explicit string(logic::runtime &runtime, logic::storage::object *parent = nullptr);
 
+		virtual ~string();
 	};
 }

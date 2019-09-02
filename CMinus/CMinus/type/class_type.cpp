@@ -139,7 +139,7 @@ bool cminus::type::class_::add_base(logic::runtime &runtime, access_type access,
 	return true;
 }
 
-bool cminus::type::class_::add_declaration(logic::runtime &runtime, access_type access, std::shared_ptr<declaration::variable> value){
+bool cminus::type::class_::add_declaration(logic::runtime &runtime, std::shared_ptr<declaration::variable> value){
 	if (entries_.find(value->get_name()) != entries_.end())
 		return false;
 

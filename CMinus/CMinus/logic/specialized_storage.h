@@ -13,9 +13,9 @@ namespace cminus::logic::storage{
 
 		virtual ~specialized();
 
-		virtual void raise_interrupt(interrupt_type type, std::shared_ptr<memory::reference> value);
+		virtual void raise_interrupt(interrupt_type type, std::shared_ptr<memory::reference> value) override;
 
-		virtual std::shared_ptr<memory::reference> get_raised_interrupt_value() const;
+		virtual std::shared_ptr<memory::reference> get_raised_interrupt_value() const override;
 
 	protected:
 		virtual bool interrupt_is_valid_(interrupt_type value) const = 0;

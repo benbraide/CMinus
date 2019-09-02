@@ -3,9 +3,41 @@
 #include "function_declaration.h"
 
 namespace cminus::declaration::string{
+	class default_constructor : public function{
+	public:
+		default_constructor(logic::runtime &runtime, logic::naming::parent *parent);
+
+		virtual ~default_constructor();
+
+		virtual bool is_defined() const override;
+
+		virtual bool supports_return_statement() const override;
+
+	protected:
+		virtual void print_return_(logic::runtime &runtime) const override;
+
+		virtual void evaluate_body_(logic::runtime &runtime) const override;
+	};
+
+	class destructor : public function{
+	public:
+		destructor(logic::runtime &runtime, logic::naming::parent *parent);
+
+		virtual ~destructor();
+
+		virtual bool is_defined() const override;
+
+		virtual bool supports_return_statement() const override;
+
+	protected:
+		virtual void print_return_(logic::runtime &runtime) const override;
+
+		virtual void evaluate_body_(logic::runtime &runtime) const override;
+	};
+
 	class empty : public function{
 	public:
-		explicit empty(logic::runtime &runtime, logic::naming::parent *parent);
+		empty(logic::runtime &runtime, logic::naming::parent *parent);
 
 		virtual ~empty();
 
@@ -29,7 +61,7 @@ namespace cminus::declaration::string{
 
 	class data : public function{
 	public:
-		explicit data(logic::runtime &runtime, bool read_only, logic::naming::parent *parent);
+		data(logic::runtime &runtime, bool read_only, logic::naming::parent *parent);
 
 		virtual ~data();
 
@@ -41,7 +73,7 @@ namespace cminus::declaration::string{
 
 	class resize : public function{
 	public:
-		explicit resize(logic::runtime &runtime, logic::naming::parent *parent);
+		resize(logic::runtime &runtime, logic::naming::parent *parent);
 
 		virtual ~resize();
 
@@ -53,7 +85,7 @@ namespace cminus::declaration::string{
 
 	class clear : public function{
 	public:
-		explicit clear(logic::runtime &runtime, logic::naming::parent *parent);
+		clear(logic::runtime &runtime, logic::naming::parent *parent);
 
 		virtual ~clear();
 

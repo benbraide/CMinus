@@ -19,6 +19,10 @@ void cminus::logic::storage::object::raise_interrupt(interrupt_type type, std::s
 		invalid_interrupt_(type, value);
 }
 
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::get_raised_interrupt_value() const{
+	return nullptr;
+}
+
 void cminus::logic::storage::object::add(logic::runtime &runtime, const std::string &name, std::shared_ptr<memory::reference> entry){
 	if (!exists(name))
 		entries_[name] = entry;

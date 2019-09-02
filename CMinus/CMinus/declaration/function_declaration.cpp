@@ -1,4 +1,5 @@
 #include "../type/class_type.h"
+#include "../type/pointer_type.h"
 
 #include "function_declaration.h"
 
@@ -93,7 +94,7 @@ cminus::type::object::score_result_type cminus::declaration::function::get_rank(
 
 void cminus::declaration::function::print(logic::runtime &runtime) const{
 	print_attributes_(runtime);
-	return_declaration_->print(runtime);
+	print_return_(runtime);
 
 	print_name_(runtime);
 	print_params_(runtime);
@@ -111,6 +112,10 @@ void cminus::declaration::function::define(std::shared_ptr<node::object> body){
 
 bool cminus::declaration::function::is_defined() const{
 	return (body_ != nullptr);
+}
+
+bool cminus::declaration::function::supports_return_statement() const{
+	return true;
 }
 
 void cminus::declaration::function::traverse_params(const std::function<void(std::shared_ptr<variable>)> &callback) const{
@@ -174,6 +179,16 @@ void cminus::declaration::function::print_attributes_(logic::runtime &runtime) c
 	attributes_.print(runtime);
 }
 
+void cminus::declaration::function::print_return_(logic::runtime &runtime) const{
+	if (return_declaration_ != nullptr){
+		return_declaration_->get_type()->print(runtime, true);
+		if (dynamic_cast<type::pointer *>(return_declaration_->get_type().get()) == nullptr)
+			runtime.writer.write_scalar(' ');
+	}
+	else
+		runtime.writer.write_buffer("void ", 5u);
+}
+
 void cminus::declaration::function::print_name_(logic::runtime &runtime) const{
 	auto name = get_qualified_naming_value();
 	if (name.empty())
@@ -231,7 +246,7 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::function::call_(
 	}
 	catch (logic::storage::specialized::interrupt_type e){//Check for value return
 		if (e == logic::storage::specialized::interrupt_type::return_)
-			return_value = copy_return_value_(runtime, dynamic_cast<logic::storage::function *>(runtime.current_storage.get())->get_raised_interrupt_value());
+			return_value = copy_return_value_(runtime, runtime.current_storage->get_raised_interrupt_value());
 		else//Forward exception
 			throw;
 	}

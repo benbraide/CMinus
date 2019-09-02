@@ -27,7 +27,7 @@ namespace cminus::type{
 			std::shared_ptr<type::object> value;
 		};
 
-		explicit class_(logic::runtime &runtime, const std::string &name, logic::storage::object *parent = nullptr);
+		class_(logic::runtime &runtime, const std::string &name, logic::storage::object *parent = nullptr);
 
 		virtual ~class_();
 
@@ -53,7 +53,7 @@ namespace cminus::type{
 
 		virtual bool add_base(logic::runtime &runtime, access_type access, std::shared_ptr<type::object> value);
 
-		virtual bool add_declaration(logic::runtime &runtime, access_type access, std::shared_ptr<declaration::variable> value);
+		virtual bool add_declaration(logic::runtime &runtime, std::shared_ptr<declaration::variable> value);
 
 		virtual relationship_type get_relationship(const type::object &target) const;
 

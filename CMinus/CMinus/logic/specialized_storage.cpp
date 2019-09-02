@@ -115,7 +115,7 @@ const cminus::declaration::function_base &cminus::logic::storage::function::get_
 }
 
 bool cminus::logic::storage::function::interrupt_is_valid_(interrupt_type value) const{
-	return (value == interrupt_type::return_);
+	return (value == interrupt_type::return_ && owner_.supports_return_statement());
 }
 
 cminus::logic::storage::loop::loop(object *parent)
