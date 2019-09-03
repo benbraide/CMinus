@@ -46,8 +46,6 @@ void cminus::declaration::variable::evaluate(logic::runtime &runtime, std::share
 			throw memory::exception(memory::error_code::allocation_failure, 0u);
 	}
 
-	//reference->add_attribute(runtime.global_storage->find_attribute("#LVal#", false));
-
 	runtime.current_storage->add(runtime, name_, reference);
 	if (reference->find_attribute("Static", true, false) != nullptr)
 		static_value_ = reference;

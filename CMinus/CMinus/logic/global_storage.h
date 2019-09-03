@@ -13,9 +13,11 @@ namespace cminus::evaluator{
 namespace cminus::logic::storage{
 	class global : public object{
 	public:
-		explicit global(logic::runtime &runtime);
+		explicit global();
 
 		virtual ~global();
+
+		virtual void init(logic::runtime &runtime);
 
 		virtual std::shared_ptr<type::object> get_primitve_type(type::primitive::id_type id) const;
 
@@ -25,7 +27,7 @@ namespace cminus::logic::storage{
 
 		virtual std::shared_ptr<evaluator::object> get_evaluator(evaluator::id id) const;
 
-		virtual const char *get_string_data(logic::runtime &runtime, std::shared_ptr<evaluator::object> object) const;
+		virtual const char *get_string_data(logic::runtime &runtime, std::shared_ptr<memory::reference> object) const;
 
 	protected:
 		std::unordered_map<type::primitive::id_type, std::shared_ptr<type::object>> primitive_types_;

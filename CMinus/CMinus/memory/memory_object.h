@@ -125,7 +125,7 @@ namespace cminus::memory{
 		}
 
 		std::list<std::shared_ptr<block>> blocks_;
-		std::size_t next_address_ = 0u;
+		std::size_t next_address_ = 1u;
 
 		std::atomic<std::size_t> lock_count_ = 0u;
 		mutable std::shared_mutex lock_;

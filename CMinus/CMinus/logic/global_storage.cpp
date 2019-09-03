@@ -1,9 +1,30 @@
 #include "../type/string_type.h"
 #include "../evaluator/evaluator_object.h"
 
-cminus::logic::storage::global::global(logic::runtime &runtime)
-	: object("", nullptr){
-	primitive_types_[type::primitive::id_type::string] = std::make_shared<type::string>(runtime);
+cminus::logic::storage::global::global()
+	: object("", nullptr){}
+
+cminus::logic::storage::global::~global() = default;
+
+void cminus::logic::storage::global::init(logic::runtime &runtime){
+	attributes_["Private"] = std::make_shared<logic::attributes::private_access>();
+	attributes_["Protected"] = std::make_shared<logic::attributes::protected_access>();
+	attributes_["Public"] = std::make_shared<logic::attributes::public_access>();
+
+	attributes_["ReadOnly"] = std::make_shared<logic::attributes::read_only>();
+	attributes_["ReadOnlyContext"] = std::make_shared<logic::attributes::read_only_context>();
+	attributes_["ReadOnlyTarget"] = std::make_shared<logic::attributes::read_only_target>();
+
+	attributes_["WriteOnly"] = std::make_shared<logic::attributes::write_only>();
+	attributes_["WriteOnlyTarget"] = std::make_shared<logic::attributes::write_only_target>();
+
+	attributes_["Deprecated"] = std::make_shared<logic::attributes::deprecated>();
+	attributes_["NotNull"] = std::make_shared<logic::attributes::not_null>();
+	attributes_["Ref"] = std::make_shared<logic::attributes::ref>();
+
+	attributes_["#NaN#"] = std::make_shared<logic::attributes::special>("#NaN#");
+	attributes_["#Init#"] = std::make_shared<logic::attributes::special>("#Init#");
+
 	for (auto id = type::primitive::id_type::nullptr_; id < type::primitive::id_type::string; id = static_cast<type::primitive::id_type>(static_cast<int>(id) + 1))
 		primitive_types_[id] = std::make_shared<type::primitive>(id);
 
@@ -26,9 +47,9 @@ cminus::logic::storage::global::global(logic::runtime &runtime)
 		nullptr,
 		node::named_constant::constant_type::nan_
 	);
-}
 
-cminus::logic::storage::global::~global() = default;
+	primitive_types_[type::primitive::id_type::string] = std::make_shared<type::string>(runtime);
+}
 
 std::shared_ptr<cminus::type::object> cminus::logic::storage::global::get_primitve_type(type::primitive::id_type id) const{
 	if (primitive_types_.empty())
@@ -64,6 +85,14 @@ std::shared_ptr<cminus::evaluator::object> cminus::logic::storage::global::get_e
 	return nullptr;
 }
 
-const char *cminus::logic::storage::global::get_string_data(logic::runtime &runtime, std::shared_ptr<evaluator::object> object) const{
+const char *cminus::logic::storage::global::get_string_data(logic::runtime &runtime, std::shared_ptr<memory::reference> object) const{
+	auto string_type = dynamic_cast<type::string *>(object->get_type().get());
+	if (string_type == nullptr)
+		return nullptr;
+
+	auto data = string_type->find(runtime, search_options{ string_type, object, "data_", false });
+	if (auto data_block = runtime.memory_object.get_block(data->read_scalar<unsigned __int64>(runtime)); data_block != nullptr)
+		return reinterpret_cast<const char *>(data_block->get_data());
+
 	return nullptr;
 }

@@ -529,7 +529,6 @@ void cminus::memory::lval_reference::allocate_memory_(logic::runtime &runtime, s
 	if (block == nullptr)
 		return;
 
-	add_attribute(runtime.global_storage->find_attribute("#LVal", false));
 	address_ = block->get_address();
 	deallocator_ = [address = address_, &memory_object = runtime.memory_object](){
 		if (address != 0u)

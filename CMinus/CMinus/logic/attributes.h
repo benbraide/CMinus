@@ -34,15 +34,15 @@ namespace cminus::logic::attributes{
 
 		virtual bool is_same(const naming::object &target) const override;
 
-		virtual std::shared_ptr<object> get_non_pointer_object() const;
+		virtual bool applies_to_function() const;
 
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const = 0;
-
-		virtual bool is_included_in_comparison(logic::runtime &runtime) const;
 
 		virtual void call(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const;
 
 		virtual void call(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const;
+
+		virtual std::shared_ptr<object> get_pointer_target(logic::runtime &runtime) const;
 
 	protected:
 		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const;
@@ -119,28 +119,6 @@ namespace cminus::logic::attributes{
 		optimised_list_type list_;
 	};
 
-	class pointer_object : public object{
-	public:
-		explicit pointer_object(std::shared_ptr<object> target);
-
-		virtual ~pointer_object();
-
-		virtual bool is_same(const naming::object &target) const override;
-
-		virtual std::shared_ptr<object> get_non_pointer_object() const override;
-
-		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
-
-		virtual bool is_included_in_comparison(logic::runtime &runtime) const override;
-
-		virtual std::shared_ptr<object> get_target() const;
-
-	protected:
-		virtual void call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const override;
-
-		std::shared_ptr<object> target_;
-	};
-
 	class bound_object : public object{
 	public:
 		bound_object(std::shared_ptr<object> target, const std::vector<std::shared_ptr<memory::reference>> &args);
@@ -149,9 +127,11 @@ namespace cminus::logic::attributes{
 
 		virtual ~bound_object();
 
+		virtual void print(logic::runtime &runtime, bool is_qualified) const override;
+
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
-		virtual bool is_included_in_comparison(logic::runtime &runtime) const override;
+		virtual std::shared_ptr<object> get_pointer_target(logic::runtime &runtime) const override;
 
 		virtual std::shared_ptr<object> get_target() const;
 
@@ -171,20 +151,79 @@ namespace cminus::logic::attributes{
 		virtual ~external();
 	};
 
+	class private_access : public external{
+	public:
+		private_access();
+
+		virtual ~private_access();
+
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+
+	protected:
+		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
+
+		virtual std::string get_default_message_() const override;
+	};
+
+	class protected_access : public external{
+	public:
+		protected_access();
+
+		virtual ~protected_access();
+
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+
+	protected:
+		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
+
+		virtual std::string get_default_message_() const override;
+	};
+
+	class public_access : public external{
+	public:
+		public_access();
+
+		virtual ~public_access();
+
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+	};
+
 	class read_only : public external{
 	public:
 		read_only();
 
 		virtual ~read_only();
 
-		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+		virtual bool applies_to_function() const override;
 
-		virtual bool is_included_in_comparison(logic::runtime &runtime) const override;
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
 	protected:
 		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
 
 		virtual std::string get_default_message_() const override;
+	};
+
+	class read_only_context : public external{
+	public:
+		read_only_context();
+
+		virtual ~read_only_context();
+
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+	};
+
+	class read_only_target : public external{
+	public:
+		read_only_target();
+
+		virtual ~read_only_target();
+
+		virtual bool applies_to_function() const override;
+
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+
+		virtual std::shared_ptr<object> get_pointer_target(logic::runtime &runtime) const override;
 	};
 
 	class write_only : public external{
@@ -193,14 +232,27 @@ namespace cminus::logic::attributes{
 
 		virtual ~write_only();
 
-		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+		virtual bool applies_to_function() const override;
 
-		virtual bool is_included_in_comparison(logic::runtime &runtime) const override;
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
 	protected:
 		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
 
 		virtual std::string get_default_message_() const override;
+	};
+
+	class write_only_target : public external{
+	public:
+		write_only_target();
+
+		virtual ~write_only_target();
+
+		virtual bool applies_to_function() const override;
+
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+
+		virtual std::shared_ptr<object> get_pointer_target(logic::runtime &runtime) const override;
 	};
 
 	class not_null : public external{
@@ -211,19 +263,38 @@ namespace cminus::logic::attributes{
 
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
-		virtual bool is_included_in_comparison(logic::runtime &runtime) const override;
-
 	protected:
 		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
 
 		virtual std::string get_default_message_() const override;
 	};
 
-	class nan : public external{
+	class ref : public external{
 	public:
-		nan();
+		ref();
 
-		virtual ~nan();
+		virtual ~ref();
+
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+	};
+
+	class deprecated : public external{
+	public:
+		deprecated();
+
+		virtual ~deprecated();
+
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+
+	protected:
+		virtual void handle_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const override;
+	};
+
+	class special : public external{
+	public:
+		explicit special(const std::string &name);
+
+		virtual ~special();
 
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 	};

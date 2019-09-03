@@ -31,6 +31,8 @@ void cminus::type::object::construct(logic::runtime &runtime, std::shared_ptr<me
 		construct_default(runtime, target);
 }
 
+void cminus::type::object::destruct_construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const{}
+
 std::size_t cminus::type::object::compute_base_offset(const object &target) const{
 	return static_cast<std::size_t>(-1);
 }

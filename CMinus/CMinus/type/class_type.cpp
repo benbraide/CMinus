@@ -17,11 +17,30 @@ cminus::type::class_::class_(logic::runtime &runtime, const std::string &name, l
 cminus::type::class_::~class_() = default;
 
 void cminus::type::class_::construct_default(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const{
-
+	construct(runtime, target, nullptr);
 }
 
 void cminus::type::class_::construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> initialization) const{
+	auto constructor = find(runtime, search_options{ this, target, get_naming_value(), false });
+	auto callable = dynamic_cast<memory::function_reference *>(constructor.get());
 
+	if (callable == nullptr)
+		throw logic::exception("Bad constructor definition", 0u, 0u);
+
+	std::vector<std::shared_ptr<memory::reference>> args;
+	if (initialization != nullptr){//Resolve initialization
+
+	}
+
+	callable->get_value()->call(runtime, callable->get_context(), args);
+}
+
+void cminus::type::class_::destruct_construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const{
+	auto destructor = find(runtime, search_options{ this, target, ("~" + get_naming_value()), false });
+	if (auto callable = dynamic_cast<memory::function_reference *>(destructor.get()); callable != nullptr)
+		callable->get_value()->call(runtime, callable->get_context(), std::vector<std::shared_ptr<memory::reference>>{});
+	else
+		throw logic::exception("Bad destructor definition", 0u, 0u);
 }
 
 void cminus::type::class_::print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const{
@@ -37,21 +56,9 @@ std::size_t cminus::type::class_::get_size() const{
 }
 
 std::size_t cminus::type::class_::compute_base_offset(const type::object &target) const{
-	if (&target == this)
-		return 0u;
-
-	if (base_types_.empty())
-		return static_cast<std::size_t>(-1);
-
-	std::size_t offset = size_;
-	for (auto base_type : base_types_){
-		if (auto base_offset = base_type.second.value->compute_base_offset(target); base_offset != static_cast<std::size_t>(-1))
-			return (offset + base_offset);
-
-		offset += base_type.second.value->get_size();
-	}
-
-	return static_cast<std::size_t>(-1);
+	computed_base_type_info info{};
+	get_computed_base_info_(target, info);
+	return info.offset;
 }
 
 bool cminus::type::class_::is_exact(logic::runtime &runtime, const type::object &target) const{
@@ -111,40 +118,34 @@ std::shared_ptr<cminus::evaluator::object> cminus::type::class_::get_evaluator(l
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::type::class_::find(logic::runtime &runtime, const search_options &options) const{
-	auto entry = find_(runtime, options);
-	if (entry == nullptr || options.context == nullptr || dynamic_cast<class_ *>(options.context->get_type().get()) != this)
+	const logic::storage::object *entry_parent = nullptr;
+	auto entry = find_(runtime, search_options{ options.scope, options.context, options.name, options.search_tree, &entry_parent });
+	if (options.branch != nullptr)//Update branch
+		*options.branch = entry_parent;
+
+	if (entry == nullptr || (options.context != nullptr && dynamic_cast<class_ *>(options.context->get_type().get()) != this))
 		return entry;
 
-	if (auto class_scope = dynamic_cast<const class_ *>(options.scope); class_scope != nullptr){
-		switch (compute_base_offset(*entry->get_type())){
-		case static_cast<std::size_t>(-1)://Public access
-			entry->call_attributes(runtime, logic::attributes::object::stage_type::before_public_access, false);
-			break;
-		case 0u://Private access
-			entry->call_attributes(runtime, logic::attributes::object::stage_type::before_private_access, false);
-			break;
-		default://Protected access
-			entry->call_attributes(runtime, logic::attributes::object::stage_type::before_protected_access, false);
-			break;
-		}
-	}
-	else//Public access
-		entry->call_attributes(runtime, logic::attributes::object::stage_type::before_public_access, false);
-
-	if (entry->has_attribute("Static", true, false))
+	auto entry_class_parent = dynamic_cast<const class_ *>(entry_parent);
+	if (entry_class_parent == nullptr)
 		return entry;
 
-	auto base_offset = compute_base_offset(*entry->get_type());
-	if (base_offset == static_cast<std::size_t>(-1))
-		throw logic::exception("A non-static member requires an object context with related types", 0u, 0u);
+	computed_base_type_info computed_info{};
+	get_computed_base_info_(*entry_class_parent, computed_info);
+	if (computed_info.access == access_type::nil)//Not related
+		return entry;
 
-	auto context = ((base_offset == 0u) ? options.context : options.context->apply_offset(base_offset));
+	check_access_(dynamic_cast<const class_ *>(options.scope), computed_info.access, entry);
+	if (options.context == nullptr || entry->has_attribute("Static", true, false))
+		return entry;
+
+	auto context = ((computed_info.offset == 0u) ? options.context : options.context->apply_offset(computed_info.offset));
 	if (context == nullptr)//Error
 		return entry;
 
-	if (auto bound_entry = entry->bound_context(runtime, context, base_offset); bound_entry != nullptr){
-		if (auto read_only_attr = context->find_attribute("ReadOnly", true, false); read_only_attr != nullptr && options.name == "this")//Add read-only to pointed object
-			bound_entry->add_attribute(std::make_shared<logic::attributes::pointer_object>(read_only_attr));
+	if (auto bound_entry = entry->bound_context(runtime, context, computed_info.offset); bound_entry != nullptr){
+		if (options.name == "this" && context->find_attribute("ReadOnly", true, false) != nullptr)//Add read-only to pointed object
+			bound_entry->add_attribute(runtime.global_storage->find_attribute("ReadOnlyTarget", false));
 		return bound_entry;
 	}
 
@@ -265,4 +266,66 @@ std::shared_ptr<cminus::memory::reference> cminus::type::class_::find_(logic::ru
 		return storage_parent->find(runtime, options);
 
 	return nullptr;
+}
+
+void cminus::type::class_::get_computed_base_info_(const type::object &target, computed_base_type_info &info) const{
+	if (&target != this){
+		if (!base_types_.empty()){
+			info = computed_base_type_info{ access_type::public_, size_ };
+			computed_base_type_info current_info{};
+
+			for (auto base_type : base_types_){
+				auto class_base_type = dynamic_cast<class_ *>(base_type.second.value.get());
+				if (class_base_type == nullptr)
+					continue;
+
+				class_base_type->get_computed_base_info_(target, current_info);
+				if (current_info.access != access_type::nil){//Found
+					info.offset += current_info.offset;
+					if (info.access < current_info.access)
+						info.access = current_info.access;
+
+					return;
+				}
+
+				info.offset += class_base_type->get_size();
+			}
+
+			info = computed_base_type_info{ access_type::nil, static_cast<std::size_t>(-1) };
+		}
+		else//Not related
+			info = computed_base_type_info{ access_type::nil, static_cast<std::size_t>(-1) };
+	}
+	else//Same type
+		info = computed_base_type_info{ access_type::private_, 0u };
+}
+
+void cminus::type::class_::check_access_(const class_ *scope, access_type access, std::shared_ptr<memory::reference> target) const{
+	if (scope != nullptr && scope != this){
+		switch (scope->compute_base_offset(*target->get_type())){
+		case static_cast<std::size_t>(-1) ://Public access
+			if (access < access_type::public_)
+				access = access_type::public_;
+			break;
+		case 0u://Private access
+			if (access < access_type::private_)
+				access = access_type::private_;
+			break;
+		default://Protected access
+			if (access < access_type::protected_)
+				access = access_type::protected_;
+			break;
+		}
+	}
+	else if (access < access_type::public_)//Public access
+		access = access_type::public_;
+
+	if (target->has_attribute("Private", true, false)){
+		if (access != access_type::private_)
+			throw logic::exception("Private object is inaccessible", 0u, 0u);
+	}
+	else if (target->has_attribute("Protected", true, false)){
+		if (access != access_type::private_ && access != access_type::protected_)
+			throw logic::exception("Private object is inaccessible", 0u, 0u);
+	}
 }

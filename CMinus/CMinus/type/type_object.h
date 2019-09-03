@@ -50,6 +50,8 @@ namespace cminus::type{
 
 		virtual void construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> initialization) const;
 
+		virtual void destruct_construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const;
+
 		virtual void print(logic::runtime &runtime, bool is_qualified) const = 0;
 
 		virtual void print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const = 0;

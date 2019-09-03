@@ -27,6 +27,11 @@ namespace cminus::type{
 			std::shared_ptr<type::object> value;
 		};
 
+		struct computed_base_type_info{
+			access_type access;
+			std::size_t offset;
+		};
+
 		class_(logic::runtime &runtime, const std::string &name, logic::storage::object *parent = nullptr);
 
 		virtual ~class_();
@@ -34,6 +39,8 @@ namespace cminus::type{
 		virtual void construct_default(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const override;
 
 		virtual void construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> initialization) const override;
+
+		virtual void destruct_construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const;
 
 		virtual void print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const override;
 
@@ -71,6 +78,10 @@ namespace cminus::type{
 		virtual void extend_function_group_(logic::runtime &runtime, declaration::function_group_base &group, std::shared_ptr<declaration::function_base> entry) override;
 
 		virtual std::shared_ptr<memory::reference> find_(logic::runtime &runtime, const search_options &options) const;
+
+		virtual void get_computed_base_info_(const type::object &target, computed_base_type_info &info) const;
+
+		virtual void check_access_(const class_ *scope, access_type access, std::shared_ptr<memory::reference> target) const;
 
 		std::size_t size_ = sizeof(void *);
 		std::unordered_map<std::string, base_type_info> base_types_;

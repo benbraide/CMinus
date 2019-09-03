@@ -72,7 +72,7 @@ void cminus::logic::storage::double_layer::invalid_interrupt_(interrupt_type typ
 }
 
 cminus::logic::storage::function::function(const declaration::function_base &owner, std::shared_ptr<memory::reference> context, object *parent)
-	: specialized("", ((context_ == nullptr) ? parent : dynamic_cast<object *>(context_->get_type().get()))), context_(context), owner_(owner){}
+	: specialized("", ((context == nullptr) ? parent : dynamic_cast<object *>(context->get_type().get()))), context_(context), owner_(owner){}
 
 cminus::logic::storage::function::~function() = default;
 
