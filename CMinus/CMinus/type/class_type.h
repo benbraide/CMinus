@@ -36,11 +36,9 @@ namespace cminus::type{
 
 		virtual ~class_();
 
-		virtual void construct_default(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const override;
-
 		virtual void construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> initialization) const override;
 
-		virtual void destruct_construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const;
+		virtual void destruct(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const;
 
 		virtual void print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const override;
 
@@ -72,6 +70,8 @@ namespace cminus::type{
 
 		virtual bool is_base(const type::object &target) const;
 
+		virtual void traverse_non_static_entries(const std::function<void(const std::string &, std::shared_ptr<memory::reference>)> &callback) const;
+
 	protected:
 		virtual bool validate_(const declaration::function_base &target) const override;
 
@@ -85,6 +85,6 @@ namespace cminus::type{
 
 		std::size_t size_ = sizeof(void *);
 		std::unordered_map<std::string, base_type_info> base_types_;
-		std::shared_ptr<logic::storage::object> this_storage_;
+		std::unordered_map<std::string, std::shared_ptr<memory::reference>> non_static_entries_;
 	};
 }

@@ -16,7 +16,7 @@ namespace cminus::declaration{
 
 		virtual ~variable();
 
-		virtual void evaluate(logic::runtime &runtime, std::shared_ptr<memory::reference> value) const;
+		virtual void evaluate(logic::runtime &runtime, std::shared_ptr<node::object> initialization) const;
 
 		virtual std::shared_ptr<memory::reference> evaluate_class_member(logic::runtime &runtime, std::size_t relative_offset) const;
 
@@ -34,7 +34,7 @@ namespace cminus::declaration{
 
 		virtual std::shared_ptr<memory::reference> allocate_memory(logic::runtime &runtime) const;
 
-		virtual void initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<memory::reference> value) const;
+		virtual void initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> value) const;
 
 	protected:
 		virtual void print_attributes_(logic::runtime &runtime) const;
@@ -60,7 +60,7 @@ namespace cminus::declaration{
 
 		virtual std::shared_ptr<memory::reference> allocate_memory(logic::runtime &runtime) const override;
 
-		virtual void initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<memory::reference> value) const override;
+		virtual void initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> value) const override;
 
 	protected:
 		virtual void print_initialization_(logic::runtime &runtime) const override;

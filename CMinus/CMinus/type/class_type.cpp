@@ -11,14 +11,9 @@ cminus::type::class_::class_(logic::runtime &runtime, const std::string &name, l
 	};
 
 	entries_["this"] = std::make_shared<memory::placeholder_reference>(0u, std::make_shared<raw_pointer>(this), attributes);
-	this_storage_ = std::make_shared<logic::storage::proxy>(*this);
 }
 
 cminus::type::class_::~class_() = default;
-
-void cminus::type::class_::construct_default(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const{
-	construct(runtime, target, nullptr);
-}
 
 void cminus::type::class_::construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> initialization) const{
 	auto constructor = find(runtime, search_options{ this, target, get_naming_value(), false });
@@ -33,9 +28,10 @@ void cminus::type::class_::construct(logic::runtime &runtime, std::shared_ptr<me
 	}
 
 	callable->get_value()->call(runtime, callable->get_context(), args);
+	target->remove_attribute("#Init#", true);
 }
 
-void cminus::type::class_::destruct_construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const{
+void cminus::type::class_::destruct(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const{
 	auto destructor = find(runtime, search_options{ this, target, ("~" + get_naming_value()), false });
 	if (auto callable = dynamic_cast<memory::function_reference *>(destructor.get()); callable != nullptr)
 		callable->get_value()->call(runtime, callable->get_context(), std::vector<std::shared_ptr<memory::reference>>{});
@@ -165,12 +161,18 @@ bool cminus::type::class_::add_base(logic::runtime &runtime, access_type access,
 }
 
 bool cminus::type::class_::add_declaration(logic::runtime &runtime, std::shared_ptr<declaration::variable> value){
-	if (entries_.find(value->get_name()) != entries_.end())
+	auto &name = value->get_name();
+	if (name.empty())
 		return false;
 
-	logic::storage::runtime_storage_guard guard(runtime, this_storage_);
+	if (entries_.find(name) != entries_.end())
+		return false;
+
+	logic::storage::runtime_storage_guard guard(runtime, std::make_shared<logic::storage::proxy>(*this));
 	if (auto non_static_member = value->evaluate_class_member(runtime, size_); non_static_member != nullptr){//Declaration is non-static
-		entries_[value->get_name()] = non_static_member;
+		entries_[name] = non_static_member;
+		non_static_entries_[name] = non_static_member;
+
 		if (non_static_member->find_attribute("Ref", true, false) == nullptr)
 			size_ += non_static_member->get_type()->get_size();
 	}
@@ -219,6 +221,11 @@ bool cminus::type::class_::is_base(const type::object &target) const{
 	}
 
 	return false;
+}
+
+void cminus::type::class_::traverse_non_static_entries(const std::function<void(const std::string &, std::shared_ptr<memory::reference>)> &callback) const{
+	for (auto &entry : non_static_entries_)
+		callback(entry.first, entry.second);
 }
 
 bool cminus::type::class_::validate_(const declaration::function_base &target) const{

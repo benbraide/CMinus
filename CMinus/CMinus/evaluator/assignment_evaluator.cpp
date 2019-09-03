@@ -35,7 +35,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 
 	if (!is_ref){//Copy value
 		if (is_init){
-			left_value->remove_attribute("#Init#", true);
 			logic::attributes::read_guard guard(runtime, right_value.get(), true);
 			runtime.memory_object.write(right_value->get_address(), left_value->get_address(), left_type->get_size());
 		}

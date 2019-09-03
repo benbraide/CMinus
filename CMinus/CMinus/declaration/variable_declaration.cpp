@@ -14,7 +14,7 @@ cminus::declaration::variable::variable(const logic::attributes::collection &att
 
 cminus::declaration::variable::~variable() = default;
 
-void cminus::declaration::variable::evaluate(logic::runtime &runtime, std::shared_ptr<memory::reference> value) const{
+void cminus::declaration::variable::evaluate(logic::runtime &runtime, std::shared_ptr<node::object> initialization) const{
 	//[Deprecated("Message")] --> Registered as 'after look-up'
 	//void print();
 
@@ -41,7 +41,7 @@ void cminus::declaration::variable::evaluate(logic::runtime &runtime, std::share
 	auto reference = static_value_;
 	if (reference == nullptr){//No static entry found
 		if ((reference = allocate_memory(runtime)) != nullptr && reference->get_address() != 0u)
-			initialize_memory(runtime, reference, value);
+			initialize_memory(runtime, reference, initialization);
 		else
 			throw memory::exception(memory::error_code::allocation_failure, 0u);
 	}
@@ -98,9 +98,7 @@ std::shared_ptr<cminus::node::object> cminus::declaration::variable::get_initial
 
 std::shared_ptr<cminus::memory::reference> cminus::declaration::variable::allocate_memory(logic::runtime &runtime) const{
 	std::shared_ptr<memory::reference> reference;
-	auto is_ref = attributes_.has("Ref", true);
-
-	if (is_ref)
+	if (attributes_.has("Ref", true))
 		reference = std::make_shared<memory::ref_reference>(type_, attributes_, nullptr);
 	else//Not a reference
 		reference = std::make_shared<memory::lval_reference>(runtime, type_, attributes_, nullptr);
@@ -108,22 +106,14 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::variable::alloca
 	if (reference == nullptr || reference->get_address() == 0u)
 		throw memory::exception(memory::error_code::allocation_failure, 0u);
 
-	if (!is_ref)//Default construction
-		reference->get_type()->construct_default(runtime, reference);
-
 	return reference;
 }
 
-void cminus::declaration::variable::initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<memory::reference> value) const{
-	if (value == nullptr && initialization_ != nullptr && (value = initialization_->evaluate(runtime)) == nullptr)
-		throw logic::exception("Failed to evaluate initialization", 0u, 0u);
-
-	if (value != nullptr){
+void cminus::declaration::variable::initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> value) const{
+	if (auto initialization = ((value == nullptr) ? initialization_ : value); initialization != nullptr || target->find_attribute("Ref", true, false) == nullptr){
 		target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
-		type_->get_evaluator(runtime)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, std::make_shared<node::memory_reference>(nullptr, value));
+		target->get_type()->construct(runtime, target, initialization);
 	}
-	else if (target->find_attribute("Ref", true, false) == nullptr)
-		target->get_attributes().call(runtime, logic::attributes::object::stage_type::after_uninitialized_declaration, target);
 	else
 		throw logic::exception("Reference variable requires initialization", 0u, 0u);
 }
@@ -159,11 +149,9 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::contructed_varia
 	return reference;
 }
 
-void cminus::declaration::contructed_variable::initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<memory::reference> value) const{
-	if (initialization_ == nullptr)
-		target->get_type()->construct_default(runtime, target);
-	else
-		target->get_type()->construct(runtime, target, initialization_);
+void cminus::declaration::contructed_variable::initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> value) const{
+	target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
+	target->get_type()->construct(runtime, target, ((value == nullptr) ? initialization_ : value));
 }
 
 void cminus::declaration::contructed_variable::print_initialization_(logic::runtime &runtime) const{

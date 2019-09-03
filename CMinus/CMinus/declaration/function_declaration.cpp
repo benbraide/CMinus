@@ -1,5 +1,6 @@
 #include "../type/class_type.h"
 #include "../type/pointer_type.h"
+#include "../node/memory_reference_node.h"
 
 #include "function_declaration.h"
 
@@ -288,7 +289,7 @@ void cminus::declaration::function::copy_args_(logic::runtime &runtime, const st
 			if (reference == nullptr || reference->get_address() == 0u)
 				throw memory::exception(memory::error_code::allocation_failure, 0u);
 
-			current_declaration->initialize_memory(runtime, reference, *arg_it);
+			current_declaration->initialize_memory(runtime, reference, std::make_shared<node::memory_reference>(nullptr, *arg_it));
 			dynamic_cast<logic::storage::function *>(runtime.current_storage.get())->add_unnamed(reference);
 
 			if (current_declaration == variadic_declaration){
@@ -297,7 +298,7 @@ void cminus::declaration::function::copy_args_(logic::runtime &runtime, const st
 			}
 		}
 		else//Named
-			current_declaration->evaluate(runtime, *arg_it);
+			current_declaration->evaluate(runtime, std::make_shared<node::memory_reference>(nullptr, *arg_it));
 	}
 
 	for (; param_it != params_.end(); ++param_it){//Check for parameters with default arguments
@@ -353,7 +354,7 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::function::copy_r
 	if (reference == nullptr || reference->get_address() == 0u)
 		throw memory::exception(memory::error_code::allocation_failure, 0u);
 
-	return_declaration_->initialize_memory(runtime, reference, value);
+	return_declaration_->initialize_memory(runtime, reference, std::make_shared<node::memory_reference>(nullptr, value));
 	dynamic_cast<logic::storage::function *>(runtime.current_storage.get())->add_unnamed(reference);
 
 	return reference;
