@@ -6,6 +6,7 @@
 cminus::type::class_::class_(logic::runtime &runtime, const std::string &name, logic::storage::object *parent)
 	: with_storage(name, parent), size_(sizeof(void *)){
 	memory::reference::attribute_list_type attributes{
+		runtime.global_storage->find_attribute("Private", false),
 		runtime.global_storage->find_attribute("ReadOnly", false)
 	};
 
@@ -109,26 +110,45 @@ std::shared_ptr<cminus::evaluator::object> cminus::type::class_::get_evaluator(l
 	return nullptr;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::type::class_::find(logic::runtime &runtime, const std::string &name, bool search_tree, const storage_base_type **branch) const{
-	if (base_types_.empty())
-		return with_storage::find(runtime, name, search_tree, branch);
+std::shared_ptr<cminus::memory::reference> cminus::type::class_::find(logic::runtime &runtime, const search_options &options) const{
+	auto entry = find_(runtime, options);
+	if (entry == nullptr || options.context == nullptr || dynamic_cast<class_ *>(options.context->get_type().get()) != this)
+		return entry;
 
-	auto entry = with_storage::find(runtime, name, false, branch);
-	if (entry != nullptr)//Entry found
-		return nullptr;
+	if (auto class_scope = dynamic_cast<const class_ *>(options.scope); class_scope != nullptr){
+		switch (compute_base_offset(*entry->get_type())){
+		case static_cast<std::size_t>(-1)://Public access
+			entry->call_attributes(runtime, logic::attributes::object::stage_type::before_public_access, false);
+			break;
+		case 0u://Private access
+			entry->call_attributes(runtime, logic::attributes::object::stage_type::before_private_access, false);
+			break;
+		default://Protected access
+			entry->call_attributes(runtime, logic::attributes::object::stage_type::before_protected_access, false);
+			break;
+		}
+	}
+	else//Public access
+		entry->call_attributes(runtime, logic::attributes::object::stage_type::before_public_access, false);
 
-	for (auto &base_type : base_types_){
-		if (auto base_class = dynamic_cast<class_ *>(base_type.second.value.get()); base_class != nullptr && (entry = base_class->find(runtime, name, false, branch)) != nullptr)
-			return entry;
+	if (entry->has_attribute("Static", true, false))
+		return entry;
+
+	auto base_offset = compute_base_offset(*entry->get_type());
+	if (base_offset == static_cast<std::size_t>(-1))
+		throw logic::exception("A non-static member requires an object context with related types", 0u, 0u);
+
+	auto context = ((base_offset == 0u) ? options.context : options.context->apply_offset(base_offset));
+	if (context == nullptr)//Error
+		return entry;
+
+	if (auto bound_entry = entry->bound_context(runtime, context, base_offset); bound_entry != nullptr){
+		if (auto read_only_attr = context->find_attribute("ReadOnly", true, false); read_only_attr != nullptr && options.name == "this")//Add read-only to pointed object
+			bound_entry->add_attribute(std::make_shared<logic::attributes::pointer_object>(read_only_attr));
+		return bound_entry;
 	}
 
-	if (!search_tree)
-		return nullptr;
-
-	if (auto storage_parent = dynamic_cast<logic::storage::object *>(parent_); storage_parent != nullptr)
-		return storage_parent->find(runtime, name, true, branch);
-
-	return nullptr;
+	return entry;
 }
 
 bool cminus::type::class_::add_base(logic::runtime &runtime, access_type access, std::shared_ptr<type::object> value){
@@ -221,4 +241,28 @@ void cminus::type::class_::extend_function_group_(logic::runtime &runtime, decla
 	}
 	else//New entry
 		group.add(entry);
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::type::class_::find_(logic::runtime &runtime, const search_options &options) const{
+	if (base_types_.empty())
+		return with_storage::find(runtime, options);
+
+	search_options non_tree_search_options{ options.scope, options.context, options.name, false, options.branch };
+	auto entry = with_storage::find(runtime, non_tree_search_options);
+
+	if (entry != nullptr)//Entry found
+		return nullptr;
+
+	for (auto &base_type : base_types_){
+		if (auto base_class = dynamic_cast<class_ *>(base_type.second.value.get()); base_class != nullptr && (entry = base_class->find(runtime, non_tree_search_options)) != nullptr)
+			return entry;
+	}
+
+	if (!options.search_tree)
+		return nullptr;
+
+	if (auto storage_parent = dynamic_cast<logic::storage::object *>(parent_); storage_parent != nullptr)
+		return storage_parent->find(runtime, options);
+
+	return nullptr;
 }

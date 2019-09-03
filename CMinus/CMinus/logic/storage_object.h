@@ -42,6 +42,14 @@ namespace cminus::logic::storage{
 			std::shared_ptr<declaration::function_group_base> value;
 		};
 
+		struct search_options{
+			const object *scope;
+			std::shared_ptr<memory::reference> context;
+			std::string name;
+			bool search_tree;
+			const object **branch;
+		};
+
 		explicit object(const std::string &value, object *parent = nullptr);
 
 		virtual ~object();
@@ -58,7 +66,9 @@ namespace cminus::logic::storage{
 
 		virtual bool exists(const std::string &name) const;
 
-		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch = nullptr) const;
+		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const search_options &options) const;
+
+		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree) const;
 
 		virtual std::shared_ptr<attributes::object> find_attribute(const std::string &name, bool search_tree, const object **branch = nullptr) const;
 
@@ -103,7 +113,9 @@ namespace cminus::logic::storage{
 
 		virtual bool exists(const std::string &name) const override;
 
-		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch = nullptr) const override;
+		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const search_options &options) const override;
+
+		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree) const override;
 
 		virtual std::shared_ptr<attributes::object> find_attribute(const std::string &name, bool search_tree, const object **branch = nullptr) const override;
 

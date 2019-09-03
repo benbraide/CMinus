@@ -37,7 +37,9 @@ namespace cminus::logic::storage{
 
 		virtual bool exists(const std::string &name) const override;
 
-		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch = nullptr) const override;
+		using specialized::find;
+
+		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const search_options &options) const override;
 
 		virtual void refresh();
 
@@ -53,7 +55,9 @@ namespace cminus::logic::storage{
 
 		virtual ~function();
 
-		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch = nullptr) const override;
+		using specialized::find;
+
+		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const search_options &options) const override;
 
 		virtual std::shared_ptr<memory::reference> get_context() const;
 

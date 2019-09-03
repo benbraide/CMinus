@@ -68,31 +68,35 @@ bool cminus::logic::storage::object::exists(const std::string &name) const{
 	return (name.empty() || entries_.find(name) != entries_.end() || function_groups_.find(name) != function_groups_.end());
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch) const{
-	if (name.empty())
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(logic::runtime &runtime, const search_options &options) const{
+	if (options.name.empty())
 		return nullptr;
 
-	if (auto it = entries_.find(name); it != entries_.end()){
-		if (branch != nullptr)
-			*branch = this;
+	if (auto it = entries_.find(options.name); it != entries_.end()){
+		if (options.branch != nullptr)
+			*options.branch = this;
 
 		return it->second;
 	}
 
-	if (auto it = function_groups_.find(name); it != function_groups_.end()){
-		if (branch != nullptr)
-			*branch = this;
+	if (auto it = function_groups_.find(options.name); it != function_groups_.end()){
+		if (options.branch != nullptr)
+			*options.branch = this;
 
 		return std::make_shared<memory::function_reference>(runtime, it->second.address, it->second.value.get());
 	}
 
-	if (!search_tree)
+	if (!options.search_tree)
 		return nullptr;
 
 	if (auto storage_parent = dynamic_cast<object *>(parent_); storage_parent != nullptr)
-		return storage_parent->find(runtime, name, true, branch);
+		return storage_parent->find(runtime, options);
 
 	return nullptr;
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(logic::runtime &runtime, const std::string &name, bool search_tree) const{
+	return find(runtime, search_options{ nullptr, nullptr, name, search_tree, nullptr });
 }
 
 std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::object::find_attribute(const std::string &name, bool search_tree, const object **branch) const{
@@ -165,8 +169,12 @@ bool cminus::logic::storage::proxy::exists(const std::string &name) const{
 	return target_.exists(name);
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::storage::proxy::find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch) const{
-	return target_.find(runtime, name, search_tree, branch);
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::proxy::find(logic::runtime &runtime, const search_options &options) const{
+	return target_.find(runtime, options);
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::proxy::find(logic::runtime &runtime, const std::string &name, bool search_tree) const{
+	return target_.find(runtime, name, search_tree);
 }
 
 std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::proxy::find_attribute(const std::string &name, bool search_tree, const object **branch) const{

@@ -49,14 +49,14 @@ bool cminus::logic::storage::double_layer::exists(const std::string &name) const
 	return ((inner_layer_ != nullptr && inner_layer_->exists(name)) || specialized::exists(name));
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::storage::double_layer::find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch) const{
-	if (auto entry = ((inner_layer_ == nullptr) ? nullptr : inner_layer_->find(runtime, name, false, nullptr)); entry != nullptr){
-		if (branch != nullptr)
-			*branch = this;
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::double_layer::find(logic::runtime &runtime, const search_options &options) const{
+	if (auto entry = ((inner_layer_ == nullptr) ? nullptr : inner_layer_->find(runtime, search_options{ options.scope, options.context, options.name, false })); entry != nullptr){
+		if (options.branch != nullptr)
+			*options.branch = this;
 		return entry;
 	}
 
-	return specialized::find(runtime, name, search_tree, branch);
+	return specialized::find(runtime, options);
 }
 
 void cminus::logic::storage::double_layer::refresh(){
@@ -76,30 +76,18 @@ cminus::logic::storage::function::function(const declaration::function_base &own
 
 cminus::logic::storage::function::~function() = default;
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::find(logic::runtime &runtime, const std::string &name, bool search_tree, const object **branch) const{
-	auto entry = specialized::find(runtime, name, search_tree, branch);
-	if (entry == nullptr)//Entry not found
-		return nullptr;
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::find(logic::runtime &runtime, const search_options &options) const{
+	if (options.context != nullptr)
+		return specialized::find(runtime, search_options{ dynamic_cast<object *>(owner_.get_naming_parent()), options.context, options.name, options.search_tree, options.branch });
 
-	if (context_ == nullptr || entry->find_attribute("Static", true, false) != nullptr)//Static entry
-		return entry;
+	if (!owner_.get_attributes().has("ReadOnlyContext", true))
+		return specialized::find(runtime, search_options{ dynamic_cast<object *>(owner_.get_naming_parent()), context_, options.name, options.search_tree, options.branch });
 
-	auto base_offset = context_->get_type()->compute_base_offset(*entry->get_type());
-	if (base_offset == static_cast<std::size_t>(-1))
-		throw logic::exception("A non-static member requires an object context with related types", 0u, 0u);
+	auto context = context_->apply_offset(0u);
+	if (context != nullptr)
+		context->add_attribute(runtime.global_storage->find_attribute("ReadOnly", false));
 
-	auto context = context_->apply_offset(base_offset);
-	if (auto bound_entry = entry->bound_context(runtime, context, base_offset); bound_entry != nullptr){
-		if (owner_.get_attributes().has("ReadOnlyContext", true)){
-			context->add_attribute(runtime.global_storage->find_attribute("ReadOnly", false));
-			if (name == "this")//Add read-only to pointed object
-				bound_entry->add_attribute(std::make_shared<attributes::pointer_object>(runtime.global_storage->find_attribute("ReadOnly", false)));
-		}
-
-		return bound_entry;
-	}
-
-	return entry;
+	return specialized::find(runtime, search_options{ dynamic_cast<object *>(owner_.get_naming_parent()), context, options.name, options.search_tree, options.branch });
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::get_context() const{

@@ -51,7 +51,9 @@ namespace cminus::type{
 
 		virtual std::shared_ptr<evaluator::object> get_evaluator(logic::runtime &runtime) const override;
 
-		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree, const storage_base_type **branch = nullptr) const override;
+		using with_storage::find;
+
+		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const search_options &options) const override;
 
 		virtual bool add_base(logic::runtime &runtime, access_type access, std::shared_ptr<type::object> value);
 
@@ -67,6 +69,8 @@ namespace cminus::type{
 		virtual bool validate_(const declaration::function_base &target) const override;
 
 		virtual void extend_function_group_(logic::runtime &runtime, declaration::function_group_base &group, std::shared_ptr<declaration::function_base> entry) override;
+
+		virtual std::shared_ptr<memory::reference> find_(logic::runtime &runtime, const search_options &options) const;
 
 		std::size_t size_ = sizeof(void *);
 		std::unordered_map<std::string, base_type_info> base_types_;

@@ -23,6 +23,9 @@ namespace cminus::logic::attributes{
 			after_delete,
 			before_inheritance,
 			after_inheritance,
+			before_public_access,
+			before_protected_access,
+			before_private_access,
 		};
 
 		object(const std::string &name, naming::parent *parent);
@@ -42,7 +45,7 @@ namespace cminus::logic::attributes{
 		virtual void call(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const;
 
 	protected:
-		virtual bool prohibits_stage_(stage_type value) const;
+		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const;
 
 		virtual std::string get_default_message_() const;
 
@@ -179,7 +182,7 @@ namespace cminus::logic::attributes{
 		virtual bool is_included_in_comparison(logic::runtime &runtime) const override;
 
 	protected:
-		virtual bool prohibits_stage_(stage_type value) const override;
+		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
 
 		virtual std::string get_default_message_() const override;
 	};
@@ -195,7 +198,7 @@ namespace cminus::logic::attributes{
 		virtual bool is_included_in_comparison(logic::runtime &runtime) const override;
 
 	protected:
-		virtual bool prohibits_stage_(stage_type value) const override;
+		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
 
 		virtual std::string get_default_message_() const override;
 	};
@@ -211,11 +214,9 @@ namespace cminus::logic::attributes{
 		virtual bool is_included_in_comparison(logic::runtime &runtime) const override;
 
 	protected:
-		virtual bool prohibits_stage_(stage_type value) const override;
+		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
 
 		virtual std::string get_default_message_() const override;
-
-		virtual void handle_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const override;
 	};
 
 	class nan : public external{
