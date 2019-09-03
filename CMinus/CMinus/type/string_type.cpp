@@ -2,7 +2,19 @@
 #include "string_type.h"
 
 cminus::type::string::string(logic::runtime &runtime)
-	: class_(runtime, "string", nullptr){
+	: class_(runtime, "string", nullptr){}
+
+cminus::type::string::~string() = default;
+
+void cminus::type::string::print(logic::runtime &runtime, bool is_qualified) const{
+	runtime.writer.write_buffer("string", 6u);
+}
+
+std::shared_ptr<cminus::evaluator::object> cminus::type::string::get_evaluator(logic::runtime &runtime) const{
+	return nullptr;
+}
+
+void cminus::type::string::init(logic::runtime &runtime){
 	declaration::variable::attribute_list_type attributes{
 		runtime.global_storage->find_attribute("Private", false)
 	};
@@ -22,8 +34,11 @@ cminus::type::string::string(logic::runtime &runtime)
 		nullptr																			//Initialization
 	));
 
-	add_function(runtime, std::make_shared<declaration::string::default_constructor>(runtime, this));
-	add_function(runtime, std::make_shared<declaration::string::destructor>(runtime, this));
+	add_function(runtime, std::make_shared<declaration::string::destructor>(this));
+	add_function(runtime, std::make_shared<declaration::string::default_constructor>(this));
+
+	add_function(runtime, std::make_shared<declaration::string::copy_constructor>(runtime, this));
+	add_function(runtime, std::make_shared<declaration::string::assignment_constructor>(runtime, this));
 
 	add_function(runtime, std::make_shared<declaration::string::empty>(runtime, this));
 	add_function(runtime, std::make_shared<declaration::string::size>(runtime, this));
@@ -33,14 +48,4 @@ cminus::type::string::string(logic::runtime &runtime)
 
 	add_function(runtime, std::make_shared<declaration::string::resize>(runtime, this));
 	add_function(runtime, std::make_shared<declaration::string::clear>(runtime, this));
-}
-
-cminus::type::string::~string() = default;
-
-void cminus::type::string::print(logic::runtime &runtime, bool is_qualified) const{
-	runtime.writer.write_buffer("string", 6u);
-}
-
-std::shared_ptr<cminus::evaluator::object> cminus::type::string::get_evaluator(logic::runtime &runtime) const{
-	return nullptr;
 }

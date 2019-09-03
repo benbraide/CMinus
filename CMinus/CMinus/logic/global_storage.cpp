@@ -4,7 +4,9 @@
 cminus::logic::storage::global::global()
 	: object("", nullptr){}
 
-cminus::logic::storage::global::~global() = default;
+cminus::logic::storage::global::~global(){
+	destroy_entries_();
+}
 
 void cminus::logic::storage::global::init(logic::runtime &runtime){
 	attributes_["Private"] = std::make_shared<logic::attributes::private_access>();
@@ -48,7 +50,10 @@ void cminus::logic::storage::global::init(logic::runtime &runtime){
 		node::named_constant::constant_type::nan_
 	);
 
-	primitive_types_[type::primitive::id_type::string] = std::make_shared<type::string>(runtime);
+	if (auto string_type = std::make_shared<type::string>(runtime); string_type != nullptr){
+		primitive_types_[type::primitive::id_type::string] = string_type;
+		string_type->init(runtime);
+	}
 }
 
 std::shared_ptr<cminus::type::object> cminus::logic::storage::global::get_primitve_type(type::primitive::id_type id) const{

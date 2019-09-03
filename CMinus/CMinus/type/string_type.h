@@ -14,5 +14,7 @@ namespace cminus::type{
 		virtual void print(logic::runtime &runtime, bool is_qualified) const override;
 
 		virtual std::shared_ptr<evaluator::object> get_evaluator(logic::runtime &runtime) const override;
+
+		virtual void init(logic::runtime &runtime);
 	};
 }

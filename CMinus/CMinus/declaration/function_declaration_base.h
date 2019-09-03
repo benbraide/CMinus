@@ -14,6 +14,8 @@ namespace cminus::declaration{
 
 		virtual ~function_group_base();
 
+		virtual const logic::attributes::collection &get_attributes() const = 0;
+
 		virtual void add(std::shared_ptr<function_base> value) = 0;
 
 		virtual void replace(function_base &existing_entry, std::shared_ptr<function_base> new_entry) = 0;

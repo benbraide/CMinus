@@ -10,7 +10,9 @@ cminus::logic::storage::error_code cminus::logic::storage::exception::get_code()
 cminus::logic::storage::object::object(const std::string &value, object *parent)
 	: parent_base_type(value, parent){}
 
-cminus::logic::storage::object::~object() = default;
+cminus::logic::storage::object::~object(){
+	destroy_entries_();
+}
 
 void cminus::logic::storage::object::raise_interrupt(interrupt_type type, std::shared_ptr<memory::reference> value){
 	if (auto object_parent = dynamic_cast<object *>(parent_); object_parent != nullptr)
@@ -24,8 +26,10 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::get_r
 }
 
 void cminus::logic::storage::object::add(logic::runtime &runtime, const std::string &name, std::shared_ptr<memory::reference> entry){
-	if (!exists(name))
+	if (!exists(name)){
 		entries_[name] = entry;
+		entries_order_.push_back(entry.get());
+	}
 	else
 		throw exception(error_code::duplicate_entry);
 }
@@ -60,8 +64,13 @@ void cminus::logic::storage::object::add_function(logic::runtime &runtime, std::
 }
 
 void cminus::logic::storage::object::remove(const std::string &name){
-	if (!entries_.empty())
-		entries_.erase(name);
+	if (!entries_.empty()){
+		if (auto entry = entries_.find(name); entry != entries_.end()){
+			entries_.erase(entry);
+			if (auto it = std::find(entries_order_.begin(), entries_order_.end(), entry->second.get()); it != entries_order_.end())
+				entries_order_.erase(it);
+		}
+	}
 }
 
 bool cminus::logic::storage::object::exists(const std::string &name) const{
@@ -73,6 +82,7 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(
 		return nullptr;
 
 	if (auto it = entries_.find(options.name); it != entries_.end()){
+		it->second->call_attributes(runtime, logic::attributes::object::stage_type::after_lookup, false);
 		if (options.branch != nullptr)
 			*options.branch = this;
 
@@ -80,10 +90,13 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(
 	}
 
 	if (auto it = function_groups_.find(options.name); it != function_groups_.end()){
+		auto entry = std::make_shared<memory::function_reference>(runtime, it->second.address, it->second.value.get());
+		it->second.value->get_attributes().call(runtime, logic::attributes::object::stage_type::after_lookup, entry);
+
 		if (options.branch != nullptr)
 			*options.branch = this;
 
-		return std::make_shared<memory::function_reference>(runtime, it->second.address, it->second.value.get());
+		return entry;
 	}
 
 	if (!options.search_tree)
@@ -107,6 +120,25 @@ std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::objec
 		return it->second;
 
 	return nullptr;
+}
+
+void cminus::logic::storage::object::destroy_entries_(){
+	if (entries_order_.empty())
+		return;
+
+	for (auto it = entries_order_.rbegin(); it != entries_order_.rend(); ++it)
+		destroy_entry_(*it);
+
+	entries_order_.clear();
+}
+
+void cminus::logic::storage::object::destroy_entry_(memory::reference *entry){
+	for (auto it = entries_.begin(); it != entries_.end(); ++it){
+		if (it->second.get() == entry){
+			entries_.erase(it);
+			break;
+		}
+	}
 }
 
 void cminus::logic::storage::object::invalid_interrupt_(interrupt_type type, std::shared_ptr<memory::reference> value){
@@ -182,8 +214,8 @@ std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::proxy
 }
 
 cminus::logic::storage::runtime_storage_guard::runtime_storage_guard(logic::runtime &runtime, std::shared_ptr<object> current)
-	: runtime_(runtime), old_(runtime.current_storage){
-	runtime.current_storage = current;
+	: runtime_(runtime), old_(runtime.current_storage), new_(current){
+	runtime.current_storage = current.get();
 }
 
 cminus::logic::storage::runtime_storage_guard::~runtime_storage_guard(){

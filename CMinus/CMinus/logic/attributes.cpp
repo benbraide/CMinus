@@ -109,7 +109,7 @@ cminus::logic::attributes::collection::collection(optimised_list_type &&list)
 	: list_(std::move(list)){}
 
 void cminus::logic::attributes::collection::add(std::shared_ptr<object> value){
-	if (value != nullptr)
+	if (value != nullptr && list_.find(value.get()) == list_.end())
 		list_[value.get()] = value;
 }
 

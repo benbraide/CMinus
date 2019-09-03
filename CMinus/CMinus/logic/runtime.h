@@ -8,7 +8,7 @@ namespace cminus::logic{
 		io::writer &writer;
 
 		std::shared_ptr<storage::global> global_storage;
-		std::shared_ptr<storage::object> current_storage;
+		storage::object *current_storage;
 
 		std::list<storage::object *> look_up_storages;
 		std::shared_ptr<memory::reference> self;

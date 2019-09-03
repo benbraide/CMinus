@@ -74,7 +74,9 @@ void cminus::logic::storage::double_layer::invalid_interrupt_(interrupt_type typ
 cminus::logic::storage::function::function(const declaration::function_base &owner, std::shared_ptr<memory::reference> context, object *parent)
 	: specialized("", ((context == nullptr) ? parent : dynamic_cast<object *>(context->get_type().get()))), context_(context), owner_(owner){}
 
-cminus::logic::storage::function::~function() = default;
+cminus::logic::storage::function::~function(){
+	destroy_entries_();
+}
 
 std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::find(logic::runtime &runtime, const search_options &options) const{
 	if (options.context != nullptr)
@@ -95,7 +97,10 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::get
 }
 
 void cminus::logic::storage::function::add_unnamed(std::shared_ptr<memory::reference> entry){
-	unnamed_entries_[entry.get()] = entry;
+	if (unnamed_entries_.find(entry.get()) == unnamed_entries_.end()){
+		unnamed_entries_[entry.get()] = entry;
+		entries_order_.push_back(entry.get());
+	}
 }
 
 const cminus::declaration::function_base &cminus::logic::storage::function::get_owner() const{
@@ -104,6 +109,13 @@ const cminus::declaration::function_base &cminus::logic::storage::function::get_
 
 bool cminus::logic::storage::function::interrupt_is_valid_(interrupt_type value) const{
 	return (value == interrupt_type::return_ && owner_.supports_return_statement());
+}
+
+void cminus::logic::storage::function::destroy_entry_(memory::reference *entry){
+	if (auto it = unnamed_entries_.find(entry); it != unnamed_entries_.end())
+		unnamed_entries_.erase(it);
+	else
+		specialized::destroy_entry_(entry);
 }
 
 cminus::logic::storage::loop::loop(object *parent)

@@ -290,7 +290,7 @@ void cminus::declaration::function::copy_args_(logic::runtime &runtime, const st
 				throw memory::exception(memory::error_code::allocation_failure, 0u);
 
 			current_declaration->initialize_memory(runtime, reference, std::make_shared<node::memory_reference>(nullptr, *arg_it));
-			dynamic_cast<logic::storage::function *>(runtime.current_storage.get())->add_unnamed(reference);
+			dynamic_cast<logic::storage::function *>(runtime.current_storage)->add_unnamed(reference);
 
 			if (current_declaration == variadic_declaration){
 				reference->add_attribute(runtime.global_storage->find_attribute("#LVal#", false));
@@ -319,7 +319,7 @@ void cminus::declaration::function::copy_args_(logic::runtime &runtime, const st
 				throw memory::exception(memory::error_code::allocation_failure, 0u);
 
 			current_declaration->initialize_memory(runtime, reference, nullptr);
-			dynamic_cast<logic::storage::function *>(runtime.current_storage.get())->add_unnamed(reference);
+			dynamic_cast<logic::storage::function *>(runtime.current_storage)->add_unnamed(reference);
 		}
 		else//Named
 			current_declaration->evaluate(runtime, nullptr);
@@ -355,7 +355,7 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::function::copy_r
 		throw memory::exception(memory::error_code::allocation_failure, 0u);
 
 	return_declaration_->initialize_memory(runtime, reference, std::make_shared<node::memory_reference>(nullptr, value));
-	dynamic_cast<logic::storage::function *>(runtime.current_storage.get())->add_unnamed(reference);
+	dynamic_cast<logic::storage::function *>(runtime.current_storage)->add_unnamed(reference);
 
 	return reference;
 }

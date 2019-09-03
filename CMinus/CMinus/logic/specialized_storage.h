@@ -66,6 +66,8 @@ namespace cminus::logic::storage{
 		virtual const declaration::function_base &get_owner() const;
 
 	protected:
+		virtual void destroy_entry_(memory::reference *entry) override;
+
 		virtual bool interrupt_is_valid_(interrupt_type value) const override;
 
 		const declaration::function_base &owner_;

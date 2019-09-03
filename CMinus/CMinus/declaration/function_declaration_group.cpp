@@ -5,6 +5,10 @@ cminus::declaration::function_group::function_group(std::string name, logic::nam
 
 cminus::declaration::function_group::~function_group() = default;
 
+const cminus::logic::attributes::collection &cminus::declaration::function_group::get_attributes() const{
+	return (list_.empty() ? attributes_ : list_.begin()->first->get_attributes());
+}
+
 void cminus::declaration::function_group::add(std::shared_ptr<function_base> value){
 	list_[value.get()] = value;
 }

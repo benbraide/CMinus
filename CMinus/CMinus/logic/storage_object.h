@@ -84,13 +84,19 @@ namespace cminus::logic::storage{
 		}
 
 	protected:
+		virtual void destroy_entries_();
+
+		virtual void destroy_entry_(memory::reference *entry);
+
 		virtual void invalid_interrupt_(interrupt_type type, std::shared_ptr<memory::reference> value);
 
 		virtual bool validate_(const declaration::function_base &target) const;
 
 		virtual void extend_function_group_(logic::runtime &runtime, declaration::function_group_base &group, std::shared_ptr<declaration::function_base> entry);
 
+		std::list<memory::reference *> entries_order_;
 		std::unordered_map<std::string, std::shared_ptr<memory::reference>> entries_;
+
 		std::unordered_map<std::string, function_group_info> function_groups_;
 		std::unordered_map<std::string, std::shared_ptr<attributes::object>> attributes_;
 	};
@@ -131,7 +137,8 @@ namespace cminus::logic::storage{
 
 	private:
 		logic::runtime &runtime_;
-		std::shared_ptr<object> old_;
+		object *old_;
+		std::shared_ptr<object> new_;
 	};
 }
 

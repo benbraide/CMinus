@@ -18,7 +18,19 @@ cminus::memory::reference::reference(std::shared_ptr<type::object> type, const l
 		size_ = type_->get_size();
 }
 
-cminus::memory::reference::~reference() = default;
+cminus::memory::reference::~reference(){
+	try{
+		if (deallocator_ != nullptr){
+			deallocator_();
+			deallocator_ = nullptr;
+		}
+	}
+	catch (...){}
+}
+
+cminus::memory::reference *cminus::memory::reference::get_non_raw() const{
+	return const_cast<reference *>(this);
+}
 
 void cminus::memory::reference::set_type(std::shared_ptr<type::object> value){
 	type_ = value;
@@ -171,13 +183,13 @@ cminus::memory::placeholder_reference::placeholder_reference(std::size_t relativ
 cminus::memory::placeholder_reference::~placeholder_reference() = default;
 
 std::shared_ptr<cminus::memory::reference> cminus::memory::placeholder_reference::bound_context(logic::runtime &runtime, std::shared_ptr<reference> value, std::size_t offset) const{
-	if (auto lval_context = dynamic_cast<const lval_reference *>(value.get()); lval_context != nullptr){
+	if (auto lval_context = dynamic_cast<const lval_reference *>(value->get_non_raw()); lval_context != nullptr){
 		if (find_attribute("Ref", true, false) == nullptr)
 			return std::make_shared<lval_reference>((lval_context->get_address() + relative_offset_ + offset), type_, attributes_, value);
 		return std::make_shared<ref_reference>(type_, attributes_, value);
 	}
 
-	if (auto rval_context = dynamic_cast<const rval_reference *>(value.get()); rval_context != nullptr)
+	if (auto rval_context = dynamic_cast<const rval_reference *>(value->get_non_raw()); rval_context != nullptr)
 		return std::make_shared<rval_reference>((rval_context->get_data(runtime) + (relative_offset_ + offset)), type_, attributes_, value);
 
 	return nullptr;
@@ -263,6 +275,10 @@ cminus::memory::raw_reference::raw_reference(reference *target)
 	: reference(target->get_type(), attribute_list_type{}, nullptr), target_(target){}
 
 cminus::memory::raw_reference::~raw_reference() = default;
+
+cminus::memory::reference *cminus::memory::raw_reference::get_non_raw() const{
+	return target_->get_non_raw();
+}
 
 void cminus::memory::raw_reference::set_type(std::shared_ptr<type::object> value){
 	target_->set_type(value);
@@ -451,8 +467,10 @@ cminus::memory::lval_reference::lval_reference(std::size_t address, std::shared_
 
 cminus::memory::lval_reference::~lval_reference(){
 	try{
-		if (deallocator_ != nullptr)
+		if (deallocator_ != nullptr){
 			deallocator_();
+			deallocator_ = nullptr;
+		}
 	}
 	catch (...){}
 }
@@ -526,14 +544,14 @@ std::size_t cminus::memory::lval_reference::set(logic::runtime &runtime, std::by
 
 void cminus::memory::lval_reference::allocate_memory_(logic::runtime &runtime, std::size_t size){
 	auto block = runtime.memory_object.allocate_block(size, memory::block::attribute_none);
-	if (block == nullptr)
-		return;
-
-	address_ = block->get_address();
-	deallocator_ = [address = address_, &memory_object = runtime.memory_object](){
-		if (address != 0u)
-			memory_object.deallocate_block(address);
-	};
+	if (block != nullptr){
+		address_ = block->get_address();
+		deallocator_ = [&](){
+			type_->destruct(runtime, std::make_shared<raw_reference>(this));
+			if (address_ != 0u)
+				runtime.memory_object.deallocate_block(address_);
+		};
+	}
 }
 
 cminus::memory::ref_reference::ref_reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
@@ -731,6 +749,42 @@ std::size_t cminus::memory::rval_reference::set(logic::runtime &runtime, std::by
 	return ((size <= size_) ? size : 0u);
 }
 
+cminus::memory::data_reference::data_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: rval_reference(nullptr, type, attributes, context){
+	if (0u < size_){
+		value_ = std::make_unique<std::byte[]>(size_);
+		data_ = value_.get();
+		deallocator_ = [&](){
+			type_->destruct(runtime, std::make_shared<raw_reference>(this));
+		};
+	}
+}
+
+cminus::memory::data_reference::data_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: rval_reference(nullptr, type, attributes, context){
+	if (0u < size_){
+		value_ = std::make_unique<std::byte[]>(size_);
+		data_ = value_.get();
+		deallocator_ = [&](){
+			type_->destruct(runtime, std::make_shared<raw_reference>(this));
+		};
+	}
+}
+
+cminus::memory::data_reference::data_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
+	: rval_reference(nullptr, type, attributes, context){
+	if (0u < size_){
+		value_ = std::make_unique<std::byte[]>(size_);
+		data_ = value_.get();
+		deallocator_ = [&](){
+			type_->destruct(runtime, std::make_shared<raw_reference>(this));
+		};
+	}
+}
+
+cminus::memory::data_reference::data_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
+	: data_reference(runtime, type, attribute_list_type{}, context){}
+
 cminus::memory::data_reference::data_reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
 	: rval_reference(nullptr, type, attributes, context){
 	if (0u < size_){
@@ -758,7 +812,15 @@ cminus::memory::data_reference::data_reference(std::shared_ptr<type::object> typ
 cminus::memory::data_reference::data_reference(std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
 	: data_reference(type, attribute_list_type{}, context){}
 
-cminus::memory::data_reference::~data_reference() = default;
+cminus::memory::data_reference::~data_reference(){
+	try{
+		if (deallocator_ != nullptr){
+			deallocator_();
+			deallocator_ = nullptr;
+		}
+	}
+	catch (...){}
+}
 
 std::shared_ptr<cminus::memory::reference> cminus::memory::data_reference::apply_offset(std::size_t value) const{
 	if (value != 0u)

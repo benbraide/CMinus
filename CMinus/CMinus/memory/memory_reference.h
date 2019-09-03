@@ -27,6 +27,8 @@ namespace cminus::memory{
 
 		virtual ~reference();
 
+		virtual reference *get_non_raw() const;
+
 		virtual void set_type(std::shared_ptr<type::object> value);
 
 		virtual std::shared_ptr<type::object> get_type() const;
@@ -128,6 +130,7 @@ namespace cminus::memory{
 		logic::attributes::collection attributes_;
 		std::shared_ptr<reference> context_;
 		std::size_t size_ = 0u;
+		std::function<void()> deallocator_;
 	};
 
 	class placeholder_reference : public reference{
@@ -185,6 +188,8 @@ namespace cminus::memory{
 		explicit raw_reference(reference *target);
 
 		virtual ~raw_reference();
+
+		virtual reference *get_non_raw() const override;
 
 		virtual void set_type(std::shared_ptr<type::object> value) override;
 
@@ -312,7 +317,6 @@ namespace cminus::memory{
 		void allocate_memory_(logic::runtime &runtime, std::size_t size);
 
 		std::size_t address_ = 0u;
-		std::function<void()> deallocator_;
 	};
 
 	class ref_reference : public lval_reference{
@@ -398,6 +402,14 @@ namespace cminus::memory{
 
 	class data_reference : public rval_reference{
 	public:
+		data_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		data_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context);
+
+		data_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context);
+
+		data_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, std::shared_ptr<reference> context);
+
 		data_reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context);
 
 		data_reference(std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context);

@@ -9,6 +9,8 @@ namespace cminus::declaration{
 
 		virtual ~function_group();
 
+		virtual const logic::attributes::collection &get_attributes() const override;
+
 		virtual void add(std::shared_ptr<function_base> value) override;
 
 		virtual void replace(function_base &existing_entry, std::shared_ptr<function_base> new_entry) override;
@@ -20,6 +22,7 @@ namespace cminus::declaration{
 		virtual std::shared_ptr<memory::reference> call(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const override;
 
 	protected:
+		cminus::logic::attributes::collection attributes_;
 		std::unordered_map<function_base *, std::shared_ptr<function_base>> list_;
 	};
 }

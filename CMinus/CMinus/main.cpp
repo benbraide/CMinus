@@ -32,7 +32,7 @@ int main(){
 		mem_obj,
 		isw,
 		global_storage,
-		global_storage
+		global_storage.get()
 	};
 
 	global_storage->init(runtime);

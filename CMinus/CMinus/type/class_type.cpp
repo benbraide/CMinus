@@ -17,7 +17,7 @@ cminus::type::class_::~class_() = default;
 
 void cminus::type::class_::construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> initialization) const{
 	auto constructor = find(runtime, search_options{ this, target, get_naming_value(), false });
-	auto callable = dynamic_cast<memory::function_reference *>(constructor.get());
+	auto callable = dynamic_cast<memory::function_reference *>(constructor->get_non_raw());
 
 	if (callable == nullptr)
 		throw logic::exception("Bad constructor definition", 0u, 0u);
@@ -33,7 +33,7 @@ void cminus::type::class_::construct(logic::runtime &runtime, std::shared_ptr<me
 
 void cminus::type::class_::destruct(logic::runtime &runtime, std::shared_ptr<memory::reference> target) const{
 	auto destructor = find(runtime, search_options{ this, target, ("~" + get_naming_value()), false });
-	if (auto callable = dynamic_cast<memory::function_reference *>(destructor.get()); callable != nullptr)
+	if (auto callable = dynamic_cast<memory::function_reference *>(destructor->get_non_raw()); callable != nullptr)
 		callable->get_value()->call(runtime, callable->get_context(), std::vector<std::shared_ptr<memory::reference>>{});
 	else
 		throw logic::exception("Bad destructor definition", 0u, 0u);

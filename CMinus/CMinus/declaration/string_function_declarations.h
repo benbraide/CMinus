@@ -3,11 +3,11 @@
 #include "function_declaration.h"
 
 namespace cminus::declaration::string{
-	class default_constructor : public function{
+	class constructor : public function{
 	public:
-		default_constructor(logic::runtime &runtime, logic::naming::parent *parent);
+		explicit constructor(logic::naming::parent *parent);
 
-		virtual ~default_constructor();
+		virtual ~constructor();
 
 		virtual bool is_defined() const override;
 
@@ -15,13 +15,61 @@ namespace cminus::declaration::string{
 
 	protected:
 		virtual void print_return_(logic::runtime &runtime) const override;
+	};
 
+	class default_constructor : public constructor{
+	public:
+		explicit default_constructor(logic::naming::parent *parent);
+
+		virtual ~default_constructor();
+
+	protected:
+		virtual void evaluate_body_(logic::runtime &runtime) const override;
+	};
+
+	class copy_constructor : public constructor{
+	public:
+		copy_constructor(logic::runtime &runtime, logic::naming::parent *parent);
+
+		virtual ~copy_constructor();
+
+	protected:
+		virtual void evaluate_body_(logic::runtime &runtime) const override;
+	};
+
+	class sub_constructor : public constructor{
+	public:
+		sub_constructor(logic::runtime &runtime, logic::naming::parent *parent);
+
+		virtual ~sub_constructor();
+
+	protected:
+		virtual void evaluate_body_(logic::runtime &runtime) const override;
+	};
+
+	class assignment_constructor : public constructor{
+	public:
+		assignment_constructor(logic::runtime &runtime, logic::naming::parent *parent);
+
+		virtual ~assignment_constructor();
+
+	protected:
+		virtual void evaluate_body_(logic::runtime &runtime) const override;
+	};
+
+	class fill_constructor : public constructor{
+	public:
+		fill_constructor(logic::runtime &runtime, logic::naming::parent *parent);
+
+		virtual ~fill_constructor();
+
+	protected:
 		virtual void evaluate_body_(logic::runtime &runtime) const override;
 	};
 
 	class destructor : public function{
 	public:
-		destructor(logic::runtime &runtime, logic::naming::parent *parent);
+		explicit destructor(logic::naming::parent *parent);
 
 		virtual ~destructor();
 
