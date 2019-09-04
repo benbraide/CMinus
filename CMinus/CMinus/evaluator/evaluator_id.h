@@ -11,5 +11,6 @@ namespace cminus::evaluator{
 		integral,
 		nan,
 		pointer,
+		class_,
 	};
 }

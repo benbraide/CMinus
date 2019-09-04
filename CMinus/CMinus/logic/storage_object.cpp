@@ -1,3 +1,4 @@
+#include "../evaluator/evaluator_object.h"
 #include "../declaration/function_declaration_group.h"
 
 cminus::logic::storage::exception::exception(error_code code)
@@ -110,6 +111,10 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(
 
 std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(logic::runtime &runtime, const std::string &name, bool search_tree) const{
 	return find(runtime, search_options{ nullptr, nullptr, name, search_tree, nullptr });
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find_operator(logic::runtime &runtime, evaluator::operator_id id, const namesless_search_options &options) const{
+	return find(runtime, search_options{ options.scope, options.context, evaluator::object::convert_operator_to_string(id), options.search_tree, options.branch });
 }
 
 std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::object::find_attribute(const std::string &name, bool search_tree, const object **branch) const{

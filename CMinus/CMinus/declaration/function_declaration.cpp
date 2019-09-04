@@ -132,6 +132,10 @@ bool cminus::declaration::function::is_defined() const{
 	return (body_ != nullptr);
 }
 
+bool cminus::declaration::function::is_operator() const{
+	return false;
+}
+
 bool cminus::declaration::function::supports_return_statement() const{
 	return true;
 }
@@ -348,7 +352,8 @@ void cminus::declaration::function::copy_args_(logic::runtime &runtime, const st
 }
 
 void cminus::declaration::function::evaluate_body_(logic::runtime &runtime) const{
-
+	if (body_ != nullptr)
+		body_->evaluate(runtime);
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::declaration::function::copy_return_value_(logic::runtime &runtime, std::shared_ptr<memory::reference> value) const{

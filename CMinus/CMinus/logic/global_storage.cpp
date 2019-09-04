@@ -2,8 +2,10 @@
 #include "../node/memory_reference_node.h"
 #include "../type/string_type.h"
 
+#include "../evaluator/class_evaluator.h"
 #include "../evaluator/byte_evaluator.h"
 #include "../evaluator/boolean_evaluator.h"
+#include "../evaluator/character_evaluator.h"
 #include "../evaluator/integral_evaluator.h"
 #include "../evaluator/floating_point_evaluator.h"
 
@@ -62,11 +64,14 @@ void cminus::logic::storage::global::init(logic::runtime &runtime){
 		string_type->init(runtime);
 	}
 
-	evaluators_[evaluator::id::byte] = std::make_shared<evaluator::byte>();
 	evaluators_[evaluator::id::boolean] = std::make_shared<evaluator::boolean>();
+	evaluators_[evaluator::id::byte] = std::make_shared<evaluator::byte>();
+	evaluators_[evaluator::id::character] = std::make_shared<evaluator::character>();
 
 	evaluators_[evaluator::id::integral] = std::make_shared<evaluator::integral>();
 	evaluators_[evaluator::id::floating_point] = std::make_shared<evaluator::floating_point>();
+
+	evaluators_[evaluator::id::class_] = std::make_shared<evaluator::class_>();
 }
 
 std::shared_ptr<cminus::type::object> cminus::logic::storage::global::get_primitve_type(type::primitive::id_type id) const{

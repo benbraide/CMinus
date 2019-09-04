@@ -44,9 +44,20 @@ cminus::declaration::function_base *cminus::declaration::function_group::get_hig
 	std::size_t match_count = 0u;
 	std::shared_ptr<function_base> highest_ranked;
 	for (auto &item : list_){
-		if (dynamic_cast<type::class_ *>(item.first->get_naming_parent()) == nullptr || item.first->get_attributes().has("Static", true))
+		if (item.first->is_operator()){
+			if (auto class_parent = dynamic_cast<type::class_ *>(item.first->get_naming_parent()); class_parent != nullptr && !item.first->get_attributes().has("Static", true)){//Member operator
+				if (args.empty() || class_parent->compute_base_offset(*args[0]->get_type()) == static_cast<std::size_t>(-1))
+					continue;//First argument must be related
+			}
+			else//Non-member or static
+				is_const_ctx = is_const;
+		}
+		else if (dynamic_cast<type::class_ *>(item.first->get_naming_parent()) == nullptr || item.first->get_attributes().has("Static", true))
 			is_const_ctx = is_const;
-		else if (is_const && !(is_const_ctx = item.first->get_attributes().has("ReadOnlyContext", true)))
+		else//Member function
+			is_const_ctx = item.first->get_attributes().has("ReadOnlyContext", true);
+
+		if (is_const && !is_const_ctx)
 			continue;
 
 		if (highest_rank_score < (current_rank_score = (type::object::get_score_value(item.first->get_rank(runtime, args)) - ((is_const_ctx == is_const) ? 0 : 1)))){
@@ -72,6 +83,26 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::function_group::
 
 	if (1u < match_count)
 		throw logic::exception("Function call is ambiguous", 0u, 0u);
+
+	if (args.empty())
+		return highest_ranked->call_(runtime, context, args);
+
+	auto class_parent = dynamic_cast<type::class_ *>(highest_ranked->get_naming_parent());
+	if (class_parent == nullptr)
+		return highest_ranked->call_(runtime, context, args);
+
+	if (auto offset = class_parent->compute_base_offset(*args[0]->get_type()); 0u < offset && offset != static_cast<std::size_t>(-1))
+		context = context->apply_offset(offset);//Adjust context
+
+	if (!highest_ranked->is_operator() || highest_ranked->get_attributes().has("Static", true))
+		return highest_ranked->call_(runtime, context, args);
+
+	std::vector<std::shared_ptr<memory::reference>> mem_args;
+	if (1u < args.size()){//Ignore first argument
+		mem_args.reserve(args.size() - 1u);
+		for (auto arg : args)
+			mem_args.push_back(arg);
+	}
 
 	return highest_ranked->call_(runtime, context, args);
 }

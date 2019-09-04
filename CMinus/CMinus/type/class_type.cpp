@@ -120,7 +120,7 @@ std::shared_ptr<cminus::memory::reference> cminus::type::class_::cast(logic::run
 }
 
 std::shared_ptr<cminus::evaluator::object> cminus::type::class_::get_evaluator(logic::runtime &runtime) const{
-	return nullptr;
+	return runtime.global_storage->get_evaluator(evaluator::id::class_);
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::type::class_::find(logic::runtime &runtime, const search_options &options) const{
@@ -145,7 +145,7 @@ std::shared_ptr<cminus::memory::reference> cminus::type::class_::find(logic::run
 	if (options.context == nullptr || entry->has_attribute("Static", true, false))
 		return entry;
 
-	auto context = ((computed_info.offset == 0u) ? options.context : options.context->apply_offset(computed_info.offset));
+	auto context = ((computed_info.offset == 0u || computed_info.offset == static_cast<std::size_t>(-1)) ? options.context : options.context->apply_offset(computed_info.offset));
 	if (context == nullptr)//Error
 		return entry;
 
@@ -161,6 +161,16 @@ std::shared_ptr<cminus::memory::reference> cminus::type::class_::find(logic::run
 	}
 
 	return entry;
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::type::class_::find_operator(logic::runtime &runtime, const type::object &target_type, bool is_ref, const namesless_search_options &options) const{
+	if (auto primitive_type = dynamic_cast<const type::primitive *>(&target_type); primitive_type != nullptr)
+		return find(runtime, search_options{ options.scope, options.context, type::primitive::convert_id_to_string(primitive_type->get_id()), options.search_tree, options.branch });
+
+	if (auto storage_type = dynamic_cast<const with_storage *>(&target_type); storage_type != nullptr)
+		return find(runtime, search_options{ options.scope, options.context, storage_type->get_qualified_naming_value(), options.search_tree, options.branch });
+
+	return nullptr;
 }
 
 bool cminus::type::class_::add_base(logic::runtime &runtime, access_type access, std::shared_ptr<type::object> value){

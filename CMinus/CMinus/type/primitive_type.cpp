@@ -1,7 +1,4 @@
-#include "../evaluator/byte_evaluator.h"
-#include "../evaluator/boolean_evaluator.h"
-#include "../evaluator/integral_evaluator.h"
-#include "../evaluator/floating_point_evaluator.h"
+#include "../evaluator/evaluator_id.h"
 #include "../declaration/function_declaration_group.h"
 
 #include "pointer_type.h"

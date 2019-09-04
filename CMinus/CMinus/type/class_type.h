@@ -57,8 +57,11 @@ namespace cminus::type{
 		virtual std::shared_ptr<evaluator::object> get_evaluator(logic::runtime &runtime) const override;
 
 		using with_storage::find;
+		using with_storage::find_operator;
 
 		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const search_options &options) const override;
+
+		virtual std::shared_ptr<memory::reference> find_operator(logic::runtime &runtime, const type::object &target_type, bool is_ref, const namesless_search_options &options) const;
 
 		virtual bool add_base(logic::runtime &runtime, access_type access, std::shared_ptr<type::object> value);
 

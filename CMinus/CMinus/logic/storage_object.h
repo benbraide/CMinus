@@ -2,6 +2,7 @@
 
 #include "../node/node_object.h"
 #include "../memory/memory_reference.h"
+#include "../evaluator/operator_id.h"
 
 namespace cminus::declaration{
 	class function_base;
@@ -50,6 +51,13 @@ namespace cminus::logic::storage{
 			const object **branch;
 		};
 
+		struct namesless_search_options{
+			const object *scope;
+			std::shared_ptr<memory::reference> context;
+			bool search_tree;
+			const object **branch;
+		};
+
 		explicit object(const std::string &value, object *parent = nullptr);
 
 		virtual ~object();
@@ -69,6 +77,8 @@ namespace cminus::logic::storage{
 		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const search_options &options) const;
 
 		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const std::string &name, bool search_tree) const;
+
+		virtual std::shared_ptr<memory::reference> find_operator(logic::runtime &runtime, evaluator::operator_id id, const namesless_search_options &options) const;
 
 		virtual std::shared_ptr<attributes::object> find_attribute(const std::string &name, bool search_tree, const object **branch = nullptr) const;
 

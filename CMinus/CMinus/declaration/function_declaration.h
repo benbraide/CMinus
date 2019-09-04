@@ -21,6 +21,8 @@ namespace cminus::declaration{
 
 		virtual bool is_defined() const override;
 
+		virtual bool is_operator() const override;
+
 		virtual bool supports_return_statement() const override;
 
 		virtual void traverse_params(const std::function<void(std::shared_ptr<variable>)> &callback) const override;
