@@ -82,6 +82,9 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::fin
 	if (options.context != nullptr)
 		return specialized::find(runtime, search_options{ dynamic_cast<object *>(owner_.get_naming_parent()), options.context, options.name, options.search_tree, options.branch });
 
+	if (owner_.get_attributes().has("Static", true))
+		return specialized::find(runtime, search_options{ dynamic_cast<object *>(owner_.get_naming_parent()), nullptr, options.name, options.search_tree, options.branch });
+
 	if (!owner_.get_attributes().has("ReadOnlyContext", true))
 		return specialized::find(runtime, search_options{ dynamic_cast<object *>(owner_.get_naming_parent()), context_, options.name, options.search_tree, options.branch });
 

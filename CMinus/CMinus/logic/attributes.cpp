@@ -303,47 +303,25 @@ cminus::logic::attributes::external::external(const std::string &name)
 
 cminus::logic::attributes::external::~external() = default;
 
-cminus::logic::attributes::private_access::private_access()
-	: external("Private"){}
+cminus::logic::attributes::final::final()
+	: external("Final"){}
 
-cminus::logic::attributes::private_access::~private_access() = default;
+cminus::logic::attributes::final::~final() = default;
 
-bool cminus::logic::attributes::private_access::handles_stage(logic::runtime &runtime, stage_type value) const{
-	return (value == stage_type::before_protected_access || value == stage_type::before_public_access);
-}
-
-bool cminus::logic::attributes::private_access::prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const{
-	return (stage == stage_type::before_protected_access || stage == stage_type::before_public_access);
-}
-
-std::string cminus::logic::attributes::private_access::get_default_message_() const{
-	return "Private object is inaccessible";
-}
-
-cminus::logic::attributes::protected_access::protected_access()
-	: external("Protected"){}
-
-cminus::logic::attributes::protected_access::~protected_access() = default;
-
-bool cminus::logic::attributes::protected_access::handles_stage(logic::runtime &runtime, stage_type value) const{
-	return (value == stage_type::before_public_access);
-}
-
-bool cminus::logic::attributes::protected_access::prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const{
-	return (stage == stage_type::before_public_access);
-}
-
-std::string cminus::logic::attributes::protected_access::get_default_message_() const{
-	return "Protected object is inaccessible";
-}
-
-cminus::logic::attributes::public_access::public_access()
-	: external("Public"){}
-
-cminus::logic::attributes::public_access::~public_access() = default;
-
-bool cminus::logic::attributes::public_access::handles_stage(logic::runtime &runtime, stage_type value) const{
+bool cminus::logic::attributes::final::applies_to_function() const{
 	return false;
+}
+
+bool cminus::logic::attributes::final::handles_stage(logic::runtime &runtime, stage_type value) const{
+	return (value == stage_type::before_inheritance);
+}
+
+bool cminus::logic::attributes::final::prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const{
+	return (stage == stage_type::before_inheritance);
+}
+
+std::string cminus::logic::attributes::final::get_default_message_() const{
+	return "Cannot inherit a class marked as 'final'!";
 }
 
 cminus::logic::attributes::read_only::read_only()
@@ -402,6 +380,10 @@ cminus::logic::attributes::not_null::not_null()
 
 cminus::logic::attributes::not_null::~not_null() = default;
 
+bool cminus::logic::attributes::not_null::applies_to_function() const{
+	return false;
+}
+
 bool cminus::logic::attributes::not_null::handles_stage(logic::runtime &runtime, stage_type value) const{
 	return (value == stage_type::after_uninitialized_declaration || value == stage_type::before_ref_assign || value == stage_type::after_write);
 }
@@ -422,8 +404,20 @@ cminus::logic::attributes::ref::ref()
 
 cminus::logic::attributes::ref::~ref() = default;
 
-bool cminus::logic::attributes::ref::handles_stage(logic::runtime &runtime, stage_type value) const{
+bool cminus::logic::attributes::ref::applies_to_function() const{
 	return false;
+}
+
+bool cminus::logic::attributes::ref::handles_stage(logic::runtime &runtime, stage_type value) const{
+	return (value == stage_type::after_uninitialized_declaration);
+}
+
+bool cminus::logic::attributes::ref::prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const{
+	return (stage == stage_type::after_uninitialized_declaration);
+}
+
+std::string cminus::logic::attributes::ref::get_default_message_() const{
+	return "Reference variable requires initialization!";
 }
 
 cminus::logic::attributes::deprecated::deprecated()

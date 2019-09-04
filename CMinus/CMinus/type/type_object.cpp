@@ -9,6 +9,10 @@ bool cminus::type::object::is_auto() const{
 	return false;
 }
 
+bool cminus::type::object::converts_auto(const object &target) const{
+	return target.is_auto();
+}
+
 void cminus::type::object::construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> initialization) const{
 	if (initialization != nullptr)
 		get_evaluator(runtime)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, initialization);

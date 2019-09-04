@@ -72,6 +72,9 @@ cminus::type::object::score_result_type cminus::type::class_::get_score(logic::r
 	if (&target == this)
 		return score_result_type::exact;
 
+	if (converts_auto(target))
+		return score_result_type::assignable;
+
 	if (is_ancestor(target))
 		return score_result_type::ancestor;
 
@@ -147,8 +150,13 @@ std::shared_ptr<cminus::memory::reference> cminus::type::class_::find(logic::run
 		return entry;
 
 	if (auto bound_entry = entry->bound_context(runtime, context, computed_info.offset); bound_entry != nullptr){
-		if (options.name == "this" && context->find_attribute("ReadOnly", true, false) != nullptr)//Add read-only to pointed object
-			bound_entry->add_attribute(runtime.global_storage->find_attribute("ReadOnlyTarget", false));
+		if (options.name == "this"){//Update target attribute
+			if (context->has_attribute("ReadOnly", true, true))
+				bound_entry->add_attribute(runtime.global_storage->find_attribute("&ReadOnly", false));
+			else//Remove read-only to pointed object
+				bound_entry->remove_attribute("&ReadOnly", true);
+		}
+
 		return bound_entry;
 	}
 

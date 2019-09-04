@@ -9,9 +9,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 	auto type = target->get_type();
 	auto primitive_type = dynamic_cast<type::primitive *>(type.get());
 
-	if (primitive_type == nullptr || !primitive_type->is_integral())
-		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
-
 	auto will_write = (std::get<operator_id>(op) == operator_id::increment || std::get<operator_id>(op) == operator_id::decrement);
 	if (!will_write && std::get<operator_id>(op) != operator_id::bitwise_inverse && std::get<operator_id>(op) != operator_id::plus){
 		if (std::get<operator_id>(op) != operator_id::minus || primitive_type->is_unsigned_integral())
@@ -50,19 +47,14 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 	if (target == nullptr || !std::holds_alternative<operator_id>(op))
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
-	auto type = target->get_type();
-	auto primitive_type = dynamic_cast<type::primitive *>(type.get());
-
-	if (primitive_type == nullptr || !primitive_type->is_integral())
-		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
-
 	if (std::get<operator_id>(op) != operator_id::increment && std::get<operator_id>(op) != operator_id::decrement)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
 	if (!target->is_lvalue())
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' requires an l-value operand", 0u, 0u);
 
-	switch (primitive_type->get_id()){
+	auto type = target->get_type();
+	switch (dynamic_cast<type::primitive *>(type.get())->get_id()){
 	case type::primitive::id_type::int8_:
 		return arithmetic::evaluate_unsigned_unary_right_<__int8>(runtime, std::get<operator_id>(op), target);
 	case type::primitive::id_type::uint8_:

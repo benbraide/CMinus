@@ -30,6 +30,9 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 	if (left_type == nullptr || right_type == nullptr)
 		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
 
+	if (right_type->converts_auto(*left_type))//Update auto type
+		left_value->set_type(left_type = right_type);
+
 	if ((right_value = right_type->cast(runtime, right_value, left_type, (is_ref ? type::object::cast_type::ref_static : type::object::cast_type::rval_static))) == nullptr)
 		throw logic::exception("Cannot assign object to destination type", 0u, 0u);
 

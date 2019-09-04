@@ -15,9 +15,13 @@ cminus::logic::storage::global::~global(){
 }
 
 void cminus::logic::storage::global::init(logic::runtime &runtime){
-	attributes_["Private"] = std::make_shared<logic::attributes::private_access>();
-	attributes_["Protected"] = std::make_shared<logic::attributes::protected_access>();
-	attributes_["Public"] = std::make_shared<logic::attributes::public_access>();
+	attributes_["Private"] = std::make_shared<logic::attributes::special>("Private");
+	attributes_["Protected"] = std::make_shared<logic::attributes::special>("Protected");
+	attributes_["Public"] = std::make_shared<logic::attributes::special>("Public");
+
+	attributes_["ThreadLocal"] = std::make_shared<logic::attributes::special>("ThreadLocal");
+	attributes_["Static"] = std::make_shared<logic::attributes::special>("Static");
+	attributes_["Final"] = std::make_shared<logic::attributes::final>();
 
 	attributes_["ReadOnly"] = std::make_shared<logic::attributes::read_only>();
 	attributes_["ReadOnlyContext"] = std::make_shared<logic::attributes::read_only_context>();

@@ -10,12 +10,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
 	auto type = target->get_type();
-	auto primitive_type = dynamic_cast<type::primitive *>(type.get());
-
-	if (primitive_type == nullptr || !primitive_type->is_floating_point())
-		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
-
-	switch (primitive_type->get_id()){
+	switch (dynamic_cast<type::primitive *>(type.get())->get_id()){
 	case type::primitive::id_type::float_:
 		return arithmetic::evaluate_unary_left_<float>(runtime, std::get<operator_id>(op), target);
 	case type::primitive::id_type::double_:

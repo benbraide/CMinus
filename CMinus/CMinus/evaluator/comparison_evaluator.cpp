@@ -18,7 +18,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::explicit_compariso
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
 	auto is_equal = (std::get<operator_id>(op) == operator_id::explicit_equality);
-	if (is_equal != (left_type->get_score(runtime, *right_type, false) == type::object::score_result_type::exact))
+	if (is_equal != left_type->is_exact(runtime, *right_type))
 		return runtime.global_storage->get_named_constant(node::named_constant::constant_type::false_);
 
 	auto comparison_evaluator = dynamic_cast<const object *>(this);
@@ -43,7 +43,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::equality_compariso
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
 	auto left_type = left_value->get_type(), right_type = right_value->get_type();
-	if (left_type == nullptr || right_type == nullptr || left_type->get_score(runtime, *right_type, false) != type::object::score_result_type::exact)
+	if (left_type == nullptr || right_type == nullptr || !left_type->is_exact(runtime, *right_type))
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
 	auto result = left_value->compare(runtime, *right_value, left_type->get_size());

@@ -9,6 +9,8 @@ namespace cminus::type{
 
 		virtual ~raw_pointer();
 
+		virtual bool converts_auto(const object &target) const override;
+
 		virtual void print(logic::runtime &runtime, bool is_qualified) const override;
 
 		virtual void print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const override;

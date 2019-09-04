@@ -7,6 +7,14 @@ cminus::type::raw_pointer::raw_pointer(object *raw_base_type)
 
 cminus::type::raw_pointer::~raw_pointer() = default;
 
+bool cminus::type::raw_pointer::converts_auto(const object &target) const{
+	if (object::converts_auto(target))
+		return true;
+
+	auto pointer_target = dynamic_cast<const raw_pointer *>(&target);
+	return (pointer_target != nullptr && raw_base_type_->converts_auto(*pointer_target->raw_base_type_));
+}
+
 void cminus::type::raw_pointer::print(logic::runtime &runtime, bool is_qualified) const{
 	raw_base_type_->print(runtime, is_qualified);
 	runtime.writer.write_buffer(" *", 2u);
@@ -30,6 +38,9 @@ bool cminus::type::raw_pointer::is_exact(logic::runtime &runtime, const type::ob
 }
 
 cminus::type::object::score_result_type cminus::type::raw_pointer::get_score(logic::runtime &runtime, const object &target, bool is_ref) const{
+	if (converts_auto(target))
+		return score_result_type::assignable;
+
 	auto type_target = dynamic_cast<const raw_pointer *>(&target);
 	if (type_target == nullptr)
 		return score_result_type::nil;

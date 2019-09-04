@@ -23,9 +23,6 @@ namespace cminus::logic::attributes{
 			after_delete,
 			before_inheritance,
 			after_inheritance,
-			before_public_access,
-			before_protected_access,
-			before_private_access,
 		};
 
 		object(const std::string &name, naming::parent *parent);
@@ -171,11 +168,13 @@ namespace cminus::logic::attributes{
 		virtual ~external();
 	};
 
-	class private_access : public external{
+	class final : public external{
 	public:
-		private_access();
+		final();
 
-		virtual ~private_access();
+		virtual ~final();
+
+		virtual bool applies_to_function() const override;
 
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
@@ -183,29 +182,6 @@ namespace cminus::logic::attributes{
 		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
 
 		virtual std::string get_default_message_() const override;
-	};
-
-	class protected_access : public external{
-	public:
-		protected_access();
-
-		virtual ~protected_access();
-
-		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
-
-	protected:
-		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
-
-		virtual std::string get_default_message_() const override;
-	};
-
-	class public_access : public external{
-	public:
-		public_access();
-
-		virtual ~public_access();
-
-		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 	};
 
 	class read_only : public external{
@@ -255,6 +231,8 @@ namespace cminus::logic::attributes{
 
 		virtual ~not_null();
 
+		virtual bool applies_to_function() const override;
+
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
 	protected:
@@ -269,7 +247,14 @@ namespace cminus::logic::attributes{
 
 		virtual ~ref();
 
+		virtual bool applies_to_function() const override;
+
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+
+	protected:
+		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
+
+		virtual std::string get_default_message_() const override;
 	};
 
 	class deprecated : public external{

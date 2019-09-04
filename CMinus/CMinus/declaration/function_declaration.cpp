@@ -86,8 +86,8 @@ cminus::type::object::score_result_type cminus::declaration::function::get_rank(
 			param_type = variadic_base_type;
 
 		if (param_type_has_ref){//Check attributes
-			if ((current_rank = param_type->get_score(runtime, *(*arg_it)->get_type(), true)) == type::object::score_result_type::nil)
-				break;
+			if (!(*arg_it)->is_lvalue() || (current_rank = param_type->get_score(runtime, *(*arg_it)->get_type(), true)) == type::object::score_result_type::nil)
+				return type::object::score_result_type::nil;
 
 			attributes_mismatch = false;
 			(*arg_it)->traverse_attributes(runtime, [&](std::shared_ptr<logic::attributes::object> attribute){
@@ -96,19 +96,18 @@ cminus::type::object::score_result_type cminus::declaration::function::get_rank(
 			}, logic::attributes::object::stage_type::nil, false);
 
 			if (attributes_mismatch)
-				break;
+				return type::object::score_result_type::nil;
 		}
 		else if ((current_rank = param_type->get_score(runtime, *(*arg_it)->get_type(), false)) == type::object::score_result_type::nil)
 			return type::object::score_result_type::nil;
 
-		if ((current_rank_score = type::object::get_score_value(current_rank)) < lowest_rank_score)
-			lowest_rank = current_rank;//Update rank
+		if ((current_rank_score = type::object::get_score_value(current_rank)) < lowest_rank_score){
+			if ((lowest_rank = current_rank) == type::object::score_result_type::nil)//Update rank
+				return type::object::score_result_type::nil;
+		}
 	}
 
-	if (arg_it != args.end())
-		return type::object::score_result_type::nil;
-
-	return lowest_rank;
+	return ((arg_it == args.end()) ? lowest_rank : type::object::score_result_type::nil);
 }
 
 void cminus::declaration::function::print(logic::runtime &runtime) const{

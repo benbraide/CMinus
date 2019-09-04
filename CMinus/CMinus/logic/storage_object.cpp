@@ -116,6 +116,11 @@ std::shared_ptr<cminus::logic::attributes::object> cminus::logic::storage::objec
 	if (name.empty() || attributes_.empty())
 		return nullptr;
 
+	if (name[0] == '&'){//Pointer
+		auto value = find_attribute(name.substr(1), search_tree, branch);
+		return ((value == nullptr) ? nullptr : std::make_shared<logic::attributes::pointer_object>(value));
+	}
+
 	if (auto it = attributes_.find(name); it != attributes_.end())
 		return it->second;
 

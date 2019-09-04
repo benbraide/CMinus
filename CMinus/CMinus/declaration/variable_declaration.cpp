@@ -110,12 +110,12 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::variable::alloca
 }
 
 void cminus::declaration::variable::initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> value) const{
-	if (auto initialization = ((value == nullptr) ? initialization_ : value); initialization != nullptr || target->find_attribute("Ref", true, false) == nullptr){
-		target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
-		target->get_type()->construct(runtime, target, initialization);
-	}
-	else
-		throw logic::exception("Reference variable requires initialization", 0u, 0u);
+	auto initialization = ((value == nullptr) ? initialization_ : value);
+	if (initialization == nullptr)
+		target->call_attributes(runtime, logic::attributes::object::stage_type::after_uninitialized_declaration, false);
+
+	target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
+	target->get_type()->construct(runtime, target, initialization);
 }
 
 void cminus::declaration::variable::print_attributes_(logic::runtime &runtime) const{

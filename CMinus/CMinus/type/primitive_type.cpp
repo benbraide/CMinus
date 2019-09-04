@@ -131,7 +131,15 @@ std::size_t cminus::type::primitive::get_size() const{
 	return 0u;
 }
 
+bool cminus::type::primitive::is_exact(logic::runtime &runtime, const type::object &target) const{
+	auto primitive_target = dynamic_cast<const primitive *>(&target);
+	return (primitive_target != nullptr && primitive_target->id_ == id_);
+}
+
 cminus::type::object::score_result_type cminus::type::primitive::get_score(logic::runtime &runtime, const type::object &target, bool is_ref) const{
+	if (converts_auto(target))
+		return score_result_type::assignable;
+
 	auto type_target = dynamic_cast<const primitive *>(&target);
 	if (type_target == nullptr){//Check for string
 		if (is_ref)
@@ -352,7 +360,7 @@ std::shared_ptr<cminus::evaluator::object> cminus::type::primitive::get_evaluato
 		return runtime.global_storage->get_evaluator(evaluator::id::byte);
 	case id_type::char_:
 	case id_type::wchar_:
-		return runtime.global_storage->get_evaluator(evaluator::id::byte);
+		return runtime.global_storage->get_evaluator(evaluator::id::character);
 	case id_type::int8_:
 	case id_type::uint8_:
 	case id_type::int16_:

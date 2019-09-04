@@ -6,12 +6,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::byte::evaluate_una
 	if (target == nullptr || !std::holds_alternative<operator_id>(op) || std::get<operator_id>(op) != operator_id::bitwise_inverse)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
-	auto type = target->get_type();
-	auto primitive_type = dynamic_cast<type::primitive *>(type.get());
-
-	if (primitive_type == nullptr || primitive_type->get_id() != type::primitive::id_type::bool_)
-		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
-
 	return evaluate_unary_left_<std::byte>(runtime, std::get<operator_id>(op), target);
 }
 
@@ -41,7 +35,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::byte::evaluate_bin
 		return result;
 
 	auto left_type = left_value->get_type(), right_type = right_value->get_type();
-	if (left_type == nullptr || left_type->get_score(runtime, *right_type, false) != type::object::score_result_type::exact)
+	if (left_type == nullptr || right_type == nullptr || !left_type->is_exact(runtime, *right_type))
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
 	auto result = evaluate_binary_<std::byte>(runtime, std::get<operator_id>(op), left_value, right_value);

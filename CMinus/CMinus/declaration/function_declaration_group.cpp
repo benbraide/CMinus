@@ -1,3 +1,5 @@
+#include "../type/class_type.h"
+
 #include "function_declaration_group.h"
 
 cminus::declaration::function_group::function_group(std::string name, logic::naming::parent *parent)
@@ -42,7 +44,9 @@ cminus::declaration::function_base *cminus::declaration::function_group::get_hig
 	std::size_t match_count = 0u;
 	std::shared_ptr<function_base> highest_ranked;
 	for (auto &item : list_){
-		if (is_const && !(is_const_ctx = item.first->get_attributes().has("ReadOnlyContext", true)))
+		if (dynamic_cast<type::class_ *>(item.first->get_naming_parent()) == nullptr || item.first->get_attributes().has("Static", true))
+			is_const_ctx = is_const;
+		else if (is_const && !(is_const_ctx = item.first->get_attributes().has("ReadOnlyContext", true)))
 			continue;
 
 		if (highest_rank_score < (current_rank_score = (type::object::get_score_value(item.first->get_rank(runtime, args)) - ((is_const_ctx == is_const) ? 0 : 1)))){

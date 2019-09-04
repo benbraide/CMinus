@@ -6,12 +6,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::boolean::evaluate_
 	if (target == nullptr || !std::holds_alternative<operator_id>(op) || std::get<operator_id>(op) != operator_id::relational_not)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
 
-	auto type = target->get_type();
-	auto primitive_type = dynamic_cast<type::primitive *>(type.get());
-
-	if (primitive_type == nullptr || primitive_type->get_id() != type::primitive::id_type::bool_)
-		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
-
 	if (target->read_scalar<constant_type>(runtime) == constant_type::true_)
 		return runtime.global_storage->get_named_constant(constant_type::false_);
 

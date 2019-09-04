@@ -5,7 +5,6 @@
 #include "type/string_type.h"
 
 int main(){
-	
 	std::stringstream ss("ben1080");
 	std::wstringstream wss(L"ben1080");
 

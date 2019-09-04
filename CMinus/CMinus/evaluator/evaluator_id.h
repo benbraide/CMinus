@@ -6,6 +6,7 @@ namespace cminus::evaluator{
 		undefined,
 		boolean,
 		byte,
+		character,
 		floating_point,
 		integral,
 		nan,
