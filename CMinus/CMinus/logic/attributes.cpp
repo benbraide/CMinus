@@ -109,7 +109,7 @@ cminus::logic::attributes::collection::collection(optimised_list_type &&list)
 	: list_(std::move(list)){}
 
 void cminus::logic::attributes::collection::add(std::shared_ptr<object> value){
-	if (value != nullptr && list_.find(value.get()) == list_.end())
+	if (value != nullptr && find(*value) == nullptr)
 		list_[value.get()] = value;
 }
 
@@ -180,6 +180,11 @@ void cminus::logic::attributes::collection::traverse(logic::runtime &runtime, co
 	}
 }
 
+void cminus::logic::attributes::collection::traverse(const std::function<void(std::shared_ptr<object>)> &callback) const{
+	for (auto &entry : list_)
+		callback(entry.second);
+}
+
 void cminus::logic::attributes::collection::call(logic::runtime &runtime, object::stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
 	for (auto &entry : list_){
 		if (stage == logic::attributes::object::stage_type::nil || entry.first->handles_stage(runtime, stage))
@@ -208,6 +213,29 @@ void cminus::logic::attributes::collection::print(logic::runtime &runtime) const
 	}
 
 	runtime.writer.write_scalar(']');
+}
+
+cminus::logic::attributes::pointer_object::pointer_object(std::shared_ptr<object> target)
+	: object(("&" + target->get_naming_value()), target->get_naming_parent()), target_(target){}
+
+cminus::logic::attributes::pointer_object::~pointer_object() = default;
+
+bool cminus::logic::attributes::pointer_object::is_same(const naming::object &target) const{
+	if (auto pointer_target = dynamic_cast<const pointer_object *>(&target); pointer_target != nullptr)
+		return target_->is_same(*pointer_target->target_);
+	return false;
+}
+
+bool cminus::logic::attributes::pointer_object::applies_to_function() const{
+	return false;
+}
+
+bool cminus::logic::attributes::pointer_object::handles_stage(logic::runtime &runtime, stage_type value) const{
+	return false;
+}
+
+std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::pointer_object::get_pointer_target(logic::runtime &runtime) const{
+	return target_;
 }
 
 cminus::logic::attributes::bound_object::bound_object(std::shared_ptr<object> target, const std::vector<std::shared_ptr<memory::reference>> &args)
@@ -348,23 +376,6 @@ bool cminus::logic::attributes::read_only_context::handles_stage(logic::runtime 
 	return false;
 }
 
-cminus::logic::attributes::read_only_target::read_only_target()
-	: external("ReadOnlyTarget"){}
-
-cminus::logic::attributes::read_only_target::~read_only_target() = default;
-
-bool cminus::logic::attributes::read_only_target::applies_to_function() const{
-	return false;
-}
-
-bool cminus::logic::attributes::read_only_target::handles_stage(logic::runtime &runtime, stage_type value) const{
-	return false;
-}
-
-std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::read_only_target::get_pointer_target(logic::runtime &runtime) const{
-	return runtime.global_storage->find_attribute("ReadOnly", false);
-}
-
 cminus::logic::attributes::write_only::write_only()
 	: external("WriteOnly"){}
 
@@ -384,23 +395,6 @@ bool cminus::logic::attributes::write_only::prohibits_stage_(logic::runtime &run
 
 std::string cminus::logic::attributes::write_only::get_default_message_() const{
 	return "Cannot read to object. Object is write-only!";
-}
-
-cminus::logic::attributes::write_only_target::write_only_target()
-	: external("WriteOnlyTarget"){}
-
-cminus::logic::attributes::write_only_target::~write_only_target() = default;
-
-bool cminus::logic::attributes::write_only_target::applies_to_function() const{
-	return false;
-}
-
-bool cminus::logic::attributes::write_only_target::handles_stage(logic::runtime &runtime, stage_type value) const{
-	return false;
-}
-
-std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::write_only_target::get_pointer_target(logic::runtime &runtime) const{
-	return runtime.global_storage->find_attribute("WriteOnly", false);
 }
 
 cminus::logic::attributes::not_null::not_null()

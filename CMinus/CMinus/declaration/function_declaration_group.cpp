@@ -20,25 +20,26 @@ void cminus::declaration::function_group::replace(function_base &existing_entry,
 	}
 }
 
-std::shared_ptr<cminus::declaration::function_base> cminus::declaration::function_group::find(logic::runtime &runtime, const function_base &tmpl) const{
+cminus::declaration::function_base *cminus::declaration::function_group::find(logic::runtime &runtime, const function_base &tmpl) const{
 	if (list_.empty())
 		return nullptr;
 
 	for (auto &item : list_){
 		if (item.first->is_exact(runtime, tmpl))
-			return item.second;
+			return item.second.get();
 	}
 
 	return nullptr;
 }
 
-std::shared_ptr<cminus::declaration::function_base> cminus::declaration::function_group::get_highest_ranked(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+cminus::declaration::function_base *cminus::declaration::function_group::get_highest_ranked(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args, std::size_t *count) const{
 	if (list_.empty())
 		return nullptr;
 
 	auto is_const = (context != nullptr && context->has_attribute("ReadOnly", true, true)), is_const_ctx = false;
 	int highest_rank_score = type::object::get_score_value(type::object::score_result_type::nil), current_rank_score;
 
+	std::size_t match_count = 0u;
 	std::shared_ptr<function_base> highest_ranked;
 	for (auto &item : list_){
 		if (is_const && !(is_const_ctx = item.first->get_attributes().has("ReadOnlyContext", true)))
@@ -47,16 +48,26 @@ std::shared_ptr<cminus::declaration::function_base> cminus::declaration::functio
 		if (highest_rank_score < (current_rank_score = (type::object::get_score_value(item.first->get_rank(runtime, args)) - ((is_const_ctx == is_const) ? 0 : 1)))){
 			highest_rank_score = current_rank_score;
 			highest_ranked = item.second;
+			match_count = 1u;
 		}
+		else if (highest_rank_score == current_rank_score)
+			++match_count;
 	}
 
-	return highest_ranked;
+	if (count != nullptr)
+		*count = match_count;
+
+	return highest_ranked.get();
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::declaration::function_group::call(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const{
-	auto highest_ranked = get_highest_ranked(runtime, context, args);
+	std::size_t match_count = 0u;
+	auto highest_ranked = get_highest_ranked(runtime, context, args, &match_count);
 	if (highest_ranked == nullptr)
 		throw logic::exception("Function does not take the specified arguments", 0u, 0u);
+
+	if (1u < match_count)
+		throw logic::exception("Function call is ambiguous", 0u, 0u);
 
 	return highest_ranked->call_(runtime, context, args);
 }

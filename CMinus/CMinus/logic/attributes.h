@@ -109,6 +109,8 @@ namespace cminus::logic::attributes{
 
 		void traverse(logic::runtime &runtime, const std::function<void(std::shared_ptr<object>)> &callback, object::stage_type stage) const;
 
+		void traverse(const std::function<void(std::shared_ptr<object>)> &callback) const;
+
 		void call(logic::runtime &runtime, object::stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const;
 
 		void call(logic::runtime &runtime, object::stage_type stage, std::shared_ptr<memory::reference> target) const;
@@ -117,6 +119,24 @@ namespace cminus::logic::attributes{
 
 	private:
 		optimised_list_type list_;
+	};
+
+	class pointer_object : public object{
+	public:
+		explicit pointer_object(std::shared_ptr<object> target);
+
+		virtual ~pointer_object();
+
+		virtual bool is_same(const naming::object &target) const override;
+
+		virtual bool applies_to_function() const override;
+
+		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
+
+		virtual std::shared_ptr<object> get_pointer_target(logic::runtime &runtime) const override;
+
+	protected:
+		std::shared_ptr<object> target_;
 	};
 
 	class bound_object : public object{
@@ -213,19 +233,6 @@ namespace cminus::logic::attributes{
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 	};
 
-	class read_only_target : public external{
-	public:
-		read_only_target();
-
-		virtual ~read_only_target();
-
-		virtual bool applies_to_function() const override;
-
-		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
-
-		virtual std::shared_ptr<object> get_pointer_target(logic::runtime &runtime) const override;
-	};
-
 	class write_only : public external{
 	public:
 		write_only();
@@ -240,19 +247,6 @@ namespace cminus::logic::attributes{
 		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
 
 		virtual std::string get_default_message_() const override;
-	};
-
-	class write_only_target : public external{
-	public:
-		write_only_target();
-
-		virtual ~write_only_target();
-
-		virtual bool applies_to_function() const override;
-
-		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
-
-		virtual std::shared_ptr<object> get_pointer_target(logic::runtime &runtime) const override;
 	};
 
 	class not_null : public external{

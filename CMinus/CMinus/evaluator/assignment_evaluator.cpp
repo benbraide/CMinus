@@ -36,7 +36,10 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 	if (!is_ref){//Copy value
 		if (is_init){
 			logic::attributes::read_guard guard(runtime, right_value.get(), true);
-			runtime.memory_object.write(right_value->get_address(), left_value->get_address(), left_type->get_size());
+			if (auto right_address = right_value->get_address(); right_address == 0u)
+				runtime.memory_object.write(left_value->get_address(), right_value->get_data(runtime), left_type->get_size());
+			else//Read from address
+				runtime.memory_object.write(right_address, left_value->get_address(), left_type->get_size());
 		}
 		else if (left_value->write(runtime, *right_value, left_type->get_size()) != left_type->get_size())
 			throw logic::exception("Assignment could not be completed", 0u, 0u);

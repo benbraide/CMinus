@@ -1,5 +1,11 @@
+#include "../node/list_node.h"
+#include "../node/memory_reference_node.h"
 #include "../type/string_type.h"
-#include "../evaluator/evaluator_object.h"
+
+#include "../evaluator/byte_evaluator.h"
+#include "../evaluator/boolean_evaluator.h"
+#include "../evaluator/integral_evaluator.h"
+#include "../evaluator/floating_point_evaluator.h"
 
 cminus::logic::storage::global::global()
 	: object("", nullptr){}
@@ -15,10 +21,7 @@ void cminus::logic::storage::global::init(logic::runtime &runtime){
 
 	attributes_["ReadOnly"] = std::make_shared<logic::attributes::read_only>();
 	attributes_["ReadOnlyContext"] = std::make_shared<logic::attributes::read_only_context>();
-	attributes_["ReadOnlyTarget"] = std::make_shared<logic::attributes::read_only_target>();
-
 	attributes_["WriteOnly"] = std::make_shared<logic::attributes::write_only>();
-	attributes_["WriteOnlyTarget"] = std::make_shared<logic::attributes::write_only_target>();
 
 	attributes_["Deprecated"] = std::make_shared<logic::attributes::deprecated>();
 	attributes_["NotNull"] = std::make_shared<logic::attributes::not_null>();
@@ -54,6 +57,12 @@ void cminus::logic::storage::global::init(logic::runtime &runtime){
 		primitive_types_[type::primitive::id_type::string] = string_type;
 		string_type->init(runtime);
 	}
+
+	evaluators_[evaluator::id::byte] = std::make_shared<evaluator::byte>();
+	evaluators_[evaluator::id::boolean] = std::make_shared<evaluator::boolean>();
+
+	evaluators_[evaluator::id::integral] = std::make_shared<evaluator::integral>();
+	evaluators_[evaluator::id::floating_point] = std::make_shared<evaluator::floating_point>();
 }
 
 std::shared_ptr<cminus::type::object> cminus::logic::storage::global::get_primitve_type(type::primitive::id_type id) const{
@@ -88,6 +97,41 @@ std::shared_ptr<cminus::evaluator::object> cminus::logic::storage::global::get_e
 		return it->second;
 
 	return nullptr;
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::global::create_string(logic::runtime &runtime, const std::string &value) const{
+	auto str = std::make_shared<memory::data_reference>(runtime, get_string_type(), declaration::variable::attribute_list_type{}, nullptr);
+	if (str == nullptr)//Error
+		return nullptr;
+
+	if (value.empty()){
+		str->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
+		str->get_type()->construct(runtime, str, nullptr);
+		return str;
+	}
+
+	auto size = std::make_shared<memory::scalar_reference<unsigned __int64>>(
+		get_primitve_type(type::primitive::id_type::uint64_),
+		nullptr,
+		value.size()
+	);
+
+	auto fill = std::make_shared<memory::scalar_reference<char>>(
+		get_primitve_type(type::primitive::id_type::char_),
+		nullptr,
+		'\0'
+	);
+
+	std::vector<std::shared_ptr<node::object>> init_list{
+		std::make_shared<node::memory_reference>(nullptr, size),
+		std::make_shared<node::memory_reference>(nullptr, fill)
+	};
+
+	str->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
+	str->get_type()->construct(runtime, str, std::make_shared<node::list>(nullptr, std::move(init_list)));
+	memcpy(const_cast<char *>(get_string_data(runtime, str)), value.data(), value.size());
+
+	return str;
 }
 
 const char *cminus::logic::storage::global::get_string_data(logic::runtime &runtime, std::shared_ptr<memory::reference> object) const{

@@ -30,6 +30,11 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 	return nullptr;
 }
 
+std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::evaluate_unary_right(logic::runtime &runtime, const operator_type &op, std::shared_ptr<memory::reference> target) const{
+	throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
+	return nullptr;
+}
+
 std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::evaluate_binary(logic::runtime &runtime, const operator_type &op, std::shared_ptr<memory::reference> left_value, const operand_type &right) const{
 	if (auto result = explicit_comparison::evaluate_(runtime, op, left_value, right); result != nullptr)//Handled
 		return result;

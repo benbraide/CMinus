@@ -1,3 +1,4 @@
+#include "../node/list_node.h"
 #include "../logic/specialized_storage.h"
 
 #include "class_type.h"
@@ -24,7 +25,13 @@ void cminus::type::class_::construct(logic::runtime &runtime, std::shared_ptr<me
 
 	std::vector<std::shared_ptr<memory::reference>> args;
 	if (initialization != nullptr){//Resolve initialization
-
+		if (auto list_node = dynamic_cast<node::list *>(initialization.get()); list_node != nullptr){
+			args.reserve(list_node->get_value().size());
+			for (auto item : list_node->get_value())
+				args.push_back(item->evaluate(runtime));
+		}
+		else//Single item
+			args.push_back(initialization->evaluate(runtime));
 	}
 
 	callable->get_value()->call(runtime, callable->get_context(), args);

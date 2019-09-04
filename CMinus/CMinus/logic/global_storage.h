@@ -27,6 +27,8 @@ namespace cminus::logic::storage{
 
 		virtual std::shared_ptr<evaluator::object> get_evaluator(evaluator::id id) const;
 
+		virtual std::shared_ptr<memory::reference> create_string(logic::runtime &runtime, const std::string &value) const;
+
 		virtual const char *get_string_data(logic::runtime &runtime, std::shared_ptr<memory::reference> object) const;
 
 	protected:

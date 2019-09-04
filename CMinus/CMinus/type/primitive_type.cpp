@@ -1,3 +1,7 @@
+#include "../evaluator/byte_evaluator.h"
+#include "../evaluator/boolean_evaluator.h"
+#include "../evaluator/integral_evaluator.h"
+#include "../evaluator/floating_point_evaluator.h"
 #include "../declaration/function_declaration_group.h"
 
 #include "pointer_type.h"
@@ -339,6 +343,37 @@ std::shared_ptr<cminus::memory::reference> cminus::type::primitive::cast(logic::
 }
 
 std::shared_ptr<cminus::evaluator::object> cminus::type::primitive::get_evaluator(logic::runtime &runtime) const{
+	switch (id_){
+	case id_type::bool_:
+		return runtime.global_storage->get_evaluator(evaluator::id::boolean);
+	case id_type::nan_:
+		return nullptr;
+	case id_type::byte_:
+		return runtime.global_storage->get_evaluator(evaluator::id::byte);
+	case id_type::char_:
+	case id_type::wchar_:
+		return runtime.global_storage->get_evaluator(evaluator::id::byte);
+	case id_type::int8_:
+	case id_type::uint8_:
+	case id_type::int16_:
+	case id_type::uint16_:
+	case id_type::int32_:
+	case id_type::uint32_:
+	case id_type::int64_:
+	case id_type::uint64_:
+	case id_type::int128_:
+	case id_type::uint128_:
+		return runtime.global_storage->get_evaluator(evaluator::id::integral);
+	case id_type::float_:
+	case id_type::double_:
+	case id_type::ldouble:
+		return runtime.global_storage->get_evaluator(evaluator::id::floating_point);
+	case id_type::nullptr_:
+		return nullptr;
+	default:
+		break;
+	}
+
 	return nullptr;
 }
 

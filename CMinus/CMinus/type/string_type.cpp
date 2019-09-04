@@ -38,7 +38,10 @@ void cminus::type::string::init(logic::runtime &runtime){
 	add_function(runtime, std::make_shared<declaration::string::default_constructor>(this));
 
 	add_function(runtime, std::make_shared<declaration::string::copy_constructor>(runtime, this));
+	add_function(runtime, std::make_shared<declaration::string::sub_constructor>(runtime, this));
+
 	add_function(runtime, std::make_shared<declaration::string::assignment_constructor>(runtime, this));
+	add_function(runtime, std::make_shared<declaration::string::fill_constructor>(runtime, this));
 
 	add_function(runtime, std::make_shared<declaration::string::empty>(runtime, this));
 	add_function(runtime, std::make_shared<declaration::string::size>(runtime, this));

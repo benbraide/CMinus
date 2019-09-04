@@ -316,9 +316,11 @@ cminus::declaration::string::data::data(logic::runtime &runtime, bool read_only,
 	: function("data", parent){
 	auto type = std::make_shared<type::pointer>(runtime.global_storage->get_primitve_type(type::primitive::id_type::char_));
 	if (read_only){
-		auto read_only_attr = runtime.global_storage->find_attribute("ReadOnlyTarget", false);
+		auto read_only_attr = runtime.global_storage->find_attribute("ReadOnly", false);
+		auto ptr_read_only_attr = std::make_shared<logic::attributes::pointer_object>(read_only_attr);
+
 		return_declaration_ = std::make_shared<variable>(
-			attribute_list_type{ read_only_attr },											//Attributes
+			attribute_list_type{ ptr_read_only_attr },										//Attributes
 			type,																			//Type
 			"",																				//Name
 			nullptr																			//Initialization

@@ -7,6 +7,12 @@
 cminus::declaration::function::function(std::string name, logic::naming::parent *parent, const attribute_list_type &attributes, std::shared_ptr<variable> return_declaration, const std::vector<std::shared_ptr<variable>> &params, std::shared_ptr<node::object> body)
 	: function_base(name, parent, attributes), return_declaration_(return_declaration), params_(params), body_(body){
 	compute_values_();
+	if (return_declaration_ != nullptr){
+		attributes_.traverse([&](std::shared_ptr<logic::attributes::object> value){
+			if (!value->applies_to_function())
+				return_declaration_->get_attributes().add(value);
+		});
+	}
 }
 
 cminus::declaration::function::function(std::string name, logic::naming::parent *parent)
@@ -23,6 +29,18 @@ bool cminus::declaration::function::is_exact(logic::runtime &runtime, const func
 		return false;
 
 	if ((return_declaration_ == nullptr) != (function_tmpl->return_declaration_ == nullptr))
+		return false;
+
+	if (attributes_.get_list().size() != tmpl.get_attributes().get_list().size())
+		return false;
+
+	auto mismatch = false;
+	attributes_.traverse(runtime, [&](std::shared_ptr<logic::attributes::object> value){
+		if (!mismatch)//Check for attribute
+			mismatch = !tmpl.get_attributes().has(*value);
+	}, logic::attributes::object::stage_type::nil);
+
+	if (mismatch)
 		return false;
 
 	if (return_declaration_ != nullptr && !is_exact_(runtime, return_declaration_, function_tmpl->return_declaration_))

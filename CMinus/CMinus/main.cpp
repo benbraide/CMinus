@@ -42,5 +42,8 @@ int main(){
 	auto entry = runtime.current_storage->find(runtime, "MyString", true);
 	auto data = global_storage->get_string_data(runtime, entry);
 
+	auto str = global_storage->create_string(runtime, "CreatedString");
+	auto sdat = global_storage->get_string_data(runtime, str);
+
 	return 0;
 }
