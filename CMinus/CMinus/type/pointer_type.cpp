@@ -21,11 +21,10 @@ void cminus::type::raw_pointer::print(logic::runtime &runtime, bool is_qualified
 }
 
 void cminus::type::raw_pointer::print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const{
-	auto target_address = data->read_scalar<unsigned __int64>(runtime);
-	if (target_address == 0u){
+	if (auto target_address = data->read_scalar<unsigned __int64>(runtime); target_address == 0u)
 		runtime.writer.write_buffer("nullptr", 7u);
-		return;
-	}
+	else//Not null
+		runtime.writer.write_scalar(logic::to_hex_string<unsigned __int64>::get(target_address));
 }
 
 std::size_t cminus::type::raw_pointer::get_size() const{

@@ -28,37 +28,37 @@ void cminus::type::primitive::print_value(logic::runtime &runtime, std::shared_p
 		runtime.writer.write_scalar(data->read_scalar<wchar_t>(runtime));
 		break;
 	case id_type::int8_:
-		runtime.writer.write_scalar(std::to_string(data->read_scalar<__int8>(runtime)) + "i8");
+		runtime.writer.write_scalar(logic::to_string<__int16>::get(static_cast<__int16>(data->read_scalar<__int8>(runtime))) + "i8");
 		break;
 	case id_type::uint8_:
-		runtime.writer.write_scalar(std::to_string(data->read_scalar<unsigned __int8>(runtime)) + "ui8");
+		runtime.writer.write_scalar(logic::to_string<unsigned __int16>::get(static_cast<unsigned __int16>(data->read_scalar<unsigned __int8>(runtime))) + "ui8");
 		break;
 	case id_type::int16_:
-		runtime.writer.write_scalar(std::to_string(data->read_scalar<__int16>(runtime)) + "i16");
+		runtime.writer.write_scalar(logic::to_string<__int16>::get(data->read_scalar<__int16>(runtime)) + "i16");
 		break;
 	case id_type::uint16_:
-		runtime.writer.write_scalar(std::to_string(data->read_scalar<unsigned __int16>(runtime)) + "ui16");
+		runtime.writer.write_scalar(logic::to_string<unsigned __int16>::get(data->read_scalar<unsigned __int16>(runtime)) + "ui16");
 		break;
 	case id_type::int32_:
-		runtime.writer.write_scalar(std::to_string(data->read_scalar<__int32>(runtime)) + "i32");
+		runtime.writer.write_scalar(logic::to_string<__int32>::get(data->read_scalar<__int32>(runtime)) + "i32");
 		break;
 	case id_type::uint32_:
-		runtime.writer.write_scalar(std::to_string(data->read_scalar<unsigned __int32>(runtime)) + "ui32");
+		runtime.writer.write_scalar(logic::to_string<unsigned __int32>::get(data->read_scalar<unsigned __int32>(runtime)) + "ui32");
 		break;
 	case id_type::int64_:
-		runtime.writer.write_scalar(std::to_string(data->read_scalar<__int64>(runtime)) + "i64");
+		runtime.writer.write_scalar(logic::to_string<__int64>::get(data->read_scalar<__int64>(runtime)) + "i64");
 		break;
 	case id_type::uint64_:
-		runtime.writer.write_scalar(std::to_string(data->read_scalar<unsigned __int64>(runtime)) + "ui64");
+		runtime.writer.write_scalar(logic::to_string<unsigned __int64>::get(data->read_scalar<unsigned __int64>(runtime)) + "ui64");
 		break;
 	case id_type::float_:
-		runtime.writer.write_scalar(std::to_string(data->read_scalar<float>(runtime)) + "f32");
+		runtime.writer.write_scalar(logic::to_string<float>::get(data->read_scalar<float>(runtime)) + "f32");
 		break;
 	case id_type::double_:
-		runtime.writer.write_scalar(std::to_string(data->read_scalar<double>(runtime)) + "f64");
+		runtime.writer.write_scalar(logic::to_string<double>::get(data->read_scalar<double>(runtime)) + "f64");
 		break;
 	case id_type::ldouble:
-		runtime.writer.write_scalar(std::to_string(data->read_scalar<long double>(runtime)) + "f128");
+		runtime.writer.write_scalar(logic::to_string<long double>::get(data->read_scalar<long double>(runtime)) + "f128");
 		break;
 	case id_type::nan_:
 		runtime.writer.write_buffer("NaN", 3u);

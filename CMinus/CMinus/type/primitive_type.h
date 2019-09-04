@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../logic/string_conversions.h"
 #include "../memory/memory_reference.h"
 
 #include "type_object.h"

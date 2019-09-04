@@ -6,6 +6,11 @@ cminus::type::string::string(logic::runtime &runtime)
 
 cminus::type::string::~string() = default;
 
+void cminus::type::string::print_value(logic::runtime &runtime, std::shared_ptr<memory::reference> data) const{
+	if (auto str = runtime.global_storage->get_string_data(runtime, data); str != nullptr)
+		runtime.writer.write_buffer(str, strlen(str));
+}
+
 void cminus::type::string::print(logic::runtime &runtime, bool is_qualified) const{
 	runtime.writer.write_buffer("string", 6u);
 }

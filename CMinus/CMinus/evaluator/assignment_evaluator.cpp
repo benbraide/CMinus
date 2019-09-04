@@ -15,16 +15,22 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 	if (right_value == nullptr)
 		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
 
-	auto is_init = (left_value->find_attribute("#Init#", true, false) != nullptr);
-	auto ref_left_value = dynamic_cast<memory::ref_reference *>(left_value.get());
+	auto is_init = left_value->has_attribute("#Init#", true, false);
+	auto ref_left_value = dynamic_cast<memory::ref_reference *>(left_value->get_non_raw());
+
 	auto is_ref = (is_init && ref_left_value != nullptr);
+	auto is_val = left_value->has_attribute("Val", true, false);
 
 	if (is_ref){//Copy reference
-		if (right_value->is_lvalue())
+		if (right_value->is_lvalue()){
+			is_val = false;
 			right_value->call_attributes(runtime, logic::attributes::object::stage_type::before_ref_assign, true, std::vector<std::shared_ptr<memory::reference>>{ left_value });
-		else
-			throw logic::exception("Ref assignment requires an l-value source", 0u, 0u);
+		}
+		else if (!(is_val = (is_val && left_value->has_attribute("ReadOnly", true, false))))
+			throw logic::exception("'Ref' assignment requires an l-value source", 0u, 0u);
 	}
+	else if (is_val && right_value->is_lvalue())
+		throw logic::exception("'Val' assignment requires an r-value source", 0u, 0u);
 
 	auto left_type = left_value->get_type(), right_type = right_value->get_type();
 	if (left_type == nullptr || right_type == nullptr)
@@ -33,7 +39,13 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 	if (right_type->converts_auto(*left_type))//Update auto type
 		left_value->set_type(left_type = right_type);
 
-	if ((right_value = right_type->cast(runtime, right_value, left_type, (is_ref ? type::object::cast_type::ref_static : type::object::cast_type::rval_static))) == nullptr)
+	type::object::cast_type cast_type;
+	if (is_ref)
+		cast_type = (is_val ? type::object::cast_type::static_ : type::object::cast_type::ref_static);
+	else//Not a reference assignment
+		cast_type = type::object::cast_type::rval_static;
+
+	if ((right_value = right_type->cast(runtime, right_value, left_type, cast_type)) == nullptr)
 		throw logic::exception("Cannot assign object to destination type", 0u, 0u);
 
 	if (!is_ref){//Copy value
@@ -49,6 +61,8 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 
 		after_value_copy_(runtime, left_value, right_value);
 	}
+	else if (is_val)//R-value reference
+		left_value = std::make_shared<memory::rval_ref_reference>(right_value);
 	else//Copy address
 		ref_left_value->write_address(right_value->get_address());
 

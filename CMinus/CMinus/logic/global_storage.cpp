@@ -31,7 +31,9 @@ void cminus::logic::storage::global::init(logic::runtime &runtime){
 
 	attributes_["Deprecated"] = std::make_shared<logic::attributes::deprecated>();
 	attributes_["NotNull"] = std::make_shared<logic::attributes::not_null>();
+
 	attributes_["Ref"] = std::make_shared<logic::attributes::ref>();
+	attributes_["Val"] = std::make_shared<logic::attributes::special>("Val");
 
 	attributes_["#NaN#"] = std::make_shared<logic::attributes::special>("#NaN#");
 	attributes_["#Init#"] = std::make_shared<logic::attributes::special>("#Init#");

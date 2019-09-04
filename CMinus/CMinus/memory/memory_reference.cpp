@@ -572,6 +572,15 @@ void cminus::memory::ref_reference::write_address(std::size_t value){
 	address_ = value;
 }
 
+cminus::memory::rval_ref_reference::rval_ref_reference(std::shared_ptr<reference> target)
+	: raw_reference(target.get()), rval_target_(target){}
+
+cminus::memory::rval_ref_reference::~rval_ref_reference() = default;
+
+std::shared_ptr<cminus::memory::reference> cminus::memory::rval_ref_reference::get_rval_target() const{
+	return rval_target_;
+}
+
 cminus::memory::function_reference::function_reference(logic::runtime &runtime, std::size_t address, declaration::function_group_base *value)
 	: function_reference(address, runtime.global_storage->get_primitve_type(type::primitive::id_type::function), value, attribute_list_type{ runtime.global_storage->find_attribute("ReadOnly", false) }, nullptr){}
 

@@ -334,6 +334,18 @@ namespace cminus::memory{
 		virtual void write_address(std::size_t value);
 	};
 
+	class rval_ref_reference : public raw_reference{
+	public:
+		explicit rval_ref_reference(std::shared_ptr<reference> target);
+
+		virtual ~rval_ref_reference();
+
+		virtual std::shared_ptr<reference> get_rval_target() const;
+
+	protected:
+		std::shared_ptr<reference> rval_target_;
+	};
+
 	class function_reference : public lval_reference{
 	public:
 		function_reference(logic::runtime &runtime, std::size_t address, declaration::function_group_base *value);

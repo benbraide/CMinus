@@ -43,6 +43,7 @@ int main(){
 
 	auto str = global_storage->create_string(runtime, "CreatedString");
 	auto sdat = global_storage->get_string_data(runtime, str);
+	str->get_type()->print_value(runtime, str);
 
 	return 0;
 }
