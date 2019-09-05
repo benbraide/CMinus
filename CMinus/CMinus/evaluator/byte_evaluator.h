@@ -22,7 +22,7 @@ namespace cminus::evaluator{
 		std::shared_ptr<memory::reference> evaluate_unary_left_(logic::runtime &runtime, operator_id op, std::shared_ptr<memory::reference> value) const{
 			switch (op){
 			case operator_id::bitwise_inverse:
-				return std::make_shared<memory::scalar_reference<value_type>>(value->get_type(), nullptr, static_cast<value_type>(~value->read_scalar<value_type>(runtime)));
+				return runtime.global_storage->create_scalar(static_cast<value_type>(~value->read_scalar<value_type>(runtime)));
 			default:
 				break;
 			}
@@ -34,11 +34,11 @@ namespace cminus::evaluator{
 		std::shared_ptr<memory::reference> evaluate_binary_(logic::runtime &runtime, operator_id op, std::shared_ptr<memory::reference> left_value, std::shared_ptr<memory::reference> right_value) const{
 			switch (op){
 			case operator_id::bitwise_and:
-				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) & right_value->read_scalar<value_type>(runtime)));
+				return runtime.global_storage->create_scalar(static_cast<value_type>(left_value->read_scalar<value_type>(runtime) & right_value->read_scalar<value_type>(runtime)));
 			case operator_id::bitwise_or:
-				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) | right_value->read_scalar<value_type>(runtime)));
+				return runtime.global_storage->create_scalar(static_cast<value_type>(left_value->read_scalar<value_type>(runtime) | right_value->read_scalar<value_type>(runtime)));
 			case operator_id::bitwise_xor:
-				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) ^ right_value->read_scalar<value_type>(runtime)));
+				return runtime.global_storage->create_scalar(static_cast<value_type>(left_value->read_scalar<value_type>(runtime) ^ right_value->read_scalar<value_type>(runtime)));
 			default:
 				break;
 			}
@@ -82,9 +82,9 @@ namespace cminus::evaluator{
 		std::shared_ptr<memory::reference> evaluate_shift_(logic::runtime &runtime, operator_id op, std::shared_ptr<memory::reference> left_value, std::shared_ptr<memory::reference> right_value) const{
 			switch (op){
 			case operator_id::left_shift:
-				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) << right_value->read_scalar<shift_type>(runtime)));
+				return runtime.global_storage->create_scalar(static_cast<value_type>(left_value->read_scalar<value_type>(runtime) << right_value->read_scalar<shift_type>(runtime)));
 			case operator_id::right_shift:
-				return std::make_shared<memory::scalar_reference<value_type>>(left_value->get_type(), nullptr, static_cast<value_type>(left_value->read_scalar<value_type>(runtime) >> right_value->read_scalar<shift_type>(runtime)));
+				return runtime.global_storage->create_scalar(static_cast<value_type>(left_value->read_scalar<value_type>(runtime) >> right_value->read_scalar<shift_type>(runtime)));
 			default:
 				break;
 			}

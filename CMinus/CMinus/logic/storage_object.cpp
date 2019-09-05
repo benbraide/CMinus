@@ -26,6 +26,12 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::get_r
 	return nullptr;
 }
 
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::get_context() const{
+	if (auto object_parent = dynamic_cast<object *>(parent_); object_parent != nullptr)
+		return object_parent->get_context();
+	return nullptr;
+}
+
 void cminus::logic::storage::object::add(logic::runtime &runtime, const std::string &name, std::shared_ptr<memory::reference> entry){
 	if (!exists(name)){
 		entries_[name] = entry;
@@ -83,7 +89,7 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::object::find(
 		return nullptr;
 
 	if (auto it = entries_.find(options.name); it != entries_.end()){
-		it->second->call_attributes(runtime, logic::attributes::object::stage_type::after_lookup, false);
+		it->second->call_attributes(runtime, logic::attributes::object::stage_type::after_lookup);
 		if (options.branch != nullptr)
 			*options.branch = this;
 

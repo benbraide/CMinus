@@ -54,6 +54,9 @@ void cminus::type::string::init(logic::runtime &runtime){
 	add_function(runtime, std::make_shared<declaration::string::data>(runtime, true, this));
 	add_function(runtime, std::make_shared<declaration::string::data>(runtime, false, this));
 
+	add_function(runtime, std::make_shared<declaration::string::at>(runtime, true, this));
+	add_function(runtime, std::make_shared<declaration::string::at>(runtime, false, this));
+
 	add_function(runtime, std::make_shared<declaration::string::resize>(runtime, this));
 	add_function(runtime, std::make_shared<declaration::string::clear>(runtime, this));
 }

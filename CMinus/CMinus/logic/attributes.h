@@ -1,19 +1,20 @@
 #pragma once
 
-#include "naming.h"
+#include "../type/type_object.h"
 
 namespace cminus::memory{
 	class reference;
 }
 
 namespace cminus::logic::attributes{
+	class pointer_object;
+	class bound_object;
+
 	class object : public naming::single{
 	public:
 		enum class stage_type{
 			nil,
 			after_uninitialized_declaration,
-			before_ref_assign,
-			before_lookup,
 			after_lookup,
 			before_read,
 			after_read,
@@ -31,7 +32,13 @@ namespace cminus::logic::attributes{
 
 		virtual bool is_same(const naming::object &target) const override;
 
-		virtual bool applies_to_function() const;
+		virtual bool is_required_on_ref_assignment(logic::runtime &runtime) const;
+
+		virtual bool is_required_on_pointer_assignment(logic::runtime &runtime) const;
+
+		virtual bool inherits_from_context(logic::runtime &runtime) const;
+
+		virtual bool applies_to_type(logic::runtime &runtime, const type::object &target_type) const = 0;
 
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const = 0;
 
@@ -42,6 +49,11 @@ namespace cminus::logic::attributes{
 		virtual std::shared_ptr<object> get_pointer_target(logic::runtime &runtime) const;
 
 	protected:
+		friend class pointer_object;
+		friend class bound_object;
+
+		virtual bool is_required_on_pointer_assignment_(logic::runtime &runtime) const;
+
 		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const;
 
 		virtual std::string get_default_message_() const;
@@ -51,13 +63,11 @@ namespace cminus::logic::attributes{
 		virtual void call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const;
 
 		virtual void handle_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const;
-
-		virtual void handle_before_ref_assign_(logic::runtime &runtime, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const;
 	};
 
 	class read_guard{
 	public:
-		read_guard(logic::runtime &runtime, memory::reference *target, bool include_context);
+		read_guard(logic::runtime &runtime, memory::reference *target);
 
 		~read_guard();
 
@@ -67,7 +77,7 @@ namespace cminus::logic::attributes{
 
 	class write_guard{
 	public:
-		write_guard(logic::runtime &runtime, memory::reference *target, bool include_context);
+		write_guard(logic::runtime &runtime, memory::reference *target);
 
 		~write_guard();
 
@@ -90,9 +100,15 @@ namespace cminus::logic::attributes{
 
 		void add(std::shared_ptr<object> value);
 
+		void add(const list_type &list);
+
+		void add(const optimised_list_type &list);
+
 		void remove(const std::string &name, bool global_only);
 
 		void remove(const logic::naming::object &name);
+
+		void clear();
 
 		std::shared_ptr<object> find(const std::string &name, bool global_only) const;
 
@@ -103,6 +119,8 @@ namespace cminus::logic::attributes{
 		bool has(const naming::object &name) const;
 
 		const optimised_list_type &get_list() const;
+
+		void traverse(logic::runtime &runtime, const type::object &target_type, const std::function<void(std::shared_ptr<object>)> &callback, object::stage_type stage) const;
 
 		void traverse(logic::runtime &runtime, const std::function<void(std::shared_ptr<object>)> &callback, object::stage_type stage) const;
 
@@ -126,13 +144,17 @@ namespace cminus::logic::attributes{
 
 		virtual bool is_same(const naming::object &target) const override;
 
-		virtual bool applies_to_function() const override;
+		virtual bool is_required_on_pointer_assignment(logic::runtime &runtime) const override;
+
+		virtual bool applies_to_type(logic::runtime &runtime, const type::object &target_type) const override;
 
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
 		virtual std::shared_ptr<object> get_pointer_target(logic::runtime &runtime) const override;
 
 	protected:
+		virtual bool is_required_on_pointer_assignment_(logic::runtime &runtime) const override;
+
 		std::shared_ptr<object> target_;
 	};
 
@@ -146,6 +168,14 @@ namespace cminus::logic::attributes{
 
 		virtual void print(logic::runtime &runtime, bool is_qualified) const override;
 
+		virtual bool is_required_on_ref_assignment(logic::runtime &runtime) const override;
+
+		virtual bool is_required_on_pointer_assignment(logic::runtime &runtime) const override;
+
+		virtual bool inherits_from_context(logic::runtime &runtime) const override;
+
+		virtual bool applies_to_type(logic::runtime &runtime, const type::object &target_type) const override;
+
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
 		virtual std::shared_ptr<object> get_pointer_target(logic::runtime &runtime) const override;
@@ -155,6 +185,8 @@ namespace cminus::logic::attributes{
 		virtual const std::vector<std::shared_ptr<memory::reference>> &get_args() const;
 
 	protected:
+		virtual bool is_required_on_pointer_assignment_(logic::runtime &runtime) const override;
+
 		virtual void call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const override;
 
 		std::shared_ptr<object> target_;
@@ -174,7 +206,7 @@ namespace cminus::logic::attributes{
 
 		virtual ~final();
 
-		virtual bool applies_to_function() const override;
+		virtual bool applies_to_type(logic::runtime &runtime, const type::object &target_type) const override;
 
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
@@ -190,11 +222,17 @@ namespace cminus::logic::attributes{
 
 		virtual ~read_only();
 
-		virtual bool applies_to_function() const override;
+		virtual bool is_required_on_ref_assignment(logic::runtime &runtime) const override;
+
+		virtual bool inherits_from_context(logic::runtime &runtime) const override;
+
+		virtual bool applies_to_type(logic::runtime &runtime, const type::object &target_type) const override;
 
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
 	protected:
+		virtual bool is_required_on_pointer_assignment_(logic::runtime &runtime) const override;
+
 		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
 
 		virtual std::string get_default_message_() const override;
@@ -206,6 +244,8 @@ namespace cminus::logic::attributes{
 
 		virtual ~read_only_context();
 
+		virtual bool applies_to_type(logic::runtime &runtime, const type::object &target_type) const override;
+
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 	};
 
@@ -215,11 +255,17 @@ namespace cminus::logic::attributes{
 
 		virtual ~write_only();
 
-		virtual bool applies_to_function() const override;
+		virtual bool is_required_on_ref_assignment(logic::runtime &runtime) const override;
+
+		virtual bool inherits_from_context(logic::runtime &runtime) const override;
+
+		virtual bool applies_to_type(logic::runtime &runtime, const type::object &target_type) const override;
 
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
 	protected:
+		virtual bool is_required_on_pointer_assignment_(logic::runtime &runtime) const override;
+
 		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
 
 		virtual std::string get_default_message_() const override;
@@ -231,11 +277,15 @@ namespace cminus::logic::attributes{
 
 		virtual ~not_null();
 
-		virtual bool applies_to_function() const override;
+		virtual bool is_required_on_ref_assignment(logic::runtime &runtime) const override;
+
+		virtual bool applies_to_type(logic::runtime &runtime, const type::object &target_type) const override;
 
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
 	protected:
+		virtual bool is_required_on_pointer_assignment_(logic::runtime &runtime) const override;
+
 		virtual bool prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const override;
 
 		virtual std::string get_default_message_() const override;
@@ -247,7 +297,7 @@ namespace cminus::logic::attributes{
 
 		virtual ~ref();
 
-		virtual bool applies_to_function() const override;
+		virtual bool applies_to_type(logic::runtime &runtime, const type::object &target_type) const override;
 
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
@@ -263,6 +313,8 @@ namespace cminus::logic::attributes{
 
 		virtual ~deprecated();
 
+		virtual bool applies_to_type(logic::runtime &runtime, const type::object &target_type) const override;
+
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 
 	protected:
@@ -274,6 +326,8 @@ namespace cminus::logic::attributes{
 		explicit special(const std::string &name);
 
 		virtual ~special();
+
+		virtual bool applies_to_type(logic::runtime &runtime, const type::object &target_type) const override;
 
 		virtual bool handles_stage(logic::runtime &runtime, stage_type value) const override;
 	};

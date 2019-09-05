@@ -8,6 +8,7 @@
 #include "../evaluator/character_evaluator.h"
 #include "../evaluator/integral_evaluator.h"
 #include "../evaluator/floating_point_evaluator.h"
+#include "../evaluator/pointer_evaluator.h"
 
 cminus::logic::storage::global::global()
 	: object("", nullptr){}
@@ -44,20 +45,17 @@ void cminus::logic::storage::global::init(logic::runtime &runtime){
 	for (auto id = node::named_constant::constant_type::false_; id <= node::named_constant::constant_type::true_; id = static_cast<node::named_constant::constant_type>(static_cast<int>(id) + 1)){
 		named_constants_[id] = std::make_shared<memory::scalar_reference<node::named_constant::constant_type>>(
 			primitive_types_[type::primitive::id_type::bool_],
-			nullptr,
 			id
 		);
 	}
 
 	named_constants_[node::named_constant::constant_type::nullptr_] = std::make_shared<memory::scalar_reference<unsigned __int64>>(
 		primitive_types_[type::primitive::id_type::nullptr_],
-		nullptr,
 		0ui64
 	);
 
 	named_constants_[node::named_constant::constant_type::nan_] = std::make_shared<memory::scalar_reference<node::named_constant::constant_type>>(
 		primitive_types_[type::primitive::id_type::nan_],
-		nullptr,
 		node::named_constant::constant_type::nan_
 	);
 
@@ -68,7 +66,9 @@ void cminus::logic::storage::global::init(logic::runtime &runtime){
 
 	evaluators_[evaluator::id::boolean] = std::make_shared<evaluator::boolean>();
 	evaluators_[evaluator::id::byte] = std::make_shared<evaluator::byte>();
+
 	evaluators_[evaluator::id::character] = std::make_shared<evaluator::character>();
+	evaluators_[evaluator::id::pointer] = std::make_shared<evaluator::pointer>();
 
 	evaluators_[evaluator::id::integral] = std::make_shared<evaluator::integral>();
 	evaluators_[evaluator::id::floating_point] = std::make_shared<evaluator::floating_point>();
@@ -121,21 +121,9 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::global::creat
 		return str;
 	}
 
-	auto size = std::make_shared<memory::scalar_reference<unsigned __int64>>(
-		get_primitve_type(type::primitive::id_type::uint64_),
-		nullptr,
-		value.size()
-	);
-
-	auto fill = std::make_shared<memory::scalar_reference<char>>(
-		get_primitve_type(type::primitive::id_type::char_),
-		nullptr,
-		'\0'
-	);
-
 	std::vector<std::shared_ptr<node::object>> init_list{
-		std::make_shared<node::memory_reference>(nullptr, size),
-		std::make_shared<node::memory_reference>(nullptr, fill)
+		std::make_shared<node::memory_reference>(nullptr, create_scalar(value.size())),
+		std::make_shared<node::memory_reference>(nullptr, create_scalar('\0'))
 	};
 
 	str->add_attribute(runtime.global_storage->find_attribute("#Init#", false));

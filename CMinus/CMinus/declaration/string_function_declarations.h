@@ -119,6 +119,18 @@ namespace cminus::declaration::string{
 		virtual void evaluate_body_(logic::runtime &runtime) const override;
 	};
 
+	class at : public function{
+	public:
+		at(logic::runtime &runtime, bool read_only, logic::naming::parent *parent);
+
+		virtual ~at();
+
+		virtual bool is_defined() const override;
+
+	protected:
+		virtual void evaluate_body_(logic::runtime &runtime) const override;
+	};
+
 	class resize : public function{
 	public:
 		resize(logic::runtime &runtime, logic::naming::parent *parent);

@@ -73,14 +73,21 @@ std::shared_ptr<cminus::memory::reference> cminus::type::raw_pointer::cast(logic
 	auto pointer_target_type = dynamic_cast<const raw_pointer *>(target_type.get());
 	if (pointer_target_type != nullptr){
 		if (type == cast_type::reinterpret)
-			return std::make_shared<cminus::memory::scalar_reference<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
+			return runtime.global_storage->create_scalar(data->read_scalar<unsigned __int64>(runtime));
 
 		if (type != cast_type::static_ && type != cast_type::rval_static)
 			return nullptr;
 
+		if (raw_base_type_->is_exact(runtime, *pointer_target_type->raw_base_type_)){//Same type
+			if (type != cast_type::static_)
+				return data;
+
+			return runtime.global_storage->create_scalar(data->read_scalar<unsigned __int64>(runtime));
+		}
+
 		if (auto base_class_type = dynamic_cast<class_ *>(raw_base_type_); base_class_type != nullptr && base_class_type->is_ancestor(*pointer_target_type->raw_base_type_)){//Cast to base type pointer
 			auto address = (data->read_scalar<unsigned __int64>(runtime) + raw_base_type_->compute_base_offset(*pointer_target_type->raw_base_type_));
-			return std::make_shared<cminus::memory::scalar_reference<unsigned __int64>>(target_type, nullptr, address);
+			return runtime.global_storage->create_scalar(address);
 		}
 
 		if (type != cast_type::static_)
@@ -88,20 +95,13 @@ std::shared_ptr<cminus::memory::reference> cminus::type::raw_pointer::cast(logic
 
 		auto primitive_target_base_target_type = dynamic_cast<const primitive *>(pointer_target_type->raw_base_type_);
 		if (primitive_target_base_target_type != nullptr && primitive_target_base_target_type->get_id() == primitive::id_type::void_)
-			return std::make_shared<cminus::memory::scalar_reference<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
+			return runtime.global_storage->create_scalar(data->read_scalar<unsigned __int64>(runtime));
 
 		auto primitive_base_target_type = dynamic_cast<const primitive *>(raw_base_type_);
 		if (primitive_base_target_type != nullptr && primitive_base_target_type->get_id() == primitive::id_type::void_)
-			return std::make_shared<cminus::memory::scalar_reference<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
+			return runtime.global_storage->create_scalar(data->read_scalar<unsigned __int64>(runtime));
 
 		return nullptr;
-	}
-
-	if (raw_base_type_->is_exact(runtime, *pointer_target_type->raw_base_type_)){//Same type
-		if (type != cast_type::static_)
-			return data;
-
-		return std::make_shared<cminus::memory::scalar_reference<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
 	}
 
 	if (type != cast_type::reinterpret)
@@ -113,21 +113,21 @@ std::shared_ptr<cminus::memory::reference> cminus::type::raw_pointer::cast(logic
 
 	switch (primitive_target_type->get_id()){
 	case primitive::id_type::int8_:
-		return std::make_shared<cminus::memory::scalar_reference<__int8>>(target_type, nullptr, static_cast<__int8>(data->read_scalar<unsigned __int64>(runtime)));
+		return runtime.global_storage->create_scalar(static_cast<__int8>(data->read_scalar<unsigned __int64>(runtime)));
 	case primitive::id_type::uint8_:
-		return std::make_shared<cminus::memory::scalar_reference<unsigned __int8>>(target_type, nullptr, static_cast<unsigned __int8>(data->read_scalar<unsigned __int64>(runtime)));
+		return runtime.global_storage->create_scalar(static_cast<unsigned __int8>(data->read_scalar<unsigned __int64>(runtime)));
 	case primitive::id_type::int16_:
-		return std::make_shared<cminus::memory::scalar_reference<__int16>>(target_type, nullptr, static_cast<__int16>(data->read_scalar<unsigned __int64>(runtime)));
+		return runtime.global_storage->create_scalar(static_cast<__int16>(data->read_scalar<unsigned __int64>(runtime)));
 	case primitive::id_type::uint16_:
-		return std::make_shared<cminus::memory::scalar_reference<unsigned __int16>>(target_type, nullptr, static_cast<unsigned __int16>(data->read_scalar<unsigned __int64>(runtime)));
+		return runtime.global_storage->create_scalar(static_cast<unsigned __int16>(data->read_scalar<unsigned __int64>(runtime)));
 	case primitive::id_type::int32_:
-		return std::make_shared<cminus::memory::scalar_reference<__int32>>(target_type, nullptr, static_cast<__int32>(data->read_scalar<unsigned __int64>(runtime)));
+		return runtime.global_storage->create_scalar(static_cast<__int32>(data->read_scalar<unsigned __int64>(runtime)));
 	case primitive::id_type::uint32_:
-		return std::make_shared<cminus::memory::scalar_reference<unsigned __int32>>(target_type, nullptr, static_cast<unsigned __int32>(data->read_scalar<unsigned __int64>(runtime)));
+		return runtime.global_storage->create_scalar(static_cast<unsigned __int32>(data->read_scalar<unsigned __int64>(runtime)));
 	case primitive::id_type::int64_:
-		return std::make_shared<cminus::memory::scalar_reference<__int64>>(target_type, nullptr, static_cast<__int64>(data->read_scalar<unsigned __int64>(runtime)));
+		return runtime.global_storage->create_scalar(static_cast<__int64>(data->read_scalar<unsigned __int64>(runtime)));
 	case primitive::id_type::uint64_:
-		return std::make_shared<cminus::memory::scalar_reference<unsigned __int64>>(target_type, nullptr, data->read_scalar<unsigned __int64>(runtime));
+		return runtime.global_storage->create_scalar(data->read_scalar<unsigned __int64>(runtime));
 	default:
 		break;
 	}
@@ -136,7 +136,7 @@ std::shared_ptr<cminus::memory::reference> cminus::type::raw_pointer::cast(logic
 }
 
 std::shared_ptr<cminus::evaluator::object> cminus::type::raw_pointer::get_evaluator(logic::runtime &runtime) const{
-	return nullptr;
+	return runtime.global_storage->get_evaluator(evaluator::id::pointer);
 }
 
 cminus::type::object *cminus::type::raw_pointer::get_raw_base_type() const{

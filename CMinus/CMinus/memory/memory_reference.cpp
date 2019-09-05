@@ -1,19 +1,40 @@
 #include "../declaration/function_declaration_group.h"
 
-cminus::memory::reference::reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+cminus::memory::reference::reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
 	: type_(type), attributes_(attributes), context_(context){
+	inherit_attributes_(runtime);
 	if (type_ != nullptr)
 		size_ = type_->get_size();
 }
 
-cminus::memory::reference::reference(std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
+cminus::memory::reference::reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
 	: type_(type), attributes_(attributes), context_(context){
+	inherit_attributes_(runtime);
 	if (type_ != nullptr)
 		size_ = type_->get_size();
 }
 
-cminus::memory::reference::reference(std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
+cminus::memory::reference::reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
 	: type_(type), attributes_(attributes), context_(context){
+	inherit_attributes_(runtime);
+	if (type_ != nullptr)
+		size_ = type_->get_size();
+}
+
+cminus::memory::reference::reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes)
+	: type_(type), attributes_(attributes){
+	if (type_ != nullptr)
+		size_ = type_->get_size();
+}
+
+cminus::memory::reference::reference(std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes)
+	: type_(type), attributes_(attributes){
+	if (type_ != nullptr)
+		size_ = type_->get_size();
+}
+
+cminus::memory::reference::reference(std::shared_ptr<type::object> type, const logic::attributes::collection &attributes)
+	: type_(type), attributes_(attributes){
 	if (type_ != nullptr)
 		size_ = type_->get_size();
 }
@@ -49,11 +70,12 @@ bool cminus::memory::reference::is_nan() const{
 	if (primitive_type->get_id() == type::primitive::id_type::nan_)
 		return true;
 
-	return (primitive_type->is_numeric() && find_attribute("#NaN#", true, false) != nullptr);
+	return (primitive_type->is_numeric() && has_attribute("#NaN#", true));
 }
 
-void cminus::memory::reference::set_context(std::shared_ptr<reference> value){
+void cminus::memory::reference::set_context(logic::runtime &runtime, std::shared_ptr<reference> value){
 	context_ = value;
+	inherit_attributes_(runtime);
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::memory::reference::bound_context(logic::runtime &runtime, std::shared_ptr<reference> value, std::size_t offset) const{
@@ -76,46 +98,60 @@ void cminus::memory::reference::remove_attribute(const logic::naming::object &na
 	attributes_.remove(name);
 }
 
-std::shared_ptr<cminus::logic::attributes::object> cminus::memory::reference::find_attribute(const std::string &name, bool global_only, bool include_context) const{
+std::shared_ptr<cminus::logic::attributes::object> cminus::memory::reference::find_attribute(const std::string &name, bool global_only) const{
 	if (auto entry = attributes_.find(name, global_only); entry != nullptr)
 		return entry;
 
-	return ((include_context && context_ != nullptr) ? context_->find_attribute(name, global_only, true) : nullptr);
+	if (auto entry = inherited_attributes_.find(name, global_only); entry != nullptr)
+		return entry;
+
+	return nullptr;
 }
 
-std::shared_ptr<cminus::logic::attributes::object> cminus::memory::reference::find_attribute(const logic::naming::object &name, bool include_context) const{
+std::shared_ptr<cminus::logic::attributes::object> cminus::memory::reference::find_attribute(const logic::naming::object &name) const{
 	if (auto entry = attributes_.find(name); entry != nullptr)
 		return entry;
 
-	return ((include_context && context_ != nullptr) ? context_->find_attribute(name, true) : nullptr);
+	if (auto entry = inherited_attributes_.find(name); entry != nullptr)
+		return entry;
+
+	return nullptr;
 }
 
-bool cminus::memory::reference::has_attribute(const std::string &name, bool global_only, bool include_context) const{
-	return (find_attribute(name, global_only, include_context) != nullptr);
+bool cminus::memory::reference::has_attribute(const std::string &name, bool global_only) const{
+	return (find_attribute(name, global_only) != nullptr);
 }
 
-bool cminus::memory::reference::has_attribute(const logic::naming::object &name, bool include_context) const{
-	return (find_attribute(name, include_context) != nullptr);
+bool cminus::memory::reference::has_attribute(const logic::naming::object &name) const{
+	return (find_attribute(name) != nullptr);
 }
 
 const cminus::logic::attributes::collection &cminus::memory::reference::get_attributes() const{
 	return attributes_;
 }
 
-void cminus::memory::reference::traverse_attributes(logic::runtime &runtime, const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage, bool include_context) const{
-	attributes_.traverse(runtime, callback, stage);
-	if (include_context && context_ != nullptr)
-		context_->traverse_attributes(runtime, callback, stage, true);
+const cminus::logic::attributes::collection &cminus::memory::reference::get_inherited_attributes() const{
+	return inherited_attributes_;
 }
 
-void cminus::memory::reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, const std::vector<std::shared_ptr<memory::reference>> &args) const{
-	attributes_.call(runtime, stage, std::make_shared<raw_reference>(const_cast<reference *>(this)), args);
-	if (include_context && context_ != nullptr)
-		context_->call_attributes(runtime, stage, true, args);
+void cminus::memory::reference::traverse_attributes(logic::runtime &runtime, const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage) const{
+	attributes_.traverse(runtime, *type_, callback, stage);
+	inherited_attributes_.traverse(runtime, *type_, callback, stage);
 }
 
-void cminus::memory::reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context) const{
-	call_attributes(runtime, stage, include_context, std::vector<std::shared_ptr<memory::reference>>{});
+void cminus::memory::reference::traverse_attributes(const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback) const{
+	attributes_.traverse(callback);
+	inherited_attributes_.traverse(callback);
+}
+
+void cminus::memory::reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	auto self = std::make_shared<raw_reference>(const_cast<reference *>(this));
+	attributes_.call(runtime, stage, self, args);
+	inherited_attributes_.call(runtime, stage, self, args);
+}
+
+void cminus::memory::reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage) const{
+	call_attributes(runtime, stage, std::vector<std::shared_ptr<memory::reference>>{});
 }
 
 int cminus::memory::reference::compare(logic::runtime &runtime, const std::byte *buffer, std::size_t size) const{
@@ -168,14 +204,27 @@ int cminus::memory::reference::compare(logic::runtime &runtime, const reference 
 	return compare(runtime, buffer.get_data(runtime), size);
 }
 
+void cminus::memory::reference::inherit_attributes_(logic::runtime &runtime){
+	inherited_attributes_.clear();
+	if (context_ == nullptr)
+		return;
+
+	context_->attributes_.traverse([&](std::shared_ptr<logic::attributes::object> attribute){
+		if (attribute->inherits_from_context(runtime))
+			inherited_attributes_.add(attribute);
+	});
+
+	inherited_attributes_.add(context_->inherited_attributes_.get_list());
+}
+
 cminus::memory::placeholder_reference::placeholder_reference(std::size_t relative_offset, std::shared_ptr<type::object> type, const attribute_list_type &attributes)
-	: reference(type, attributes, nullptr), relative_offset_(relative_offset){}
+	: reference(type, attributes), relative_offset_(relative_offset){}
 
 cminus::memory::placeholder_reference::placeholder_reference(std::size_t relative_offset, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes)
-	: reference(type, attributes, nullptr), relative_offset_(relative_offset){}
+	: reference(type, attributes), relative_offset_(relative_offset){}
 
 cminus::memory::placeholder_reference::placeholder_reference(std::size_t relative_offset, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes)
-	: reference(type, attributes, nullptr), relative_offset_(relative_offset){}
+	: reference(type, attributes), relative_offset_(relative_offset){}
 
 cminus::memory::placeholder_reference::placeholder_reference(std::size_t relative_offset, std::shared_ptr<type::object> type)
 	: placeholder_reference(relative_offset, type, attribute_list_type{}){}
@@ -184,18 +233,18 @@ cminus::memory::placeholder_reference::~placeholder_reference() = default;
 
 std::shared_ptr<cminus::memory::reference> cminus::memory::placeholder_reference::bound_context(logic::runtime &runtime, std::shared_ptr<reference> value, std::size_t offset) const{
 	if (auto lval_context = dynamic_cast<const lval_reference *>(value->get_non_raw()); lval_context != nullptr){
-		if (find_attribute("Ref", true, false) == nullptr)
-			return std::make_shared<lval_reference>((lval_context->get_address() + relative_offset_ + offset), type_, attributes_, value);
-		return std::make_shared<ref_reference>(type_, attributes_, value);
+		if (find_attribute("Ref", true) == nullptr)
+			return std::make_shared<lval_reference>(runtime, (lval_context->get_address() + relative_offset_ + offset), type_, attributes_, value);
+		return std::make_shared<ref_reference>(runtime, type_, attributes_, value);
 	}
 
 	if (auto rval_context = dynamic_cast<const rval_reference *>(value->get_non_raw()); rval_context != nullptr)
-		return std::make_shared<rval_reference>((rval_context->get_data(runtime) + (relative_offset_ + offset)), type_, attributes_, value);
+		return std::make_shared<rval_reference>(runtime, (rval_context->get_data(runtime) + (relative_offset_ + offset)), type_, attributes_, value);
 
 	return nullptr;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::memory::placeholder_reference::apply_offset(std::size_t value) const{
+std::shared_ptr<cminus::memory::reference> cminus::memory::placeholder_reference::apply_offset(logic::runtime &runtime, std::size_t value) const{
 	return std::make_shared<placeholder_reference>((relative_offset_ + value), type_, attributes_);
 }
 
@@ -272,7 +321,7 @@ std::size_t cminus::memory::placeholder_reference::get_relative_offset() const{
 }
 
 cminus::memory::raw_reference::raw_reference(reference *target)
-	: reference(target->get_type(), attribute_list_type{}, nullptr), target_(target){}
+	: reference(target->get_type(), attribute_list_type{}), target_(target){}
 
 cminus::memory::raw_reference::~raw_reference() = default;
 
@@ -292,8 +341,8 @@ bool cminus::memory::raw_reference::is_nan() const{
 	return target_->is_nan();
 }
 
-void cminus::memory::raw_reference::set_context(std::shared_ptr<reference> value){
-	target_->set_context(value);
+void cminus::memory::raw_reference::set_context(logic::runtime &runtime, std::shared_ptr<reference> value){
+	target_->set_context(runtime, value);
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::memory::raw_reference::bound_context(logic::runtime &runtime, std::shared_ptr<reference> value, std::size_t offset) const{
@@ -316,40 +365,44 @@ void cminus::memory::raw_reference::remove_attribute(const logic::naming::object
 	target_->remove_attribute(name);
 }
 
-std::shared_ptr<cminus::logic::attributes::object> cminus::memory::raw_reference::find_attribute(const std::string &name, bool global_only, bool include_context) const{
-	return target_->find_attribute(name, global_only, include_context);
+std::shared_ptr<cminus::logic::attributes::object> cminus::memory::raw_reference::find_attribute(const std::string &name, bool global_only) const{
+	return target_->find_attribute(name, global_only);
 }
 
-std::shared_ptr<cminus::logic::attributes::object> cminus::memory::raw_reference::find_attribute(const logic::naming::object &name, bool include_context) const{
-	return target_->find_attribute(name, include_context);
+std::shared_ptr<cminus::logic::attributes::object> cminus::memory::raw_reference::find_attribute(const logic::naming::object &name) const{
+	return target_->find_attribute(name);
 }
 
-bool cminus::memory::raw_reference::has_attribute(const std::string &name, bool global_only, bool include_context) const{
-	return target_->has_attribute(name, global_only, include_context);
+bool cminus::memory::raw_reference::has_attribute(const std::string &name, bool global_only) const{
+	return target_->has_attribute(name, global_only);
 }
 
-bool cminus::memory::raw_reference::has_attribute(const logic::naming::object &name, bool include_context) const{
-	return target_->has_attribute(name, include_context);
+bool cminus::memory::raw_reference::has_attribute(const logic::naming::object &name) const{
+	return target_->has_attribute(name);
 }
 
 const cminus::logic::attributes::collection &cminus::memory::raw_reference::get_attributes() const{
 	return target_->get_attributes();
 }
 
-void cminus::memory::raw_reference::traverse_attributes(logic::runtime &runtime, const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage, bool include_context) const{
-	target_->traverse_attributes(runtime, callback, stage, include_context);
+void cminus::memory::raw_reference::traverse_attributes(logic::runtime &runtime, const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback, logic::attributes::object::stage_type stage) const{
+	target_->traverse_attributes(runtime, callback, stage);
 }
 
-void cminus::memory::raw_reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context, const std::vector<std::shared_ptr<memory::reference>> &args) const{
-	target_->call_attributes(runtime, stage, include_context, args);
+void cminus::memory::raw_reference::traverse_attributes(const std::function<void(std::shared_ptr<logic::attributes::object>)> &callback) const{
+	target_->traverse_attributes(callback);
 }
 
-void cminus::memory::raw_reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, bool include_context) const{
-	target_->call_attributes(runtime, stage, include_context);
+void cminus::memory::raw_reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage, const std::vector<std::shared_ptr<memory::reference>> &args) const{
+	target_->call_attributes(runtime, stage, args);
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::memory::raw_reference::apply_offset(std::size_t value) const{
-	return target_->apply_offset(value);
+void cminus::memory::raw_reference::call_attributes(logic::runtime &runtime, logic::attributes::object::stage_type stage) const{
+	target_->call_attributes(runtime, stage);
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::memory::raw_reference::apply_offset(logic::runtime &runtime, std::size_t value) const{
+	return target_->apply_offset(runtime, value);
 }
 
 bool cminus::memory::raw_reference::is_lvalue() const{
@@ -421,7 +474,7 @@ cminus::memory::reference *cminus::memory::raw_reference::get_target() const{
 }
 
 cminus::memory::lval_reference::lval_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: reference(type, attributes, context){
+	: reference(runtime, type, attributes, context){
 	try{
 		allocate_memory_(runtime, type_->get_size());
 	}
@@ -431,7 +484,7 @@ cminus::memory::lval_reference::lval_reference(logic::runtime &runtime, std::sha
 }
 
 cminus::memory::lval_reference::lval_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: reference(type, attributes, context){
+	: reference(runtime, type, attributes, context){
 	try{
 		allocate_memory_(runtime, type_->get_size());
 	}
@@ -441,7 +494,7 @@ cminus::memory::lval_reference::lval_reference(logic::runtime &runtime, std::sha
 }
 
 cminus::memory::lval_reference::lval_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
-	: reference(type, attributes, context){
+	: reference(runtime, type, attributes, context){
 	try{
 		allocate_memory_(runtime, type_->get_size());
 	}
@@ -453,17 +506,17 @@ cminus::memory::lval_reference::lval_reference(logic::runtime &runtime, std::sha
 cminus::memory::lval_reference::lval_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
 	: lval_reference(runtime, type, attribute_list_type{}, context){}
 
-cminus::memory::lval_reference::lval_reference(std::size_t address, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: reference(type, attributes, context), address_(address){}
+cminus::memory::lval_reference::lval_reference(logic::runtime &runtime, std::size_t address, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: reference(runtime, type, attributes, context), address_(address){}
 
-cminus::memory::lval_reference::lval_reference(std::size_t address, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: reference(type, attributes, context), address_(address){}
+cminus::memory::lval_reference::lval_reference(logic::runtime &runtime, std::size_t address, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: reference(runtime, type, attributes, context), address_(address){}
 
-cminus::memory::lval_reference::lval_reference(std::size_t address, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
-	: reference(type, attributes, context), address_(address){}
+cminus::memory::lval_reference::lval_reference(logic::runtime &runtime, std::size_t address, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
+	: reference(runtime, type, attributes, context), address_(address){}
 
-cminus::memory::lval_reference::lval_reference(std::size_t address, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
-	: lval_reference(address, type, attribute_list_type{}, context){}
+cminus::memory::lval_reference::lval_reference(logic::runtime &runtime, std::size_t address, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
+	: lval_reference(runtime, address, type, attribute_list_type{}, context){}
 
 cminus::memory::lval_reference::~lval_reference(){
 	try{
@@ -475,8 +528,8 @@ cminus::memory::lval_reference::~lval_reference(){
 	catch (...){}
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::memory::lval_reference::apply_offset(std::size_t value) const{
-	return std::make_shared<lval_reference>((address_ + value), type_, attributes_, context_);
+std::shared_ptr<cminus::memory::reference> cminus::memory::lval_reference::apply_offset(logic::runtime &runtime, std::size_t value) const{
+	return std::make_shared<lval_reference>(runtime, (address_ + value), type_, attributes_, context_);
 }
 
 bool cminus::memory::lval_reference::is_lvalue() const{
@@ -493,52 +546,52 @@ std::byte *cminus::memory::lval_reference::get_data(logic::runtime &runtime) con
 }
 
 std::size_t cminus::memory::lval_reference::read(logic::runtime &runtime, std::byte *buffer, std::size_t size) const{
-	logic::attributes::read_guard guard(runtime, const_cast<lval_reference *>(this), true);
+	logic::attributes::read_guard guard(runtime, const_cast<lval_reference *>(this));
 	return runtime.memory_object.read(get_address(), buffer, ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::read(logic::runtime &runtime, io::binary_writer &buffer, std::size_t size) const{
-	logic::attributes::read_guard guard(runtime, const_cast<lval_reference *>(this), true);
+	logic::attributes::read_guard guard(runtime, const_cast<lval_reference *>(this));
 	return runtime.memory_object.read(get_address(), buffer, ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::read(logic::runtime &runtime, std::size_t buffer, std::size_t size) const{
-	logic::attributes::read_guard guard(runtime, const_cast<lval_reference *>(this), true);
+	logic::attributes::read_guard guard(runtime, const_cast<lval_reference *>(this));
 	return runtime.memory_object.read(get_address(), buffer, ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::read(logic::runtime &runtime, reference &buffer, std::size_t size) const{
-	logic::attributes::read_guard guard(runtime, const_cast<lval_reference *>(this), true);
+	logic::attributes::read_guard guard(runtime, const_cast<lval_reference *>(this));
 	return buffer.write(runtime, get_address(), ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, const std::byte *buffer, std::size_t size){
-	logic::attributes::write_guard guard(runtime, const_cast<lval_reference *>(this), true);
+	logic::attributes::write_guard guard(runtime, const_cast<lval_reference *>(this));
 	return runtime.memory_object.write(get_address(), buffer, ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, const io::binary_reader &buffer, std::size_t size){
-	logic::attributes::write_guard guard(runtime, const_cast<lval_reference *>(this), true);
+	logic::attributes::write_guard guard(runtime, const_cast<lval_reference *>(this));
 	return runtime.memory_object.write(get_address(), buffer, ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, std::size_t buffer, std::size_t size){
-	logic::attributes::write_guard guard(runtime, const_cast<lval_reference *>(this), true);
+	logic::attributes::write_guard guard(runtime, const_cast<lval_reference *>(this));
 	return runtime.memory_object.write(buffer, get_address(), ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, const reference &buffer, std::size_t size){
-	logic::attributes::write_guard guard(runtime, const_cast<lval_reference *>(this), true);
+	logic::attributes::write_guard guard(runtime, const_cast<lval_reference *>(this));
 	return buffer.read(runtime, get_address(), ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
 std::size_t cminus::memory::lval_reference::write(logic::runtime &runtime, managed_object &object){
-	logic::attributes::write_guard guard(runtime, const_cast<lval_reference *>(this), true);
+	logic::attributes::write_guard guard(runtime, const_cast<lval_reference *>(this));
 	return runtime.memory_object.write(get_address(), object);
 }
 
 std::size_t cminus::memory::lval_reference::set(logic::runtime &runtime, std::byte value, std::size_t size){
-	logic::attributes::write_guard guard(runtime, const_cast<lval_reference *>(this), true);
+	logic::attributes::write_guard guard(runtime, const_cast<lval_reference *>(this));
 	return runtime.memory_object.set(get_address(), value, ((size == static_cast<std::size_t>(-1) || size_ < size) ? size_ : size));
 }
 
@@ -554,17 +607,17 @@ void cminus::memory::lval_reference::allocate_memory_(logic::runtime &runtime, s
 	}
 }
 
-cminus::memory::ref_reference::ref_reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: lval_reference(0u, type, attributes, context){}
+cminus::memory::ref_reference::ref_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: lval_reference(runtime, 0u, type, attributes, context){}
 
-cminus::memory::ref_reference::ref_reference(std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: lval_reference(0u, type, attributes, context){}
+cminus::memory::ref_reference::ref_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: lval_reference(runtime, 0u, type, attributes, context){}
 
-cminus::memory::ref_reference::ref_reference(std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
-	: lval_reference(0u, type, attributes, context){}
+cminus::memory::ref_reference::ref_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
+	: lval_reference(runtime, 0u, type, attributes, context){}
 
-cminus::memory::ref_reference::ref_reference(std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
-	: ref_reference(type, attribute_list_type{}, context){}
+cminus::memory::ref_reference::ref_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
+	: ref_reference(runtime, type, attribute_list_type{}, context){}
 
 cminus::memory::ref_reference::~ref_reference() = default;
 
@@ -582,47 +635,59 @@ std::shared_ptr<cminus::memory::reference> cminus::memory::rval_ref_reference::g
 }
 
 cminus::memory::function_reference::function_reference(logic::runtime &runtime, std::size_t address, declaration::function_group_base *value)
-	: function_reference(address, runtime.global_storage->get_primitve_type(type::primitive::id_type::function), value, attribute_list_type{ runtime.global_storage->find_attribute("ReadOnly", false) }, nullptr){}
+	: function_reference(runtime, address, runtime.global_storage->get_primitve_type(type::primitive::id_type::function), value, attribute_list_type{ runtime.global_storage->find_attribute("ReadOnly", false) }, nullptr){}
 
-cminus::memory::function_reference::function_reference(std::size_t address, std::shared_ptr<type::object> type, declaration::function_group_base *value, const attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: lval_reference(address, type, attributes, context), value_(value){}
+cminus::memory::function_reference::function_reference(logic::runtime &runtime, std::size_t address, std::shared_ptr<type::object> type, declaration::function_group_base *value, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: lval_reference(runtime, address, type, attributes, context), value_(value){}
 
-cminus::memory::function_reference::function_reference(std::size_t address, std::shared_ptr<type::object> type, declaration::function_group_base *value, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: lval_reference(address, type, attributes, context), value_(value){}
+cminus::memory::function_reference::function_reference(logic::runtime &runtime, std::size_t address, std::shared_ptr<type::object> type, declaration::function_group_base *value, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: lval_reference(runtime, address, type, attributes, context), value_(value){}
 
-cminus::memory::function_reference::function_reference(std::size_t address, std::shared_ptr<type::object> type, declaration::function_group_base *value, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
-	: lval_reference(address, type, attributes, context), value_(value){}
+cminus::memory::function_reference::function_reference(logic::runtime &runtime, std::size_t address, std::shared_ptr<type::object> type, declaration::function_group_base *value, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
+	: lval_reference(runtime, address, type, attributes, context), value_(value){}
 
 cminus::memory::function_reference::~function_reference() = default;
 
 std::shared_ptr<cminus::memory::reference> cminus::memory::function_reference::bound_context(logic::runtime &runtime, std::shared_ptr<reference> value, std::size_t offset) const{
-	return std::make_shared<function_reference>(address_, type_, value_, attributes_, value);
+	return std::make_shared<function_reference>(runtime, address_, type_, value_, attributes_, value);
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::memory::function_reference::apply_offset(std::size_t value) const{
-	return ((value == 0u) ? std::make_shared<function_reference>(address_, type_, value_, attributes_, context_) : nullptr);
+std::shared_ptr<cminus::memory::reference> cminus::memory::function_reference::apply_offset(logic::runtime &runtime, std::size_t value) const{
+	return ((value == 0u) ? std::make_shared<function_reference>(runtime, address_, type_, value_, attributes_, context_) : nullptr);
 }
 
 cminus::declaration::function_group_base *cminus::memory::function_reference::get_value() const{
 	return value_;
 }
 
-cminus::memory::rval_reference::rval_reference(std::byte *data, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: reference(type, attributes, context), data_(data){}
+cminus::memory::rval_reference::rval_reference(logic::runtime &runtime, std::byte *data, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: reference(runtime, type, attributes, context), data_(data){}
 
-cminus::memory::rval_reference::rval_reference(std::byte *data, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: reference(type, attributes, context), data_(data){}
+cminus::memory::rval_reference::rval_reference(logic::runtime &runtime, std::byte *data, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
+	: reference(runtime, type, attributes, context), data_(data){}
 
-cminus::memory::rval_reference::rval_reference(std::byte *data, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
-	: reference(type, attributes, context), data_(data){}
+cminus::memory::rval_reference::rval_reference(logic::runtime &runtime, std::byte *data, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
+	: reference(runtime, type, attributes, context), data_(data){}
 
-cminus::memory::rval_reference::rval_reference(std::byte *data, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
-	: rval_reference(data, type, attribute_list_type{}, context){}
+cminus::memory::rval_reference::rval_reference(logic::runtime &runtime, std::byte *data, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
+	: rval_reference(runtime, data, type, attribute_list_type{}, context){}
+
+cminus::memory::rval_reference::rval_reference(std::byte *data, std::shared_ptr<type::object> type, const attribute_list_type &attributes)
+	: reference(type, attributes), data_(data){}
+
+cminus::memory::rval_reference::rval_reference(std::byte *data, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes)
+	: reference(type, attributes), data_(data){}
+
+cminus::memory::rval_reference::rval_reference(std::byte *data, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes)
+	: reference(type, attributes), data_(data){}
+
+cminus::memory::rval_reference::rval_reference(std::byte *data, std::shared_ptr<type::object> type)
+	: rval_reference(data, type, attribute_list_type{}){}
 
 cminus::memory::rval_reference::~rval_reference() = default;
 
-std::shared_ptr<cminus::memory::reference> cminus::memory::rval_reference::apply_offset(std::size_t value) const{
-	return std::make_shared<rval_reference>((data_ + value), type_, attributes_, context_);
+std::shared_ptr<cminus::memory::reference> cminus::memory::rval_reference::apply_offset(logic::runtime &runtime, std::size_t value) const{
+	return std::make_shared<rval_reference>(runtime, (data_ + value), type_, attributes_, context_);
 }
 
 bool cminus::memory::rval_reference::is_lvalue() const{
@@ -759,7 +824,7 @@ std::size_t cminus::memory::rval_reference::set(logic::runtime &runtime, std::by
 }
 
 cminus::memory::data_reference::data_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: rval_reference(nullptr, type, attributes, context){
+	: rval_reference(runtime, nullptr, type, attributes, context){
 	if (0u < size_){
 		value_ = std::make_unique<std::byte[]>(size_);
 		data_ = value_.get();
@@ -770,7 +835,7 @@ cminus::memory::data_reference::data_reference(logic::runtime &runtime, std::sha
 }
 
 cminus::memory::data_reference::data_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: rval_reference(nullptr, type, attributes, context){
+	: rval_reference(runtime, nullptr, type, attributes, context){
 	if (0u < size_){
 		value_ = std::make_unique<std::byte[]>(size_);
 		data_ = value_.get();
@@ -781,7 +846,7 @@ cminus::memory::data_reference::data_reference(logic::runtime &runtime, std::sha
 }
 
 cminus::memory::data_reference::data_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
-	: rval_reference(nullptr, type, attributes, context){
+	: rval_reference(runtime, nullptr, type, attributes, context){
 	if (0u < size_){
 		value_ = std::make_unique<std::byte[]>(size_);
 		data_ = value_.get();
@@ -794,32 +859,32 @@ cminus::memory::data_reference::data_reference(logic::runtime &runtime, std::sha
 cminus::memory::data_reference::data_reference(logic::runtime &runtime, std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
 	: data_reference(runtime, type, attribute_list_type{}, context){}
 
-cminus::memory::data_reference::data_reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: rval_reference(nullptr, type, attributes, context){
+cminus::memory::data_reference::data_reference(std::shared_ptr<type::object> type, const attribute_list_type &attributes)
+	: rval_reference(nullptr, type, attributes){
 	if (0u < size_){
 		value_ = std::make_unique<std::byte[]>(size_);
 		data_ = value_.get();
 	}
 }
 
-cminus::memory::data_reference::data_reference(std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes, std::shared_ptr<reference> context)
-	: rval_reference(nullptr, type, attributes, context){
+cminus::memory::data_reference::data_reference(std::shared_ptr<type::object> type, const optimised_attribute_list_type &attributes)
+	: rval_reference(nullptr, type, attributes){
 	if (0u < size_){
 		value_ = std::make_unique<std::byte[]>(size_);
 		data_ = value_.get();
 	}
 }
 
-cminus::memory::data_reference::data_reference(std::shared_ptr<type::object> type, const logic::attributes::collection &attributes, std::shared_ptr<reference> context)
-	: rval_reference(nullptr, type, attributes, context){
+cminus::memory::data_reference::data_reference(std::shared_ptr<type::object> type, const logic::attributes::collection &attributes)
+	: rval_reference(nullptr, type, attributes){
 	if (0u < size_){
 		value_ = std::make_unique<std::byte[]>(size_);
 		data_ = value_.get();
 	}
 }
 
-cminus::memory::data_reference::data_reference(std::shared_ptr<type::object> type, std::shared_ptr<reference> context)
-	: data_reference(type, attribute_list_type{}, context){}
+cminus::memory::data_reference::data_reference(std::shared_ptr<type::object> type)
+	: data_reference(type, attribute_list_type{}){}
 
 cminus::memory::data_reference::~data_reference(){
 	try{
@@ -831,11 +896,11 @@ cminus::memory::data_reference::~data_reference(){
 	catch (...){}
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::memory::data_reference::apply_offset(std::size_t value) const{
+std::shared_ptr<cminus::memory::reference> cminus::memory::data_reference::apply_offset(logic::runtime &runtime, std::size_t value) const{
 	if (value != 0u)
-		return rval_reference::apply_offset(value);
+		return rval_reference::apply_offset(runtime, value);
 
-	if (auto clone = std::make_shared<data_reference>(type_, attributes_, context_); clone != nullptr && clone->data_ != nullptr){
+	if (auto clone = std::make_shared<data_reference>(runtime, type_, attributes_, context_); clone != nullptr && clone->data_ != nullptr){
 		memcpy(clone->data_, data_, size_);
 		return clone;
 	}

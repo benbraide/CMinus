@@ -10,8 +10,16 @@ bool cminus::logic::attributes::object::is_same(const naming::object &target) co
 	return single::is_same(target);
 }
 
-bool cminus::logic::attributes::object::applies_to_function() const{
-	return true;
+bool cminus::logic::attributes::object::is_required_on_ref_assignment(logic::runtime &runtime) const{
+	return false;
+}
+
+bool cminus::logic::attributes::object::is_required_on_pointer_assignment(logic::runtime &runtime) const{
+	return false;
+}
+
+bool cminus::logic::attributes::object::inherits_from_context(logic::runtime &runtime) const{
+	return false;
 }
 
 void cminus::logic::attributes::object::call(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
@@ -24,6 +32,10 @@ void cminus::logic::attributes::object::call(logic::runtime &runtime, stage_type
 
 std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::object::get_pointer_target(logic::runtime &runtime) const{
 	return nullptr;
+}
+
+bool cminus::logic::attributes::object::is_required_on_pointer_assignment_(logic::runtime &runtime) const{
+	return false;
 }
 
 bool cminus::logic::attributes::object::prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const{
@@ -42,15 +54,7 @@ void cminus::logic::attributes::object::throw_error_(logic::runtime &runtime, co
 }
 
 void cminus::logic::attributes::object::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
-	switch (stage){
-	case stage_type::before_ref_assign:
-		handle_before_ref_assign_(runtime, target, args);
-		break;
-	default:
-		handle_stage_(runtime, stage, target, args);
-		break;
-	}
-	
+	handle_stage_(runtime, stage, target, args);
 }
 
 void cminus::logic::attributes::object::handle_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
@@ -58,15 +62,10 @@ void cminus::logic::attributes::object::handle_stage_(logic::runtime &runtime, s
 		throw_error_(runtime, args, 0u);
 }
 
-void cminus::logic::attributes::object::handle_before_ref_assign_(logic::runtime &runtime, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
-	if (!args.empty() && handles_stage(runtime, stage_type::before_ref_assign) && !args[0]->has_attribute(*this, false))
-		throw logic::exception(("'" + get_qualified_naming_value() + "' attribute is required on reference destination!"), 0u, 0u);
-}
-
-cminus::logic::attributes::read_guard::read_guard(logic::runtime &runtime, memory::reference *target, bool include_context){
-	target->call_attributes(runtime, object::stage_type::before_read, include_context);
-	callback_ = [&runtime, target, include_context]{
-		target->call_attributes(runtime, object::stage_type::after_read, include_context);
+cminus::logic::attributes::read_guard::read_guard(logic::runtime &runtime, memory::reference *target){
+	target->call_attributes(runtime, object::stage_type::before_read);
+	callback_ = [&runtime, target]{
+		target->call_attributes(runtime, object::stage_type::after_read);
 	};
 }
 
@@ -78,10 +77,10 @@ cminus::logic::attributes::read_guard::~read_guard(){
 	catch (...){}
 }
 
-cminus::logic::attributes::write_guard::write_guard(logic::runtime &runtime, memory::reference *target, bool include_context){
-	target->call_attributes(runtime, object::stage_type::before_write, include_context);
-	callback_ = [&runtime, target, include_context]{
-		target->call_attributes(runtime, object::stage_type::after_write, include_context);
+cminus::logic::attributes::write_guard::write_guard(logic::runtime &runtime, memory::reference *target){
+	target->call_attributes(runtime, object::stage_type::before_write);
+	callback_ = [&runtime, target]{
+		target->call_attributes(runtime, object::stage_type::after_write);
 	};
 }
 
@@ -113,6 +112,16 @@ void cminus::logic::attributes::collection::add(std::shared_ptr<object> value){
 		list_[value.get()] = value;
 }
 
+void cminus::logic::attributes::collection::add(const list_type &list){
+	for (auto entry : list)
+		add(entry);
+}
+
+void cminus::logic::attributes::collection::add(const optimised_list_type &list){
+	for (auto &entry : list)
+		add(entry.second);
+}
+
 void cminus::logic::attributes::collection::remove(const std::string &name, bool global_only){
 	if (list_.empty())
 		return;
@@ -135,6 +144,10 @@ void cminus::logic::attributes::collection::remove(const logic::naming::object &
 			break;
 		}
 	}
+}
+
+void cminus::logic::attributes::collection::clear(){
+	list_.clear();
 }
 
 std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::collection::find(const std::string &name, bool global_only) const{
@@ -173,6 +186,13 @@ const cminus::logic::attributes::collection::optimised_list_type &cminus::logic:
 	return list_;
 }
 
+void cminus::logic::attributes::collection::traverse(logic::runtime &runtime, const type::object &target_type, const std::function<void(std::shared_ptr<object>)> &callback, object::stage_type stage) const{
+	for (auto &entry : list_){
+		if (entry.first->applies_to_type(runtime, target_type) && (stage == logic::attributes::object::stage_type::nil || entry.first->handles_stage(runtime, stage)))
+			callback(entry.second);
+	}
+}
+
 void cminus::logic::attributes::collection::traverse(logic::runtime &runtime, const std::function<void(std::shared_ptr<object>)> &callback, object::stage_type stage) const{
 	for (auto &entry : list_){
 		if (stage == logic::attributes::object::stage_type::nil || entry.first->handles_stage(runtime, stage))
@@ -187,7 +207,7 @@ void cminus::logic::attributes::collection::traverse(const std::function<void(st
 
 void cminus::logic::attributes::collection::call(logic::runtime &runtime, object::stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
 	for (auto &entry : list_){
-		if (stage == logic::attributes::object::stage_type::nil || entry.first->handles_stage(runtime, stage))
+		if (entry.first->applies_to_type(runtime, *target->get_type()) && (stage == logic::attributes::object::stage_type::nil || entry.first->handles_stage(runtime, stage)))
 			entry.second->call(runtime, stage, target, args);
 	}
 }
@@ -226,7 +246,13 @@ bool cminus::logic::attributes::pointer_object::is_same(const naming::object &ta
 	return false;
 }
 
-bool cminus::logic::attributes::pointer_object::applies_to_function() const{
+bool cminus::logic::attributes::pointer_object::is_required_on_pointer_assignment(logic::runtime &runtime) const{
+	return target_->is_required_on_pointer_assignment_(runtime);
+}
+
+bool cminus::logic::attributes::pointer_object::applies_to_type(logic::runtime &runtime, const type::object &target_type) const{
+	if (auto pointer_target_type = dynamic_cast<const type::pointer *>(&target_type); pointer_target_type != nullptr)
+		return target_->applies_to_type(runtime, *pointer_target_type->get_base_type());
 	return false;
 }
 
@@ -236,6 +262,10 @@ bool cminus::logic::attributes::pointer_object::handles_stage(logic::runtime &ru
 
 std::shared_ptr<cminus::logic::attributes::object> cminus::logic::attributes::pointer_object::get_pointer_target(logic::runtime &runtime) const{
 	return target_;
+}
+
+bool cminus::logic::attributes::pointer_object::is_required_on_pointer_assignment_(logic::runtime &runtime) const{
+	return target_->is_required_on_pointer_assignment_(runtime);
 }
 
 cminus::logic::attributes::bound_object::bound_object(std::shared_ptr<object> target, const std::vector<std::shared_ptr<memory::reference>> &args)
@@ -265,6 +295,22 @@ void cminus::logic::attributes::bound_object::print(logic::runtime &runtime, boo
 	runtime.writer.write_scalar(')');
 }
 
+bool cminus::logic::attributes::bound_object::is_required_on_ref_assignment(logic::runtime &runtime) const{
+	return target_->is_required_on_ref_assignment(runtime);
+}
+
+bool cminus::logic::attributes::bound_object::is_required_on_pointer_assignment(logic::runtime &runtime) const{
+	return target_->is_required_on_pointer_assignment(runtime);
+}
+
+bool cminus::logic::attributes::bound_object::inherits_from_context(logic::runtime &runtime) const{
+	return target_->inherits_from_context(runtime);
+}
+
+bool cminus::logic::attributes::bound_object::applies_to_type(logic::runtime &runtime, const type::object &target_type) const{
+	return target_->applies_to_type(runtime, target_type);
+}
+
 bool cminus::logic::attributes::bound_object::handles_stage(logic::runtime &runtime, stage_type value) const{
 	return target_->handles_stage(runtime, value);
 }
@@ -282,9 +328,13 @@ const std::vector<std::shared_ptr<cminus::memory::reference>> &cminus::logic::at
 	return args_;
 }
 
+bool cminus::logic::attributes::bound_object::is_required_on_pointer_assignment_(logic::runtime &runtime) const{
+	return target_->is_required_on_pointer_assignment_(runtime);
+}
+
 void cminus::logic::attributes::bound_object::call_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target, const std::vector<std::shared_ptr<memory::reference>> &args) const{
 	if (args.empty())
-		return target_->call(runtime, stage, target, args_);
+		return target_->call_(runtime, stage, target, args_);
 
 	std::vector<std::shared_ptr<memory::reference>> combined_args;
 	combined_args.reserve(args_.size() + args.size());
@@ -295,7 +345,7 @@ void cminus::logic::attributes::bound_object::call_(logic::runtime &runtime, sta
 	for (auto arg : args_)
 		combined_args.push_back(arg);
 
-	return target_->call(runtime, stage, target, combined_args);
+	return target_->call_(runtime, stage, target, combined_args);
 }
 
 cminus::logic::attributes::external::external(const std::string &name)
@@ -308,7 +358,7 @@ cminus::logic::attributes::final::final()
 
 cminus::logic::attributes::final::~final() = default;
 
-bool cminus::logic::attributes::final::applies_to_function() const{
+bool cminus::logic::attributes::final::applies_to_type(logic::runtime &runtime, const type::object &target_type) const{
 	return false;
 }
 
@@ -329,12 +379,26 @@ cminus::logic::attributes::read_only::read_only()
 
 cminus::logic::attributes::read_only::~read_only() = default;
 
-bool cminus::logic::attributes::read_only::applies_to_function() const{
-	return false;
+bool cminus::logic::attributes::read_only::is_required_on_ref_assignment(logic::runtime &runtime) const{
+	return true;
+}
+
+bool cminus::logic::attributes::read_only::inherits_from_context(logic::runtime &runtime) const{
+	return true;
+}
+
+bool cminus::logic::attributes::read_only::applies_to_type(logic::runtime &runtime, const type::object &target_type) const{
+	if (auto primitive_target_type = dynamic_cast<const type::primitive *>(&target_type); primitive_target_type != nullptr)
+		return (primitive_target_type->get_id() != type::primitive::id_type::function);
+	return true;
 }
 
 bool cminus::logic::attributes::read_only::handles_stage(logic::runtime &runtime, stage_type value) const{
-	return (value == stage_type::before_ref_assign || value == stage_type::before_write);
+	return (value == stage_type::before_write);
+}
+
+bool cminus::logic::attributes::read_only::is_required_on_pointer_assignment_(logic::runtime &runtime) const{
+	return true;
 }
 
 bool cminus::logic::attributes::read_only::prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const{
@@ -350,6 +414,12 @@ cminus::logic::attributes::read_only_context::read_only_context()
 
 cminus::logic::attributes::read_only_context::~read_only_context() = default;
 
+bool cminus::logic::attributes::read_only_context::applies_to_type(logic::runtime &runtime, const type::object &target_type) const{
+	if (auto primitive_target_type = dynamic_cast<const type::primitive *>(&target_type); primitive_target_type != nullptr)
+		return (primitive_target_type->get_id() == type::primitive::id_type::function);
+	return false;
+}
+
 bool cminus::logic::attributes::read_only_context::handles_stage(logic::runtime &runtime, stage_type value) const{
 	return false;
 }
@@ -359,12 +429,26 @@ cminus::logic::attributes::write_only::write_only()
 
 cminus::logic::attributes::write_only::~write_only() = default;
 
-bool cminus::logic::attributes::write_only::applies_to_function() const{
-	return false;
+bool cminus::logic::attributes::write_only::is_required_on_ref_assignment(logic::runtime &runtime) const{
+	return true;
+}
+
+bool cminus::logic::attributes::write_only::inherits_from_context(logic::runtime &runtime) const{
+	return true;
+}
+
+bool cminus::logic::attributes::write_only::applies_to_type(logic::runtime &runtime, const type::object &target_type) const{
+	if (auto primitive_target_type = dynamic_cast<const type::primitive *>(&target_type); primitive_target_type != nullptr)
+		return (primitive_target_type->get_id() != type::primitive::id_type::function);
+	return true;
 }
 
 bool cminus::logic::attributes::write_only::handles_stage(logic::runtime &runtime, stage_type value) const{
-	return (value == stage_type::before_ref_assign || value == stage_type::before_read);
+	return (value == stage_type::before_read);
+}
+
+bool cminus::logic::attributes::write_only::is_required_on_pointer_assignment_(logic::runtime &runtime) const{
+	return true;
 }
 
 bool cminus::logic::attributes::write_only::prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const{
@@ -380,12 +464,20 @@ cminus::logic::attributes::not_null::not_null()
 
 cminus::logic::attributes::not_null::~not_null() = default;
 
-bool cminus::logic::attributes::not_null::applies_to_function() const{
-	return false;
+bool cminus::logic::attributes::not_null::is_required_on_ref_assignment(logic::runtime &runtime) const{
+	return true;
+}
+
+bool cminus::logic::attributes::not_null::applies_to_type(logic::runtime &runtime, const type::object &target_type) const{
+	return (dynamic_cast<const type::pointer *>(&target_type) != nullptr);
 }
 
 bool cminus::logic::attributes::not_null::handles_stage(logic::runtime &runtime, stage_type value) const{
-	return (value == stage_type::after_uninitialized_declaration || value == stage_type::before_ref_assign || value == stage_type::after_write);
+	return (value == stage_type::after_uninitialized_declaration || value == stage_type::after_write);
+}
+
+bool cminus::logic::attributes::not_null::is_required_on_pointer_assignment_(logic::runtime &runtime) const{
+	return true;
 }
 
 bool cminus::logic::attributes::not_null::prohibits_stage_(logic::runtime &runtime, stage_type stage, std::shared_ptr<memory::reference> target) const{
@@ -404,8 +496,10 @@ cminus::logic::attributes::ref::ref()
 
 cminus::logic::attributes::ref::~ref() = default;
 
-bool cminus::logic::attributes::ref::applies_to_function() const{
-	return false;
+bool cminus::logic::attributes::ref::applies_to_type(logic::runtime &runtime, const type::object &target_type) const{
+	if (auto primitive_target_type = dynamic_cast<const type::primitive *>(&target_type); primitive_target_type != nullptr)
+		return (primitive_target_type->get_id() != type::primitive::id_type::function);
+	return true;
 }
 
 bool cminus::logic::attributes::ref::handles_stage(logic::runtime &runtime, stage_type value) const{
@@ -425,6 +519,10 @@ cminus::logic::attributes::deprecated::deprecated()
 
 cminus::logic::attributes::deprecated::~deprecated() = default;
 
+bool cminus::logic::attributes::deprecated::applies_to_type(logic::runtime &runtime, const type::object &target_type) const{
+	return true;
+}
+
 bool cminus::logic::attributes::deprecated::handles_stage(logic::runtime &runtime, stage_type value) const{
 	return (value == stage_type::after_lookup);
 }
@@ -440,6 +538,10 @@ cminus::logic::attributes::special::special(const std::string &name)
 	: external(name){}
 
 cminus::logic::attributes::special::~special() = default;
+
+bool cminus::logic::attributes::special::applies_to_type(logic::runtime &runtime, const type::object &target_type) const{
+	return true;
+}
 
 bool cminus::logic::attributes::special::handles_stage(logic::runtime &runtime, stage_type value) const{
 	return false;

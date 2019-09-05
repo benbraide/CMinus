@@ -213,7 +213,7 @@ std::shared_ptr<cminus::memory::block> cminus::memory::object::allocate_block_(s
 		if ((*free_it)->size_ == 0u)
 			*free_it = block;
 		else
-			blocks_.erase(free_it);
+			blocks_.insert(free_it, block);
 	}
 	else//Append
 		blocks_.push_back(block);

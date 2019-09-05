@@ -19,7 +19,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::class_::evaluate_u
 
 	std::vector<std::shared_ptr<memory::reference>> args{
 		target,
-		std::make_shared<memory::scalar_reference<int>>(runtime.global_storage->get_primitve_type(type::primitive::id_type::int32_), nullptr, 0)
+		runtime.global_storage->create_scalar(0)
 	};
 
 	return callable->get_value()->call(runtime, callable->get_context(), args);

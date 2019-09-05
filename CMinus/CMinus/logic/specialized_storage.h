@@ -55,11 +55,11 @@ namespace cminus::logic::storage{
 
 		virtual ~function();
 
+		virtual std::shared_ptr<memory::reference> get_context() const override;
+
 		using specialized::find;
 
 		virtual std::shared_ptr<memory::reference> find(logic::runtime &runtime, const search_options &options) const override;
-
-		virtual std::shared_ptr<memory::reference> get_context() const;
 
 		virtual void add_unnamed(std::shared_ptr<memory::reference> entry);
 

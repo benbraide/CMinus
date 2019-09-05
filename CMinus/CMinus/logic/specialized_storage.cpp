@@ -78,6 +78,10 @@ cminus::logic::storage::function::~function(){
 	destroy_entries_();
 }
 
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::get_context() const{
+	return context_;
+}
+
 std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::find(logic::runtime &runtime, const search_options &options) const{
 	if (options.context != nullptr)
 		return specialized::find(runtime, search_options{ dynamic_cast<object *>(owner_.get_naming_parent()), options.context, options.name, options.search_tree, options.branch });
@@ -88,15 +92,11 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::fin
 	if (!owner_.get_attributes().has("ReadOnlyContext", true))
 		return specialized::find(runtime, search_options{ dynamic_cast<object *>(owner_.get_naming_parent()), context_, options.name, options.search_tree, options.branch });
 
-	auto context = context_->apply_offset(0u);
+	auto context = context_->apply_offset(runtime, 0u);
 	if (context != nullptr)
 		context->add_attribute(runtime.global_storage->find_attribute("ReadOnly", false));
 
 	return specialized::find(runtime, search_options{ dynamic_cast<object *>(owner_.get_naming_parent()), context, options.name, options.search_tree, options.branch });
-}
-
-std::shared_ptr<cminus::memory::reference> cminus::logic::storage::function::get_context() const{
-	return context_;
 }
 
 void cminus::logic::storage::function::add_unnamed(std::shared_ptr<memory::reference> entry){

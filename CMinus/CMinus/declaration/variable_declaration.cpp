@@ -65,7 +65,7 @@ void cminus::declaration::variable::evaluate(logic::runtime &runtime, std::share
 	}
 
 	runtime.current_storage->add(runtime, name_, reference);
-	if (reference->find_attribute("Static", true, false) != nullptr)
+	if (reference->find_attribute("Static", true) != nullptr)
 		static_value_ = reference;
 }
 
@@ -117,7 +117,7 @@ std::shared_ptr<cminus::node::object> cminus::declaration::variable::get_initial
 std::shared_ptr<cminus::memory::reference> cminus::declaration::variable::allocate_memory(logic::runtime &runtime) const{
 	std::shared_ptr<memory::reference> reference;
 	if (attributes_.has("Ref", true))
-		reference = std::make_shared<memory::ref_reference>(type_, attributes_, nullptr);
+		reference = std::make_shared<memory::ref_reference>(runtime, type_, attributes_, nullptr);
 	else//Not a reference
 		reference = std::make_shared<memory::lval_reference>(runtime, type_, attributes_, nullptr);
 
@@ -130,7 +130,7 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::variable::alloca
 void cminus::declaration::variable::initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> value) const{
 	auto initialization = ((value == nullptr) ? initialization_ : value);
 	if (initialization == nullptr)
-		target->call_attributes(runtime, logic::attributes::object::stage_type::after_uninitialized_declaration, false);
+		target->call_attributes(runtime, logic::attributes::object::stage_type::after_uninitialized_declaration);
 
 	target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
 	target->get_type()->construct(runtime, target, initialization);

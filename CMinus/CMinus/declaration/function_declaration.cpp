@@ -4,12 +4,12 @@
 
 #include "function_declaration.h"
 
-cminus::declaration::function::function(std::string name, logic::naming::parent *parent, const attribute_list_type &attributes, std::shared_ptr<variable> return_declaration, const std::vector<std::shared_ptr<variable>> &params, std::shared_ptr<node::object> body)
+cminus::declaration::function::function(logic::runtime &runtime, std::string name, logic::naming::parent *parent, const attribute_list_type &attributes, std::shared_ptr<variable> return_declaration, const std::vector<std::shared_ptr<variable>> &params, std::shared_ptr<node::object> body)
 	: function_base(name, parent, attributes), return_declaration_(return_declaration), params_(params), body_(body){
 	compute_values_();
-	if (return_declaration_ != nullptr){
+	if (auto return_type = ((return_declaration_ == nullptr) ? nullptr : return_declaration_->get_type()); return_type != nullptr){
 		attributes_.traverse([&](std::shared_ptr<logic::attributes::object> value){
-			if (!value->applies_to_function())
+			if (value->applies_to_type(runtime, *return_type))
 				return_declaration_->get_attributes().add(value);
 		});
 	}
@@ -91,9 +91,9 @@ cminus::type::object::score_result_type cminus::declaration::function::get_rank(
 
 			attributes_mismatch = false;
 			(*arg_it)->traverse_attributes(runtime, [&](std::shared_ptr<logic::attributes::object> attribute){
-				if (!attributes_mismatch && attribute->handles_stage(runtime, logic::attributes::object::stage_type::before_ref_assign) && !(*param_it)->get_attributes().has(*attribute))
+				if (!attributes_mismatch && attribute->is_required_on_ref_assignment(runtime) && !(*param_it)->get_attributes().has(*attribute))
 					attributes_mismatch = true;
-			}, logic::attributes::object::stage_type::nil, false);
+			}, logic::attributes::object::stage_type::nil);
 
 			if (attributes_mismatch)
 				return type::object::score_result_type::nil;

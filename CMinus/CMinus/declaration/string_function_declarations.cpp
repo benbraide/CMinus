@@ -103,7 +103,7 @@ cminus::declaration::string::sub_constructor::sub_constructor(logic::runtime &ru
 		attribute_list_type{},															//Attributes
 		runtime.global_storage->get_primitve_type(type::primitive::id_type::uint64_),	//Type
 		"size",																			//Name
-		runtime.global_storage->create_scalar(runtime, static_cast<std::size_t>(-1))	//Initialization
+		runtime.global_storage->create_scalar(static_cast<std::size_t>(-1))				//Initialization
 	));
 
 	min_arg_count_ = 2u;
@@ -160,7 +160,7 @@ cminus::declaration::string::assignment_constructor::assignment_constructor(logi
 		attribute_list_type{},															//Attributes
 		runtime.global_storage->get_primitve_type(type::primitive::id_type::uint64_),	//Type
 		"size",																			//Name
-		runtime.global_storage->create_scalar(runtime, static_cast<std::size_t>(-1))	//Initialization
+		runtime.global_storage->create_scalar(static_cast<std::size_t>(-1))				//Initialization
 	));
 
 	min_arg_count_ = 1u;
@@ -314,7 +314,7 @@ cminus::declaration::string::data::data(logic::runtime &runtime, bool read_only,
 		auto ptr_read_only_attr = std::make_shared<logic::attributes::pointer_object>(read_only_attr);
 
 		return_declaration_ = std::make_shared<variable>(
-			attribute_list_type{ ptr_read_only_attr },										//Attributes
+			attribute_list_type{ /*ptr_read_only_attr*/ },										//Attributes
 			type,																			//Type
 			"",																				//Name
 			nullptr																			//Initialization
@@ -342,6 +342,66 @@ void cminus::declaration::string::data::evaluate_body_(logic::runtime &runtime) 
 	runtime.current_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, runtime.current_storage->find(runtime, "data_", true));
 }
 
+cminus::declaration::string::at::at(logic::runtime &runtime, bool read_only, logic::naming::parent *parent)
+	: function("at", parent){
+	auto ref = runtime.global_storage->find_attribute("Ref", false);
+	if (read_only){
+		auto read_only_attr = runtime.global_storage->find_attribute("ReadOnly", false);
+		return_declaration_ = std::make_shared<variable>(
+			attribute_list_type{ ref, read_only_attr },										//Attributes
+			runtime.global_storage->get_primitve_type(type::primitive::id_type::char_),		//Type
+			"",																				//Name
+			nullptr																			//Initialization
+		);
+
+		attributes_.add(runtime.global_storage->find_attribute("ReadOnlyContext", false));
+	}
+	else{//Not read-only
+		return_declaration_ = std::make_shared<variable>(
+			attribute_list_type{ ref },														//Attributes
+			runtime.global_storage->get_primitve_type(type::primitive::id_type::char_),		//Type
+			"",																				//Name
+			nullptr																			//Initialization
+		);
+	}
+
+	params_.push_back(std::make_shared<variable>(
+		attribute_list_type{},															//Attributes
+		runtime.global_storage->get_primitve_type(type::primitive::id_type::uint64_),	//Type
+		"position",																		//Name
+		nullptr																			//Initialization
+	));
+}
+
+cminus::declaration::string::at::~at() = default;
+
+bool cminus::declaration::string::at::is_defined() const{
+	return true;
+}
+
+void cminus::declaration::string::at::evaluate_body_(logic::runtime &runtime) const{
+	auto position_value = runtime.current_storage->find(runtime, "position", true)->read_scalar<unsigned __int64>(runtime);
+	auto size_value = runtime.current_storage->find(runtime, "size_", true)->read_scalar<unsigned __int64>(runtime);
+
+	if (size_value <= position_value)
+		throw logic::exception("Index is out of bounds", 0u, 0u);
+
+	auto data = runtime.current_storage->find(runtime, "data_", true);
+	auto data_address = data->read_scalar<unsigned __int64>(runtime);
+
+	auto result = std::make_shared<memory::lval_reference>(
+		runtime,
+		(data_address + position_value),
+		runtime.global_storage->get_primitve_type(type::primitive::id_type::char_),
+		nullptr
+	);
+
+	if (result != nullptr)
+		runtime.current_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, result);
+	else
+		throw memory::exception(memory::error_code::allocation_failure, 0u);
+}
+
 cminus::declaration::string::resize::resize(logic::runtime &runtime, logic::naming::parent *parent)
 	: function("resize", parent){
 	params_.push_back(std::make_shared<variable>(
@@ -355,7 +415,7 @@ cminus::declaration::string::resize::resize(logic::runtime &runtime, logic::nami
 		attribute_list_type{},															//Attributes
 		runtime.global_storage->get_primitve_type(type::primitive::id_type::char_),		//Type
 		"fill",																			//Name
-		runtime.global_storage->create_scalar(runtime, '\0')							//Initialization
+		runtime.global_storage->create_scalar('\0')										//Initialization
 	));
 
 	min_arg_count_ = 1u;

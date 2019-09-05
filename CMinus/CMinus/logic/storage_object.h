@@ -66,6 +66,8 @@ namespace cminus::logic::storage{
 
 		virtual std::shared_ptr<memory::reference> get_raised_interrupt_value() const;
 
+		virtual std::shared_ptr<memory::reference> get_context() const;
+
 		virtual void add(logic::runtime &runtime, const std::string &name, std::shared_ptr<memory::reference> entry);
 
 		virtual void add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry);

@@ -38,7 +38,7 @@ cminus::declaration::function_base *cminus::declaration::function_group::get_hig
 	if (list_.empty())
 		return nullptr;
 
-	auto is_const = (context != nullptr && context->has_attribute("ReadOnly", true, true)), is_const_ctx = false;
+	auto is_const = (context != nullptr && context->has_attribute("ReadOnly", true)), is_const_ctx = false;
 	int highest_rank_score = type::object::get_score_value(type::object::score_result_type::nil), current_rank_score;
 
 	std::size_t match_count = 0u;
@@ -92,7 +92,7 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::function_group::
 		return highest_ranked->call_(runtime, context, args);
 
 	if (auto offset = class_parent->compute_base_offset(*args[0]->get_type()); 0u < offset && offset != static_cast<std::size_t>(-1))
-		context = context->apply_offset(offset);//Adjust context
+		context = context->apply_offset(runtime, offset);//Adjust context
 
 	if (!highest_ranked->is_operator() || highest_ranked->get_attributes().has("Static", true))
 		return highest_ranked->call_(runtime, context, args);

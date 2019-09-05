@@ -11,7 +11,7 @@ cminus::node::memory_reference::memory_reference(object *parent, std::shared_ptr
 cminus::node::memory_reference::~memory_reference() = default;
 
 std::shared_ptr<cminus::node::object> cminus::node::memory_reference::clone() const{
-	return std::make_shared<memory_reference>(nullptr, value_->apply_offset(0u));
+	return std::make_shared<memory_reference>(nullptr, value_);
 }
 
 void cminus::node::memory_reference::print(logic::runtime &runtime) const{

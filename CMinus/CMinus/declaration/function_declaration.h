@@ -7,7 +7,7 @@
 namespace cminus::declaration{
 	class function : public function_base{
 	public:
-		function(std::string name, logic::naming::parent *parent, const attribute_list_type &attributes, std::shared_ptr<variable> return_declaration, const std::vector<std::shared_ptr<variable>> &params, std::shared_ptr<node::object> body);
+		function(logic::runtime &runtime, std::string name, logic::naming::parent *parent, const attribute_list_type &attributes, std::shared_ptr<variable> return_declaration, const std::vector<std::shared_ptr<variable>> &params, std::shared_ptr<node::object> body);
 
 		virtual ~function();
 

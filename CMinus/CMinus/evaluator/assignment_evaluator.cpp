@@ -1,3 +1,4 @@
+#include "../type/pointer_type.h"
 #include "../node/memory_reference_node.h"
 
 #include "assignment_evaluator.h"
@@ -15,26 +16,39 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 	if (right_value == nullptr)
 		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
 
-	auto is_init = left_value->has_attribute("#Init#", true, false);
+	auto is_init = left_value->has_attribute("#Init#", true);
 	auto ref_left_value = dynamic_cast<memory::ref_reference *>(left_value->get_non_raw());
 
 	auto is_ref = (is_init && ref_left_value != nullptr);
-	auto is_val = left_value->has_attribute("Val", true, false);
+	auto is_val = (!is_ref && left_value->has_attribute("Val", true));
+
+	auto left_type = left_value->get_type(), right_type = right_value->get_type();
+	if (left_type == nullptr || right_type == nullptr)
+		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
 
 	if (is_ref){//Copy reference
 		if (right_value->is_lvalue()){
-			is_val = false;
-			right_value->call_attributes(runtime, logic::attributes::object::stage_type::before_ref_assign, true, std::vector<std::shared_ptr<memory::reference>>{ left_value });
+			right_value->traverse_attributes([&](std::shared_ptr<logic::attributes::object> attribute){
+				if (attribute->is_required_on_ref_assignment(runtime)){
+					if (!left_value->has_attribute(*attribute))
+						throw logic::exception("'" + attribute->get_qualified_naming_value() + "' attribute is required on a ref assignment!", 0u, 0u);
+				}
+			});
 		}
-		else if (!(is_val = (is_val && left_value->has_attribute("ReadOnly", true, false))))
+		else if (!(is_val = left_value->has_attribute("ReadOnly", true)))
 			throw logic::exception("'Ref' assignment requires an l-value source", 0u, 0u);
 	}
 	else if (is_val && right_value->is_lvalue())
 		throw logic::exception("'Val' assignment requires an r-value source", 0u, 0u);
 
-	auto left_type = left_value->get_type(), right_type = right_value->get_type();
-	if (left_type == nullptr || right_type == nullptr)
-		throw logic::exception("Operator '=' does not take the specified operands", 0u, 0u);
+	if (dynamic_cast<type::pointer *>(right_value.get()) != nullptr){//Pointer assignment
+		right_value->traverse_attributes([&](std::shared_ptr<logic::attributes::object> attribute){
+			if (attribute->is_required_on_pointer_assignment(runtime)){
+				if (!left_value->has_attribute(*attribute))
+					throw logic::exception("'" + attribute->get_qualified_naming_value() + "' attribute is required on a pointer assignment!", 0u, 0u);
+			}
+		});
+	}
 
 	if (right_type->converts_auto(*left_type))//Update auto type
 		left_value->set_type(left_type = right_type);
@@ -50,7 +64,7 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::assignment::evalua
 
 	if (!is_ref){//Copy value
 		if (is_init){
-			logic::attributes::read_guard guard(runtime, right_value.get(), true);
+			logic::attributes::read_guard guard(runtime, right_value.get());
 			if (auto right_address = right_value->get_address(); right_address == 0u)
 				runtime.memory_object.write(left_value->get_address(), right_value->get_data(runtime), left_type->get_size());
 			else//Read from address
