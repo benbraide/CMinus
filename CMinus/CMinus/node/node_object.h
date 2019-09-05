@@ -28,6 +28,8 @@ namespace cminus::node{
 
 		virtual std::shared_ptr<memory::reference> evaluate(logic::runtime &runtime) const = 0;
 
+		virtual std::shared_ptr<memory::reference> lookup(logic::runtime &runtime, std::shared_ptr<memory::reference> context) const;
+
 	protected:
 		virtual void set_parent_(std::shared_ptr<object> target);
 
