@@ -92,21 +92,18 @@ cminus::declaration::string::sub_constructor::sub_constructor(logic::runtime &ru
 		nullptr																			//Initialization
 	));
 
-	auto int_type = runtime.global_storage->get_primitve_type(type::primitive::id_type::uint64_);
-	auto max_int = std::make_shared<memory::scalar_reference<unsigned __int64>>(int_type, nullptr, static_cast<unsigned __int64>(-1));
-
 	params_.push_back(std::make_shared<variable>(
 		attribute_list_type{},															//Attributes
-		int_type,																		//Type
+		runtime.global_storage->get_primitve_type(type::primitive::id_type::uint64_),	//Type
 		"position",																		//Name
 		nullptr																			//Initialization
 	));
 
 	params_.push_back(std::make_shared<variable>(
 		attribute_list_type{},															//Attributes
-		int_type,																		//Type
+		runtime.global_storage->get_primitve_type(type::primitive::id_type::uint64_),	//Type
 		"size",																			//Name
-		std::make_shared<node::memory_reference>(nullptr, max_int)						//Initialization
+		runtime.global_storage->create_scalar(runtime, static_cast<std::size_t>(-1))	//Initialization
 	));
 
 	min_arg_count_ = 2u;
@@ -159,14 +156,11 @@ cminus::declaration::string::assignment_constructor::assignment_constructor(logi
 		nullptr																			//Initialization
 	));
 
-	auto int_type = runtime.global_storage->get_primitve_type(type::primitive::id_type::uint64_);
-	auto max_int = std::make_shared<memory::scalar_reference<unsigned __int64>>(int_type, nullptr, static_cast<unsigned __int64>(-1));
-
 	params_.push_back(std::make_shared<variable>(
 		attribute_list_type{},															//Attributes
-		int_type,																		//Type
+		runtime.global_storage->get_primitve_type(type::primitive::id_type::uint64_),	//Type
 		"size",																			//Name
-		std::make_shared<node::memory_reference>(nullptr, max_int)						//Initialization
+		runtime.global_storage->create_scalar(runtime, static_cast<std::size_t>(-1))	//Initialization
 	));
 
 	min_arg_count_ = 1u;
@@ -357,14 +351,11 @@ cminus::declaration::string::resize::resize(logic::runtime &runtime, logic::nami
 		nullptr																			//Initialization
 	));
 
-	auto char_type = runtime.global_storage->get_primitve_type(type::primitive::id_type::char_);
-	auto null_char = std::make_shared<memory::scalar_reference<char>>(char_type, nullptr, '\0');
-
 	params_.push_back(std::make_shared<variable>(
 		attribute_list_type{},															//Attributes
-		char_type,																		//Type
+		runtime.global_storage->get_primitve_type(type::primitive::id_type::char_),		//Type
 		"fill",																			//Name
-		std::make_shared<node::memory_reference>(nullptr, null_char)					//Initialization
+		runtime.global_storage->create_scalar(runtime, '\0')							//Initialization
 	));
 
 	min_arg_count_ = 1u;

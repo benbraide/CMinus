@@ -14,6 +14,18 @@ namespace cminus::declaration{
 
 		variable(const logic::attributes::collection &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<node::object> initialization);
 
+		variable(const attribute_list_type &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<memory::reference> initialization);
+
+		variable(const optimised_attribute_list_type &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<memory::reference> initialization);
+
+		variable(const logic::attributes::collection &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<memory::reference> initialization);
+
+		variable(const attribute_list_type &attributes, std::shared_ptr<type::object> type, std::string name, nullptr_t);
+
+		variable(const optimised_attribute_list_type &attributes, std::shared_ptr<type::object> type, std::string name, nullptr_t);
+
+		variable(const logic::attributes::collection &attributes, std::shared_ptr<type::object> type, std::string name, nullptr_t);
+
 		virtual ~variable();
 
 		virtual void evaluate(logic::runtime &runtime, std::shared_ptr<node::object> initialization) const;
@@ -54,7 +66,9 @@ namespace cminus::declaration{
 
 	class contructed_variable : public variable{
 	public:
-		contructed_variable(const std::vector<std::shared_ptr<logic::attributes::object>> &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<node::object> initialization);
+		template <typename... args_types>
+		contructed_variable(args_types &&... args)
+			: variable(std::forward<args_types>(args)...){}
 
 		virtual ~contructed_variable();
 
@@ -68,7 +82,9 @@ namespace cminus::declaration{
 
 	class uniform_contructed_variable : public contructed_variable{
 	public:
-		uniform_contructed_variable(const std::vector<std::shared_ptr<logic::attributes::object>> &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<node::object> initialization);
+		template <typename... args_types>
+		uniform_contructed_variable(args_types &&... args)
+			: contructed_variable(std::forward<args_types>(args)...){}
 
 		virtual ~uniform_contructed_variable();
 

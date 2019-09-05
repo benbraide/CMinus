@@ -31,6 +31,15 @@ namespace cminus::logic::storage{
 
 		virtual const char *get_string_data(logic::runtime &runtime, std::shared_ptr<memory::reference> object) const;
 
+		template <typename value_type>
+		std::shared_ptr<memory::reference> create_scalar(logic::runtime &runtime, value_type value) const{
+			return std::make_shared<memory::scalar_reference<value_type>>(
+				get_primitve_type(type::primitive_id<value_type>::template get()),
+				nullptr,
+				value
+			);
+		}
+
 	protected:
 		std::unordered_map<type::primitive::id_type, std::shared_ptr<type::object>> primitive_types_;
 		std::unordered_map<node::named_constant::constant_type, std::shared_ptr<memory::reference>> named_constants_;

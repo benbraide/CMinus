@@ -12,6 +12,24 @@ cminus::declaration::variable::variable(const optimised_attribute_list_type &att
 cminus::declaration::variable::variable(const logic::attributes::collection &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<node::object> initialization)
 	: attributes_(attributes), type_(type), name_(name), initialization_(initialization){}
 
+cminus::declaration::variable::variable(const attribute_list_type &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<memory::reference> initialization)
+	: attributes_(attributes), type_(type), name_(name), initialization_(std::make_shared<node::memory_reference>(nullptr, initialization)){}
+
+cminus::declaration::variable::variable(const optimised_attribute_list_type &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<memory::reference> initialization)
+	: attributes_(attributes), type_(type), name_(name), initialization_(std::make_shared<node::memory_reference>(nullptr, initialization)){}
+
+cminus::declaration::variable::variable(const logic::attributes::collection &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<memory::reference> initialization)
+	: attributes_(attributes), type_(type), name_(name), initialization_(std::make_shared<node::memory_reference>(nullptr, initialization)){}
+
+cminus::declaration::variable::variable(const attribute_list_type &attributes, std::shared_ptr<type::object> type, std::string name, nullptr_t)
+	: attributes_(attributes), type_(type), name_(name), initialization_(nullptr){}
+
+cminus::declaration::variable::variable(const optimised_attribute_list_type &attributes, std::shared_ptr<type::object> type, std::string name, nullptr_t)
+	: attributes_(attributes), type_(type), name_(name), initialization_(nullptr){}
+
+cminus::declaration::variable::variable(const logic::attributes::collection &attributes, std::shared_ptr<type::object> type, std::string name, nullptr_t)
+	: attributes_(attributes), type_(type), name_(name), initialization_(nullptr){}
+
 cminus::declaration::variable::~variable() = default;
 
 void cminus::declaration::variable::evaluate(logic::runtime &runtime, std::shared_ptr<node::object> initialization) const{
@@ -136,9 +154,6 @@ void cminus::declaration::variable::print_initialization_(logic::runtime &runtim
 	initialization_->print(runtime);
 }
 
-cminus::declaration::contructed_variable::contructed_variable(const std::vector<std::shared_ptr<logic::attributes::object>> &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<node::object> initialization)
-	: variable(attributes, type, name, initialization){}
-
 cminus::declaration::contructed_variable::~contructed_variable() = default;
 
 std::shared_ptr<cminus::memory::reference> cminus::declaration::contructed_variable::allocate_memory(logic::runtime &runtime) const{
@@ -159,9 +174,6 @@ void cminus::declaration::contructed_variable::print_initialization_(logic::runt
 	initialization_->print(runtime);
 	runtime.writer.write_scalar(')');
 }
-
-cminus::declaration::uniform_contructed_variable::uniform_contructed_variable(const std::vector<std::shared_ptr<logic::attributes::object>> &attributes, std::shared_ptr<type::object> type, std::string name, std::shared_ptr<node::object> initialization)
-	: contructed_variable(attributes, type, name, initialization){}
 
 cminus::declaration::uniform_contructed_variable::~uniform_contructed_variable() = default;
 

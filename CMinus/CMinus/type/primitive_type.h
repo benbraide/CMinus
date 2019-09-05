@@ -119,4 +119,110 @@ namespace cminus::type{
 	protected:
 		id_type id_;
 	};
+
+	template <class value_type>
+	struct primitive_id{
+		static primitive::id_type get(){
+			return primitive::id_type::nil;
+		}
+	};
+
+	template <>
+	struct primitive_id<std::byte>{
+		static primitive::id_type get(){
+			return primitive::id_type::byte_;
+		}
+	};
+
+	template <>
+	struct primitive_id<bool>{
+		static primitive::id_type get(){
+			return primitive::id_type::bool_;
+		}
+	};
+
+	template <>
+	struct primitive_id<char>{
+		static primitive::id_type get(){
+			return primitive::id_type::char_;
+		}
+	};
+
+	template <>
+	struct primitive_id<wchar_t>{
+		static primitive::id_type get(){
+			return primitive::id_type::wchar_
+;
+		}
+	};
+
+	template <>
+	struct primitive_id<__int16>{
+		static primitive::id_type get(){
+			return primitive::id_type::int16_;
+		}
+	};
+
+	template <>
+	struct primitive_id<unsigned __int16>{
+		static primitive::id_type get(){
+			return primitive::id_type::uint16_;
+		}
+	};
+
+	template <>
+	struct primitive_id<__int32>{
+		static primitive::id_type get(){
+			return primitive::id_type::int32_;
+		}
+	};
+
+	template <>
+	struct primitive_id<unsigned __int32>{
+		static primitive::id_type get(){
+			return primitive::id_type::uint32_;
+		}
+	};
+
+	template <>
+	struct primitive_id<__int64>{
+		static primitive::id_type get(){
+			return primitive::id_type::int64_;
+		}
+	};
+
+	template <>
+	struct primitive_id<unsigned __int64>{
+		static primitive::id_type get(){
+			return primitive::id_type::uint64_;
+		}
+	};
+
+	template <>
+	struct primitive_id<float>{
+		static primitive::id_type get(){
+			return primitive::id_type::float_;
+		}
+	};
+
+	template <>
+	struct primitive_id<double>{
+		static primitive::id_type get(){
+			return primitive::id_type::double_;
+		}
+	};
+
+	template <>
+	struct primitive_id<long double>{
+		static primitive::id_type get(){
+			return primitive::id_type::ldouble;
+		}
+	};
+
+	template <>
+	struct primitive_id<nullptr_t>{
+		static primitive::id_type get(){
+			return primitive::id_type::nullptr_;
+		}
+	};
 }
