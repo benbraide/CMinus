@@ -15,8 +15,6 @@ namespace cminus::type{
 			byte_,
 			char_,
 			wchar_,
-			int8_,
-			uint8_,
 			int16_,
 			uint16_,
 			int32_,
@@ -86,10 +84,6 @@ namespace cminus::type{
 		template <typename target_type, typename runtime_type>
 		target_type cast_integral(runtime_type &runtime, memory::reference &source) const{
 			switch (id_){
-			case id_type::int8_:
-				return static_cast<target_type>(source.read_scalar<__int8>(runtime));
-			case id_type::uint8_:
-				return static_cast<target_type>(source.read_scalar<unsigned __int8>(runtime));
 			case id_type::int16_:
 				return static_cast<target_type>(source.read_scalar<__int16>(runtime));
 			case id_type::uint16_:

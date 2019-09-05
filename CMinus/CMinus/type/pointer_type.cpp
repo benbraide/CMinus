@@ -112,10 +112,6 @@ std::shared_ptr<cminus::memory::reference> cminus::type::raw_pointer::cast(logic
 		return nullptr;
 
 	switch (primitive_target_type->get_id()){
-	case primitive::id_type::int8_:
-		return runtime.global_storage->create_scalar(static_cast<__int8>(data->read_scalar<unsigned __int64>(runtime)));
-	case primitive::id_type::uint8_:
-		return runtime.global_storage->create_scalar(static_cast<unsigned __int8>(data->read_scalar<unsigned __int64>(runtime)));
 	case primitive::id_type::int16_:
 		return runtime.global_storage->create_scalar(static_cast<__int16>(data->read_scalar<unsigned __int64>(runtime)));
 	case primitive::id_type::uint16_:

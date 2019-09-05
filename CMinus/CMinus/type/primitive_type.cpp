@@ -27,38 +27,32 @@ void cminus::type::primitive::print_value(logic::runtime &runtime, std::shared_p
 	case id_type::wchar_:
 		runtime.writer.write_scalar(data->read_scalar<wchar_t>(runtime));
 		break;
-	case id_type::int8_:
-		runtime.writer.write_scalar(logic::to_string<__int16>::get(static_cast<__int16>(data->read_scalar<__int8>(runtime))) + "i8");
-		break;
-	case id_type::uint8_:
-		runtime.writer.write_scalar(logic::to_string<unsigned __int16>::get(static_cast<unsigned __int16>(data->read_scalar<unsigned __int8>(runtime))) + "ui8");
-		break;
 	case id_type::int16_:
-		runtime.writer.write_scalar(logic::to_string<__int16>::get(data->read_scalar<__int16>(runtime)) + "i16");
+		runtime.writer.write_scalar(logic::to_string<__int16>::get(data->read_scalar<__int16>(runtime)) + "H");
 		break;
 	case id_type::uint16_:
-		runtime.writer.write_scalar(logic::to_string<unsigned __int16>::get(data->read_scalar<unsigned __int16>(runtime)) + "ui16");
+		runtime.writer.write_scalar(logic::to_string<unsigned __int16>::get(data->read_scalar<unsigned __int16>(runtime)) + "UH");
 		break;
 	case id_type::int32_:
-		runtime.writer.write_scalar(logic::to_string<__int32>::get(data->read_scalar<__int32>(runtime)) + "i32");
+		runtime.writer.write_scalar(logic::to_string<__int32>::get(data->read_scalar<__int32>(runtime)));
 		break;
 	case id_type::uint32_:
-		runtime.writer.write_scalar(logic::to_string<unsigned __int32>::get(data->read_scalar<unsigned __int32>(runtime)) + "ui32");
+		runtime.writer.write_scalar(logic::to_string<unsigned __int32>::get(data->read_scalar<unsigned __int32>(runtime)));
 		break;
 	case id_type::int64_:
-		runtime.writer.write_scalar(logic::to_string<__int64>::get(data->read_scalar<__int64>(runtime)) + "i64");
+		runtime.writer.write_scalar(logic::to_string<__int64>::get(data->read_scalar<__int64>(runtime)) + "L");
 		break;
 	case id_type::uint64_:
-		runtime.writer.write_scalar(logic::to_string<unsigned __int64>::get(data->read_scalar<unsigned __int64>(runtime)) + "ui64");
+		runtime.writer.write_scalar(logic::to_string<unsigned __int64>::get(data->read_scalar<unsigned __int64>(runtime)) + "LL");
 		break;
 	case id_type::float_:
-		runtime.writer.write_scalar(logic::to_string<float>::get(data->read_scalar<float>(runtime)) + "f32");
+		runtime.writer.write_scalar(logic::to_string<float>::get(data->read_scalar<float>(runtime)) + "F");
 		break;
 	case id_type::double_:
-		runtime.writer.write_scalar(logic::to_string<double>::get(data->read_scalar<double>(runtime)) + "f64");
+		runtime.writer.write_scalar(logic::to_string<double>::get(data->read_scalar<double>(runtime)));
 		break;
 	case id_type::ldouble:
-		runtime.writer.write_scalar(logic::to_string<long double>::get(data->read_scalar<long double>(runtime)) + "f128");
+		runtime.writer.write_scalar(logic::to_string<long double>::get(data->read_scalar<long double>(runtime)) + "L");
 		break;
 	case id_type::nan_:
 		runtime.writer.write_buffer("NaN", 3u);
@@ -98,9 +92,6 @@ std::size_t cminus::type::primitive::get_size() const{
 		return sizeof(char);
 	case id_type::wchar_:
 		return sizeof(wchar_t);
-	case id_type::int8_:
-	case id_type::uint8_:
-		return sizeof(__int8);
 	case id_type::int16_:
 	case id_type::uint16_:
 		return sizeof(__int16);
@@ -193,10 +184,6 @@ std::shared_ptr<cminus::memory::reference> cminus::type::primitive::get_default_
 		return runtime.global_storage->create_scalar(static_cast<char>(0));
 	case id_type::wchar_:
 		return runtime.global_storage->create_scalar(static_cast<wchar_t>(0));
-	case id_type::int8_:
-		return runtime.global_storage->create_scalar(static_cast<__int8>(0));
-	case id_type::uint8_:
-		return runtime.global_storage->create_scalar(static_cast<unsigned __int8>(0));
 	case id_type::int16_:
 		return runtime.global_storage->create_scalar(static_cast<__int16>(0));
 	case id_type::uint16_:
@@ -246,10 +233,6 @@ std::shared_ptr<cminus::memory::reference> cminus::type::primitive::cast(logic::
 	if (type == cast_type::reinterpret){
 		if (id_ == id_type::function){
 			switch (primitive_target_type->id_){
-			case id_type::int8_:
-				return runtime.global_storage->create_scalar(static_cast<__int8>(data->read_scalar<unsigned __int64>(runtime)));
-			case id_type::uint8_:
-				return runtime.global_storage->create_scalar(static_cast<unsigned __int8>(data->read_scalar<unsigned __int64>(runtime)));
 			case id_type::int16_:
 				return runtime.global_storage->create_scalar(static_cast<__int16>(data->read_scalar<unsigned __int64>(runtime)));
 			case id_type::uint16_:
@@ -292,12 +275,6 @@ std::shared_ptr<cminus::memory::reference> cminus::type::primitive::cast(logic::
 	std::shared_ptr<memory::reference> value;
 	try{
 		switch (primitive_target_type->id_){
-		case id_type::int8_:
-			value = runtime.global_storage->create_scalar(cast_numeric<__int8>(runtime, *data));
-			break;
-		case id_type::uint8_:
-			value = runtime.global_storage->create_scalar(cast_numeric<unsigned __int8>(runtime, *data));
-			break;
 		case id_type::int16_:
 			value = runtime.global_storage->create_scalar(cast_numeric<__int16>(runtime, *data));
 			break;
@@ -356,8 +333,6 @@ std::shared_ptr<cminus::evaluator::object> cminus::type::primitive::get_evaluato
 	case id_type::char_:
 	case id_type::wchar_:
 		return runtime.global_storage->get_evaluator(evaluator::id::character);
-	case id_type::int8_:
-	case id_type::uint8_:
 	case id_type::int16_:
 	case id_type::uint16_:
 	case id_type::int32_:
@@ -390,16 +365,15 @@ cminus::type::primitive::id_type cminus::type::primitive::get_id() const{
 }
 
 bool cminus::type::primitive::is_numeric() const{
-	return (id_type::int8_ <= id_ && id_ <= id_type::ldouble);
+	return (id_type::int16_ <= id_ && id_ <= id_type::ldouble);
 }
 
 bool cminus::type::primitive::is_integral() const{
-	return (id_type::int8_ <= id_ && id_ <= id_type::uint128_);
+	return (id_type::int16_ <= id_ && id_ <= id_type::uint128_);
 }
 
 bool cminus::type::primitive::is_unsigned_integral() const{
 	switch (id_){
-	case id_type::uint8_:
 	case id_type::uint16_:
 	case id_type::uint32_:
 	case id_type::uint64_:
@@ -432,12 +406,6 @@ cminus::type::primitive::id_type cminus::type::primitive::convert_string_to_id(c
 	if (value == "wchar")
 		return id_type::wchar_;
 
-	if (value == "int8_t")
-		return id_type::int8_;
-
-	if (value == "uint8_t")
-		return id_type::uint8_;
-
 	if (value == "int16_t")
 		return id_type::int16_;
 
@@ -462,10 +430,10 @@ cminus::type::primitive::id_type cminus::type::primitive::convert_string_to_id(c
 	if (value == "uint128_t")
 		return id_type::uint128_;
 
-	if (value == "float32_t")
+	if (value == "float")
 		return id_type::float_;
 
-	if (value == "float64_t")
+	if (value == "double")
 		return id_type::double_;
 
 	if (value == "float128_t")
@@ -498,10 +466,6 @@ std::string cminus::type::primitive::convert_id_to_string(id_type value){
 		return "char";
 	case id_type::wchar_:
 		return "wchar";
-	case id_type::int8_:
-		return "int8_t";
-	case id_type::uint8_:
-		return "uint8_t";
 	case id_type::int16_:
 		return "int16_t";
 	case id_type::uint16_:

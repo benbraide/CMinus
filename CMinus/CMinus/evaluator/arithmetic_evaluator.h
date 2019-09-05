@@ -167,10 +167,7 @@ namespace cminus::evaluator{
 			if (auto right_primitive_type = dynamic_cast<type::primitive *>(right_type.get()); right_primitive_type != nullptr){
 				switch (right_primitive_type->get_id()){
 				case type::primitive::id_type::nan_:
-				case type::primitive::id_type::int8_:
 					return evaluate_integral_shift_<value_type, __int8>(runtime, op, left_value, right_value);
-				case type::primitive::id_type::uint8_:
-					return evaluate_integral_shift_<value_type, unsigned __int8>(runtime, op, left_value, right_value);
 				case type::primitive::id_type::int16_:
 					return evaluate_integral_shift_<value_type, __int16>(runtime, op, left_value, right_value);
 				case type::primitive::id_type::uint16_:

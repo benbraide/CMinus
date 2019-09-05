@@ -19,10 +19,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' requires an l-value operand", 0u, 0u);
 
 	switch (primitive_type->get_id()){
-	case type::primitive::id_type::int8_:
-		return arithmetic::evaluate_integral_unary_left_<__int8>(runtime, std::get<operator_id>(op), target);
-	case type::primitive::id_type::uint8_:
-		return arithmetic::evaluate_unsigned_integral_unary_left_<unsigned __int8>(runtime, std::get<operator_id>(op), target);
 	case type::primitive::id_type::int16_:
 		return arithmetic::evaluate_integral_unary_left_<__int16>(runtime, std::get<operator_id>(op), target);
 	case type::primitive::id_type::uint16_:
@@ -55,10 +51,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 
 	auto type = target->get_type();
 	switch (dynamic_cast<type::primitive *>(type.get())->get_id()){
-	case type::primitive::id_type::int8_:
-		return arithmetic::evaluate_unsigned_unary_right_<__int8>(runtime, std::get<operator_id>(op), target);
-	case type::primitive::id_type::uint8_:
-		return arithmetic::evaluate_unsigned_unary_right_<unsigned __int8>(runtime, std::get<operator_id>(op), target);
 	case type::primitive::id_type::int16_:
 		return arithmetic::evaluate_unsigned_unary_right_<__int16>(runtime, std::get<operator_id>(op), target);
 	case type::primitive::id_type::uint16_:
@@ -107,12 +99,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 	if (object::operator_is_shift(std::get<operator_id>(op), true)){
 		std::shared_ptr<memory::reference> result;
 		switch (left_primitive_type->get_id()){
-		case type::primitive::id_type::int8_:
-			result = arithmetic::evaluate_integral_shift_<__int8>(runtime, std::get<operator_id>(op), left_value, right_value);
-			break;
-		case type::primitive::id_type::uint8_:
-			result = arithmetic::evaluate_integral_shift_<unsigned __int8>(runtime, std::get<operator_id>(op), left_value, right_value);
-			break;
 		case type::primitive::id_type::int16_:
 			result = arithmetic::evaluate_integral_shift_<__int16>(runtime, std::get<operator_id>(op), left_value, right_value);
 			break;
@@ -159,10 +145,6 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::integral::evaluate
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 
 	switch (left_primitive_type->get_id()){
-	case type::primitive::id_type::int8_:
-		return evaluate_binary_<__int8>(runtime, std::get<operator_id>(op), left_value, right_value);
-	case type::primitive::id_type::uint8_:
-		return evaluate_binary_<unsigned __int8>(runtime, std::get<operator_id>(op), left_value, right_value);
 	case type::primitive::id_type::int16_:
 		return evaluate_binary_<__int16>(runtime, std::get<operator_id>(op), left_value, right_value);
 	case type::primitive::id_type::uint16_:
