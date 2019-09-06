@@ -61,8 +61,6 @@ cminus::declaration::string::copy_constructor::~copy_constructor() = default;
 
 void cminus::declaration::string::copy_constructor::evaluate_body_(logic::runtime &runtime) const{
 	auto other_data = runtime.global_storage->get_string_data(runtime, runtime.current_storage->find(runtime, "other", true));
-	if (other_data == nullptr)
-		throw memory::exception(memory::error_code::allocation_failure, 0u);
 
 	auto size_value = strlen(other_data);
 	auto new_data_block = runtime.memory_object.allocate_block((size_value + 1u), 0u);
@@ -117,8 +115,6 @@ cminus::declaration::string::sub_constructor::~sub_constructor() = default;
 
 void cminus::declaration::string::sub_constructor::evaluate_body_(logic::runtime &runtime) const{
 	auto other_data = runtime.global_storage->get_string_data(runtime, runtime.current_storage->find(runtime, "other", true));
-	if (other_data == nullptr)
-		throw memory::exception(memory::error_code::allocation_failure, 0u);
 
 	auto other_size_value = strlen(other_data);
 	auto position_value = runtime.current_storage->find(runtime, "position", true)->read_scalar<unsigned __int64>(runtime);
@@ -263,6 +259,68 @@ void cminus::declaration::string::destructor::evaluate_body_(logic::runtime &run
 		runtime.memory_object.deallocate_block(data_address);
 		data->write_scalar(runtime, 0ui64);//Update address
 	}
+}
+
+cminus::declaration::string::index::index(logic::runtime &runtime, bool read_only, logic::naming::parent *parent)
+	: function("[]", parent){
+	auto ref = runtime.global_storage->find_attribute("Ref", false);
+	if (read_only){
+		auto read_only_attr = runtime.global_storage->find_attribute("ReadOnly", false);
+		return_declaration_ = std::make_shared<variable>(
+			attribute_list_type{ ref, read_only_attr },										//Attributes
+			runtime.global_storage->get_primitve_type(type::primitive::id_type::char_),		//Type
+			"",																				//Name
+			nullptr																			//Initialization
+		);
+
+		attributes_.add(runtime.global_storage->find_attribute("ReadOnlyContext", false));
+	}
+	else{//Not read-only
+		return_declaration_ = std::make_shared<variable>(
+			attribute_list_type{ ref },														//Attributes
+			runtime.global_storage->get_primitve_type(type::primitive::id_type::char_),		//Type
+			"",																				//Name
+			nullptr																			//Initialization
+		);
+	}
+
+	params_.push_back(std::make_shared<variable>(
+		attribute_list_type{},															//Attributes
+		runtime.global_storage->get_primitve_type(type::primitive::id_type::uint64_),	//Type
+		"position",																		//Name
+		nullptr																			//Initialization
+	));
+
+	min_arg_count_ = 1u;
+	max_arg_count_ = 1u;
+
+}
+
+cminus::declaration::string::index::~index() = default;
+
+bool cminus::declaration::string::index::is_defined() const{
+	return true;
+}
+
+bool cminus::declaration::string::index::is_operator() const{
+	return true;
+}
+
+void cminus::declaration::string::index::evaluate_body_(logic::runtime &runtime) const{
+	auto position_value = runtime.current_storage->find(runtime, "position", true)->read_scalar<unsigned __int64>(runtime);
+	auto data_address = runtime.current_storage->find(runtime, "data_", true)->read_scalar<unsigned __int64>(runtime);
+
+	auto result = std::make_shared<memory::lval_reference>(
+		runtime,
+		(data_address + position_value),
+		runtime.global_storage->get_primitve_type(type::primitive::id_type::char_),
+		nullptr
+	);
+
+	if (result != nullptr)
+		runtime.current_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, result);
+	else
+		throw memory::exception(memory::error_code::allocation_failure, 0u);
 }
 
 cminus::declaration::string::empty::empty(logic::runtime &runtime, logic::naming::parent *parent)
@@ -506,4 +564,46 @@ void cminus::declaration::string::clear::evaluate_body_(logic::runtime &runtime)
 	}
 
 	runtime.current_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, nullptr);
+}
+
+cminus::declaration::string::swap::swap(logic::runtime &runtime, logic::naming::parent *parent)
+	: function("swap", parent){
+	attribute_list_type attributes{
+		runtime.global_storage->find_attribute("Ref", false)
+	};
+
+	params_.push_back(std::make_shared<variable>(
+		attributes,																		//Attributes
+		runtime.global_storage->get_string_type(),										//Type
+		"other",																		//Name
+		nullptr																			//Initialization
+	));
+
+	min_arg_count_ = 1u;
+	max_arg_count_ = 1u;
+}
+
+cminus::declaration::string::swap::~swap() = default;
+
+bool cminus::declaration::string::swap::is_defined() const{
+	return true;
+}
+
+void cminus::declaration::string::swap::evaluate_body_(logic::runtime &runtime) const{
+	auto other = runtime.current_storage->find(runtime, "other", true);
+
+	auto other_data = runtime.current_storage->find(runtime, logic::storage::object::search_options{ nullptr, other, "data_", true });
+	auto other_size = runtime.current_storage->find(runtime, logic::storage::object::search_options{ nullptr, other, "size_", true });
+
+	auto data = runtime.current_storage->find(runtime, "data_", true);
+	auto size = runtime.current_storage->find(runtime, "size_", true);
+
+	auto data_value = data->read_scalar<unsigned __int64>(runtime);
+	auto size_value = size->read_scalar<unsigned __int64>(runtime);
+
+	data->write_scalar(runtime, other_data->read_scalar<unsigned __int64>(runtime));//Copy new address
+	size->write_scalar(runtime, other_size->read_scalar<unsigned __int64>(runtime));//Update size
+
+	other_data->write_scalar(runtime, data_value);//Copy new address
+	other_size->write_scalar(runtime, size_value);//Update size
 }

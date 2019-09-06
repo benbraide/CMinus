@@ -48,6 +48,9 @@ void cminus::type::string::init(logic::runtime &runtime){
 	add_function(runtime, std::make_shared<declaration::string::assignment_constructor>(runtime, this));
 	add_function(runtime, std::make_shared<declaration::string::fill_constructor>(runtime, this));
 
+	add_function(runtime, std::make_shared<declaration::string::index>(runtime, true, this));
+	add_function(runtime, std::make_shared<declaration::string::index>(runtime, false, this));
+
 	add_function(runtime, std::make_shared<declaration::string::empty>(runtime, this));
 	add_function(runtime, std::make_shared<declaration::string::size>(runtime, this));
 
@@ -59,4 +62,6 @@ void cminus::type::string::init(logic::runtime &runtime){
 
 	add_function(runtime, std::make_shared<declaration::string::resize>(runtime, this));
 	add_function(runtime, std::make_shared<declaration::string::clear>(runtime, this));
+
+	add_function(runtime, std::make_shared<declaration::string::swap>(runtime, this));
 }

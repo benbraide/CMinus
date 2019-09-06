@@ -52,12 +52,24 @@ int main(){
 	auto temp = tstr.empty();
 	auto tat = tstr.at(3);
 	tstr.clear();
-	auto tdat0 = tstr.data();
-	auto tsz0 = tstr.size();
-	auto temp0 = tstr.empty();
+	tdat = tstr.data();
+	tsz = tstr.size();
+	temp = tstr.empty();
 	
 	cminus::adapter::string tstr2(runtime, str);
 	auto tdat2 = tstr2.data();
+	auto tsz2 = tstr2.size();
+	auto temp2 = tstr2.empty();
+
+	tstr2.swap(tstr);
+
+	tdat = tstr.data();
+	tsz = tstr.size();
+	temp = tstr.empty();
+
+	tdat2 = tstr2.data();
+	tsz2 = tstr2.size();
+	temp2 = tstr2.empty();
 
 	return 0;
 }

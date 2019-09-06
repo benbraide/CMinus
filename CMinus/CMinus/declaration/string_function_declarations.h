@@ -83,6 +83,20 @@ namespace cminus::declaration::string{
 		virtual void evaluate_body_(logic::runtime &runtime) const override;
 	};
 
+	class index : public function{
+	public:
+		index(logic::runtime &runtime, bool read_only, logic::naming::parent *parent);
+
+		virtual ~index();
+
+		virtual bool is_defined() const override;
+
+		virtual bool is_operator() const override;
+
+	protected:
+		virtual void evaluate_body_(logic::runtime &runtime) const override;
+	};
+
 	class empty : public function{
 	public:
 		empty(logic::runtime &runtime, logic::naming::parent *parent);
@@ -148,6 +162,18 @@ namespace cminus::declaration::string{
 		clear(logic::runtime &runtime, logic::naming::parent *parent);
 
 		virtual ~clear();
+
+		virtual bool is_defined() const override;
+
+	protected:
+		virtual void evaluate_body_(logic::runtime &runtime) const override;
+	};
+
+	class swap : public function{
+	public:
+		swap(logic::runtime &runtime, logic::naming::parent *parent);
+
+		virtual ~swap();
 
 		virtual bool is_defined() const override;
 

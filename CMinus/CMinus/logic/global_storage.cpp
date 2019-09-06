@@ -64,6 +64,7 @@ void cminus::logic::storage::global::init(logic::runtime &runtime){
 		string_type->init(runtime);
 	}
 
+	evaluators_[evaluator::id::initializer] = std::make_shared<evaluator::initializer>();
 	evaluators_[evaluator::id::boolean] = std::make_shared<evaluator::boolean>();
 	evaluators_[evaluator::id::byte] = std::make_shared<evaluator::byte>();
 
@@ -110,8 +111,13 @@ std::shared_ptr<cminus::evaluator::object> cminus::logic::storage::global::get_e
 	return nullptr;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::storage::global::create_string(logic::runtime &runtime, const std::string &value) const{
-	auto str = std::make_shared<memory::data_reference>(runtime, get_string_type(), declaration::variable::attribute_list_type{}, nullptr);
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::global::create_string(logic::runtime &runtime, const std::string &value, bool lvalue) const{
+	std::shared_ptr<memory::reference> str;
+	if (lvalue)//Allocate object in memory
+		str = std::make_shared<memory::lval_reference>(runtime, get_string_type(), declaration::variable::attribute_list_type{}, nullptr);
+	else//Don't allocate object in memory
+		str = std::make_shared<memory::data_reference>(runtime, get_string_type(), declaration::variable::attribute_list_type{}, nullptr);
+
 	if (str == nullptr)//Error
 		return nullptr;
 

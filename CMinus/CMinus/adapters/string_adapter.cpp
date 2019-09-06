@@ -1,10 +1,16 @@
 #include "string_adapter.h"
 
+cminus::adapter::string::string(cminus::logic::runtime &runtime)
+	: string(runtime, ""){}
+
+cminus::adapter::string::string(const string &other)
+	: string(*other.runtime_, other.value_){}
+
 cminus::adapter::string::string(cminus::logic::runtime &runtime, const std::string &value)
-	: runtime_(&runtime), value_(runtime.global_storage->create_string(runtime, value)){}
+	: runtime_(&runtime), value_(runtime.global_storage->create_string(runtime, value, true)){}
 
 cminus::adapter::string::string(cminus::logic::runtime &runtime, std::shared_ptr<cminus::memory::reference> value)
-	: runtime_(&runtime), value_(runtime.global_storage->create_string(runtime, runtime.global_storage->get_string_data(runtime, value))){}
+	: runtime_(&runtime), value_(runtime.global_storage->create_string(runtime, runtime.global_storage->get_string_data(runtime, value), true)){}
 
 const char *cminus::adapter::string::data() const{
 	auto data = call_(*runtime_, call_info{ "data", value_ });
@@ -30,6 +36,18 @@ char cminus::adapter::string::at(std::size_t position) const{
 
 void cminus::adapter::string::clear(){
 	call_(*runtime_, call_info{ "clear", value_ });
+}
+
+void cminus::adapter::string::swap(string &other){
+	swap(other.value_);
+}
+
+void cminus::adapter::string::swap(std::shared_ptr<cminus::memory::reference> value){
+	call_(*runtime_, call_info{
+		"swap",
+		value_,
+		std::vector<std::shared_ptr<cminus::memory::reference>>{ value } }
+	);
 }
 
 std::shared_ptr<cminus::memory::reference> cminus::adapter::string::get_value() const{

@@ -11,6 +11,10 @@ namespace cminus::adapter{
 			std::vector<std::shared_ptr<cminus::memory::reference>> args;
 		};
 
+		explicit string(cminus::logic::runtime &runtime);
+
+		string(const string &other);
+
 		string(cminus::logic::runtime &runtime, const std::string &value);
 
 		string(cminus::logic::runtime &runtime, std::shared_ptr<cminus::memory::reference> value);
@@ -24,6 +28,10 @@ namespace cminus::adapter{
 		char at(std::size_t position) const;
 
 		void clear();
+
+		void swap(string &other);
+
+		void swap(std::shared_ptr<cminus::memory::reference> value);
 
 		std::shared_ptr<cminus::memory::reference> get_value() const;
 

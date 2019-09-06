@@ -130,7 +130,10 @@ void cminus::declaration::variable::initialize_memory(logic::runtime &runtime, s
 		target->call_attributes(runtime, logic::attributes::object::stage_type::after_uninitialized_declaration);
 
 	target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
-	target->get_type()->construct(runtime, target, initialization);
+	if (dynamic_cast<memory::ref_reference *>(target->get_non_raw()) == nullptr)
+		target->get_type()->construct(runtime, target, initialization);
+	else//Ref assignment
+		runtime.global_storage->get_evaluator(evaluator::id::initializer)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, initialization);
 }
 
 void cminus::declaration::variable::print_attributes_(logic::runtime &runtime) const{

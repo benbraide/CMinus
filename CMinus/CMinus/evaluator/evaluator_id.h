@@ -4,6 +4,7 @@ namespace cminus::evaluator{
 	enum class id{
 		nil,
 		undefined,
+		initializer,
 		boolean,
 		byte,
 		character,

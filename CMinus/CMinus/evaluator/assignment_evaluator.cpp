@@ -112,3 +112,23 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::compound_assignmen
 	throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
 	return nullptr;
 }
+
+cminus::evaluator::initializer::~initializer() = default;
+
+std::shared_ptr<cminus::memory::reference> cminus::evaluator::initializer::evaluate_unary_left(logic::runtime &runtime, const operator_type &op, std::shared_ptr<memory::reference> target) const{
+	throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
+	return nullptr;
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::evaluator::initializer::evaluate_unary_right(logic::runtime &runtime, const operator_type &op, std::shared_ptr<memory::reference> target) const{
+	throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operand", 0u, 0u);
+	return nullptr;
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::evaluator::initializer::evaluate_binary(logic::runtime &runtime, const operator_type &op, std::shared_ptr<memory::reference> left_value, const operand_type &right) const{
+	if (auto result = assignment::evaluate_(runtime, op, left_value, right); result != nullptr)//Handled
+		return result;
+
+	throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
+	return nullptr;
+}
