@@ -1,3 +1,6 @@
+#include "../type/string_type.h"
+#include "../node/memory_reference_node.h"
+
 #include "floating_point_evaluator.h"
 
 cminus::evaluator::floating_point::~floating_point() = default;
@@ -54,6 +57,15 @@ std::shared_ptr<cminus::memory::reference> cminus::evaluator::floating_point::ev
 	auto left_primitive_type = dynamic_cast<type::primitive *>(left_type.get());
 	if (left_primitive_type == nullptr)
 		throw logic::exception("Operator '" + object::convert_operator_to_string(op) + "' does not take the specified operands", 0u, 0u);
+
+	if (dynamic_cast<type::string *>(right_type.get()) != nullptr){
+		return right_type->get_evaluator(runtime)->evaluate_binary(
+			runtime,
+			op,
+			left_type->cast(runtime, left_value, right_type, type::object::cast_type::static_),
+			std::make_shared<node::memory_reference>(nullptr, right_value)
+		);
+	}
 
 	auto left_value_copy = left_value, right_value_copy = right_value;
 	switch (left_type->get_score(runtime, *right_type, false)){

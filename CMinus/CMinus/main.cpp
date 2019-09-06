@@ -71,5 +71,11 @@ int main(){
 	tsz2 = tstr2.size();
 	temp2 = tstr2.empty();
 
+	tstr2.assign(tstr);
+
+	tdat2 = tstr2.data();
+	tsz2 = tstr2.size();
+	temp2 = tstr2.empty();
+
 	return 0;
 }

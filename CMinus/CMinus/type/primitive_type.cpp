@@ -1,6 +1,8 @@
+#include "../logic/string_conversions.h"
 #include "../evaluator/evaluator_id.h"
 #include "../declaration/function_declaration_group.h"
 
+#include "string_type.h"
 #include "pointer_type.h"
 
 cminus::type::primitive::primitive(id_type id)
@@ -135,6 +137,9 @@ cminus::type::object::score_result_type cminus::type::primitive::get_score(logic
 
 		if (id_ == id_type::nullptr_ && dynamic_cast<const pointer *>(&target) != nullptr)
 			return score_result_type::assignable;
+
+		if (is_numeric() && dynamic_cast<const string *>(&target) != nullptr)
+			return score_result_type::assignable;
 	}
 
 	if (type_target->id_ == id_)
@@ -225,6 +230,36 @@ std::shared_ptr<cminus::memory::reference> cminus::type::primitive::cast(logic::
 			if (data->has_attribute("#NaN#", true))
 				return runtime.global_storage->create_scalar(0ui64);
 			return runtime.global_storage->create_scalar(cast_integral<unsigned __int64>(runtime, *data));
+		}
+
+		if ((type == cast_type::static_ || type == cast_type::rval_static) && dynamic_cast<string *>(target_type.get()) != nullptr){
+			if (is_numeric() && data->has_attribute("#NaN#", true))
+				return runtime.global_storage->create_string(runtime, 3u, "NaN");
+
+			switch (id_){
+			case id_type::nan_:
+				return runtime.global_storage->create_string(runtime, 3u, "NaN");
+			case id_type::int16_:
+				return runtime.global_storage->create_string(runtime, logic::to_string<__int16>::get(data->read_scalar<__int16>(runtime)));
+			case id_type::uint16_:
+				return runtime.global_storage->create_string(runtime, logic::to_string<unsigned __int16>::get(data->read_scalar<unsigned __int16>(runtime)));
+			case id_type::int32_:
+				return runtime.global_storage->create_string(runtime, logic::to_string<__int32>::get(data->read_scalar<__int32>(runtime)));
+			case id_type::uint32_:
+				return runtime.global_storage->create_string(runtime, logic::to_string<unsigned __int32>::get(data->read_scalar<unsigned __int32>(runtime)));
+			case id_type::int64_:
+				return runtime.global_storage->create_string(runtime, logic::to_string<__int64>::get(data->read_scalar<__int64>(runtime)));
+			case id_type::uint64_:
+				return runtime.global_storage->create_string(runtime, logic::to_string<unsigned __int64>::get(data->read_scalar<unsigned __int64>(runtime)));
+			case id_type::float_:
+				return runtime.global_storage->create_string(runtime, logic::to_string<float>::get(data->read_scalar<float>(runtime)));
+			case id_type::double_:
+				return runtime.global_storage->create_string(runtime, logic::to_string<double>::get(data->read_scalar<double>(runtime)));
+			case id_type::ldouble:
+				return runtime.global_storage->create_string(runtime, logic::to_string<long double>::get(data->read_scalar<long double>(runtime)));
+			default:
+				break;
+			}
 		}
 
 		return nullptr;

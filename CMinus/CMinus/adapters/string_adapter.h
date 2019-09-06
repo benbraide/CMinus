@@ -29,6 +29,10 @@ namespace cminus::adapter{
 
 		void clear();
 
+		void assign(const string &other);
+
+		void assign(std::shared_ptr<cminus::memory::reference> value);
+
 		void swap(string &other);
 
 		void swap(std::shared_ptr<cminus::memory::reference> value);

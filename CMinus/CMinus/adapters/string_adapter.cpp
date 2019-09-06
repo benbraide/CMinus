@@ -1,3 +1,6 @@
+#include "../node/memory_reference_node.h"
+#include "../evaluator/evaluator_object.h"
+
 #include "string_adapter.h"
 
 cminus::adapter::string::string(cminus::logic::runtime &runtime)
@@ -36,6 +39,19 @@ char cminus::adapter::string::at(std::size_t position) const{
 
 void cminus::adapter::string::clear(){
 	call_(*runtime_, call_info{ "clear", value_ });
+}
+
+void cminus::adapter::string::assign(const string &other){
+	assign(other.value_);
+}
+
+void cminus::adapter::string::assign(std::shared_ptr<cminus::memory::reference> value){
+	value_->get_type()->get_evaluator(*runtime_)->evaluate_binary(
+		*runtime_,
+		evaluator::operator_id::assignment,
+		value_,
+		std::make_shared<node::memory_reference>(nullptr, value)
+	);
 }
 
 void cminus::adapter::string::swap(string &other){

@@ -310,16 +310,14 @@ void cminus::declaration::function::copy_args_(logic::runtime &runtime, const st
 			if (reference == nullptr)
 				throw memory::exception(memory::error_code::allocation_failure, 0u);
 
-			current_declaration->initialize_memory(runtime, reference, std::make_shared<node::memory_reference>(nullptr, *arg_it));
+			current_declaration->initialize_memory(runtime, reference, std::make_shared<node::memory_reference>(nullptr, *arg_it), true);
 			dynamic_cast<logic::storage::function *>(runtime.current_storage)->add_unnamed(reference);
 
-			if (current_declaration == variadic_declaration){
-				reference->add_attribute(runtime.global_storage->find_attribute("#LVal#", false));
+			if (current_declaration == variadic_declaration)
 				variadic_references.push_back(reference);
-			}
 		}
 		else//Named
-			current_declaration->evaluate(runtime, std::make_shared<node::memory_reference>(nullptr, *arg_it));
+			current_declaration->evaluate(runtime, std::make_shared<node::memory_reference>(nullptr, *arg_it), true);
 	}
 
 	for (; param_it != params_.end(); ++param_it){//Check for parameters with default arguments

@@ -2,13 +2,14 @@
 #include "../node/memory_reference_node.h"
 #include "../type/string_type.h"
 
-#include "../evaluator/class_evaluator.h"
 #include "../evaluator/byte_evaluator.h"
 #include "../evaluator/boolean_evaluator.h"
 #include "../evaluator/character_evaluator.h"
 #include "../evaluator/integral_evaluator.h"
 #include "../evaluator/floating_point_evaluator.h"
 #include "../evaluator/pointer_evaluator.h"
+#include "../evaluator/class_evaluator.h"
+#include "../evaluator/string_evaluator.h"
 
 cminus::logic::storage::global::global()
 	: object("", nullptr){}
@@ -75,6 +76,7 @@ void cminus::logic::storage::global::init(logic::runtime &runtime){
 	evaluators_[evaluator::id::floating_point] = std::make_shared<evaluator::floating_point>();
 
 	evaluators_[evaluator::id::class_] = std::make_shared<evaluator::class_>();
+	evaluators_[evaluator::id::string] = std::make_shared<evaluator::string>();
 }
 
 std::shared_ptr<cminus::type::object> cminus::logic::storage::global::get_primitve_type(type::primitive::id_type id) const{
@@ -111,7 +113,7 @@ std::shared_ptr<cminus::evaluator::object> cminus::logic::storage::global::get_e
 	return nullptr;
 }
 
-std::shared_ptr<cminus::memory::reference> cminus::logic::storage::global::create_string(logic::runtime &runtime, const std::string &value, bool lvalue) const{
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::global::create_string(logic::runtime &runtime, std::size_t size, const char *value, bool lvalue) const{
 	std::shared_ptr<memory::reference> str;
 	if (lvalue)//Allocate object in memory
 		str = std::make_shared<memory::lval_reference>(runtime, get_string_type(), declaration::variable::attribute_list_type{}, nullptr);
@@ -121,30 +123,45 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::global::creat
 	if (str == nullptr)//Error
 		return nullptr;
 
-	if (value.empty()){
+	if (size == 0u){//Empty string
 		str->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
 		str->get_type()->construct(runtime, str, nullptr);
 		return str;
 	}
 
 	std::vector<std::shared_ptr<node::object>> init_list{
-		std::make_shared<node::memory_reference>(nullptr, create_scalar(value.size())),
+		std::make_shared<node::memory_reference>(nullptr, create_scalar(size)),
 		std::make_shared<node::memory_reference>(nullptr, create_scalar('\0'))
 	};
 
 	str->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
 	str->get_type()->construct(runtime, str, std::make_shared<node::list>(nullptr, std::move(init_list)));
-	memcpy(const_cast<char *>(get_string_data(runtime, str)), value.data(), value.size());
+	memcpy(const_cast<char *>(get_string_data(runtime, str)), value, size);
 
 	return str;
 }
 
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::global::create_string(logic::runtime &runtime, const char *value, bool lvalue) const{
+	return create_string(runtime, strlen(value), value, lvalue);
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::global::create_string(logic::runtime &runtime, const std::string &value, bool lvalue) const{
+	return create_string(runtime, value.size(), value.data(), lvalue);
+}
+
+std::shared_ptr<cminus::memory::reference> cminus::logic::storage::global::get_member_reference(logic::runtime &runtime, std::shared_ptr<memory::reference> object, const std::string &name) const{
+	auto class_type = dynamic_cast<type::class_ *>(object->get_type().get());
+	return ((class_type == nullptr) ? nullptr : class_type->find(runtime, search_options{ class_type, object, name, false }));
+}
+
 const char *cminus::logic::storage::global::get_string_data(logic::runtime &runtime, std::shared_ptr<memory::reference> object) const{
-	auto string_type = dynamic_cast<type::string *>(object->get_type().get());
+	/*auto string_type = dynamic_cast<type::string *>(object->get_type().get());
 	if (string_type == nullptr)
 		return nullptr;
 
-	auto data = string_type->find(runtime, search_options{ string_type, object, "data_", false });
+	auto data = string_type->find(runtime, search_options{ string_type, object, "data_", false });*/
+
+	auto data = get_member_reference(runtime, object, "data_");
 	if (auto data_block = runtime.memory_object.get_block(data->read_scalar<unsigned __int64>(runtime)); data_block != nullptr)
 		return reinterpret_cast<const char *>(data_block->get_data());
 

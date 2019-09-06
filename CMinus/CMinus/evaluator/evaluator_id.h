@@ -13,5 +13,6 @@ namespace cminus::evaluator{
 		nan,
 		pointer,
 		class_,
+		string,
 	};
 }

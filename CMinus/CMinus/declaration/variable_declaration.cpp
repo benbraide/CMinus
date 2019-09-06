@@ -32,7 +32,7 @@ cminus::declaration::variable::variable(const logic::attributes::collection &att
 
 cminus::declaration::variable::~variable() = default;
 
-void cminus::declaration::variable::evaluate(logic::runtime &runtime, std::shared_ptr<node::object> initialization) const{
+void cminus::declaration::variable::evaluate(logic::runtime &runtime, std::shared_ptr<node::object> initialization, bool no_construct) const{
 	//[Deprecated("Message")] --> Registered as 'after look-up'
 	//void print();
 
@@ -59,7 +59,7 @@ void cminus::declaration::variable::evaluate(logic::runtime &runtime, std::share
 	auto reference = static_value_;
 	if (reference == nullptr){//No static entry found
 		if ((reference = allocate_memory(runtime)) != nullptr)
-			initialize_memory(runtime, reference, initialization);
+			initialize_memory(runtime, reference, initialization, no_construct);
 		else
 			throw memory::exception(memory::error_code::allocation_failure, 0u);
 	}
@@ -124,16 +124,22 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::variable::alloca
 	return reference;
 }
 
-void cminus::declaration::variable::initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> value) const{
+void cminus::declaration::variable::initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> value, bool no_construct) const{
 	auto initialization = ((value == nullptr) ? initialization_ : value);
 	if (initialization == nullptr)
 		target->call_attributes(runtime, logic::attributes::object::stage_type::after_uninitialized_declaration);
 
 	target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
-	if (dynamic_cast<memory::ref_reference *>(target->get_non_raw()) == nullptr)
+	if (auto is_ref = (dynamic_cast<memory::ref_reference *>(target->get_non_raw()) != nullptr); is_ref || no_construct){
+		if (!is_ref){//Construct default and assign
+			target->get_type()->construct(runtime, target, nullptr);
+			target->get_type()->get_evaluator(runtime)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, initialization);
+		}
+		else//Ref assignment
+			runtime.global_storage->get_evaluator(evaluator::id::initializer)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, initialization);
+	}
+	else//Construct with initialization
 		target->get_type()->construct(runtime, target, initialization);
-	else//Ref assignment
-		runtime.global_storage->get_evaluator(evaluator::id::initializer)->evaluate_binary(runtime, evaluator::operator_id::assignment, target, initialization);
 }
 
 void cminus::declaration::variable::print_attributes_(logic::runtime &runtime) const{
@@ -164,7 +170,7 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::contructed_varia
 	return reference;
 }
 
-void cminus::declaration::contructed_variable::initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> value) const{
+void cminus::declaration::contructed_variable::initialize_memory(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> value, bool no_construct) const{
 	target->add_attribute(runtime.global_storage->find_attribute("#Init#", false));
 	target->get_type()->construct(runtime, target, ((value == nullptr) ? initialization_ : value));
 }
