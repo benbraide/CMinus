@@ -32,11 +32,11 @@ void cminus::logic::storage::double_layer::add(logic::runtime &runtime, const st
 		inner_layer_->add(runtime, name, entry);
 }
 
-void cminus::logic::storage::double_layer::add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry){
+void cminus::logic::storage::double_layer::add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry, std::size_t group_address){
 	if (inner_layer_ == nullptr)
-		specialized::add_function(runtime, entry);
+		specialized::add_function(runtime, entry, group_address);
 	else//Use inner layer
-		inner_layer_->add_function(runtime, entry);
+		inner_layer_->add_function(runtime, entry, group_address);
 }
 
 void cminus::logic::storage::double_layer::remove(const std::string &name){

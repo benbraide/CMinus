@@ -78,7 +78,7 @@ void cminus::type::string::init(logic::runtime &runtime){
 		runtime.global_storage->find_attribute("Private", false)
 	};
 
-	add_declaration(runtime, std::make_shared<declaration::variable>(
+	add_declaration(std::make_shared<declaration::variable>(
 		attributes,																		//Attributes
 		runtime.global_storage->get_primitve_type(type::primitive::id_type::uint64_),	//Type
 		"size_",																		//Name
@@ -86,33 +86,34 @@ void cminus::type::string::init(logic::runtime &runtime){
 	));
 
 	auto char_type = runtime.global_storage->get_primitve_type(type::primitive::id_type::char_);
-	add_declaration(runtime, std::make_shared<declaration::variable>(
+	add_declaration(std::make_shared<declaration::variable>(
 		attributes,																		//Attributes
 		std::make_shared<type::pointer>(char_type),										//Type
 		"data_",																		//Name
 		nullptr																			//Initialization
 	));
 
-	add_function(runtime, std::make_shared<declaration::string::destructor>(this));
-	add_function(runtime, std::make_shared<declaration::string::default_constructor>(this));
+	add_declaration(std::make_shared<declaration::string::destructor>(this));
+	add_declaration(std::make_shared<declaration::string::default_constructor>(this));
 
-	add_function(runtime, std::make_shared<declaration::string::copy_constructor>(runtime, this));
-	add_function(runtime, std::make_shared<declaration::string::sub_constructor>(runtime, this));
+	add_declaration(std::make_shared<declaration::string::copy_constructor>(runtime, this));
+	add_declaration(std::make_shared<declaration::string::sub_constructor>(runtime, this));
 
-	add_function(runtime, std::make_shared<declaration::string::assignment_constructor>(runtime, this));
-	add_function(runtime, std::make_shared<declaration::string::fill_constructor>(runtime, this));
+	add_declaration(std::make_shared<declaration::string::assignment_constructor>(runtime, this));
+	add_declaration(std::make_shared<declaration::string::fill_constructor>(runtime, this));
 
-	add_function(runtime, std::make_shared<declaration::string::empty>(runtime, this));
-	add_function(runtime, std::make_shared<declaration::string::size>(runtime, this));
+	add_declaration(std::make_shared<declaration::string::empty>(runtime, this));
+	add_declaration(std::make_shared<declaration::string::size>(runtime, this));
 
-	add_function(runtime, std::make_shared<declaration::string::data>(runtime, true, this));
-	add_function(runtime, std::make_shared<declaration::string::data>(runtime, false, this));
+	add_declaration(std::make_shared<declaration::string::data>(runtime, true, this));
+	add_declaration(std::make_shared<declaration::string::data>(runtime, false, this));
 
-	add_function(runtime, std::make_shared<declaration::string::at>(runtime, true, this));
-	add_function(runtime, std::make_shared<declaration::string::at>(runtime, false, this));
+	add_declaration(std::make_shared<declaration::string::at>(runtime, true, this));
+	add_declaration(std::make_shared<declaration::string::at>(runtime, false, this));
 
-	add_function(runtime, std::make_shared<declaration::string::resize>(runtime, this));
-	add_function(runtime, std::make_shared<declaration::string::clear>(runtime, this));
+	add_declaration(std::make_shared<declaration::string::resize>(runtime, this));
+	add_declaration(std::make_shared<declaration::string::clear>(runtime, this));
+	add_declaration(std::make_shared<declaration::string::swap>(runtime, this));
 
-	add_function(runtime, std::make_shared<declaration::string::swap>(runtime, this));
+	build();
 }

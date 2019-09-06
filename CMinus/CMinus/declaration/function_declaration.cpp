@@ -20,6 +20,14 @@ cminus::declaration::function::function(std::string name, logic::naming::parent 
 
 cminus::declaration::function::~function() = default;
 
+const std::string &cminus::declaration::function::get_name() const{
+	return get_naming_value();
+}
+
+std::size_t cminus::declaration::function::get_static_size() const{
+	return sizeof(void *);
+}
+
 bool cminus::declaration::function::is_exact(logic::runtime &runtime, const function_base &tmpl) const{
 	auto function_tmpl = dynamic_cast<const function *>(&tmpl);
 	if (function_tmpl == nullptr)

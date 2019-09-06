@@ -63,9 +63,11 @@ namespace cminus::type{
 
 		virtual std::shared_ptr<memory::reference> find_operator(logic::runtime &runtime, const type::object &target_type, bool is_ref, const namesless_search_options &options) const;
 
-		virtual bool add_base(logic::runtime &runtime, access_type access, std::shared_ptr<type::object> value);
+		virtual bool add_base(access_type access, std::shared_ptr<type::object> value);
 
-		virtual bool add_declaration(logic::runtime &runtime, std::shared_ptr<declaration::variable> value);
+		virtual bool add_declaration(std::shared_ptr<declaration::object> value);
+
+		virtual void build();
 
 		virtual relationship_type get_relationship(const type::object &target) const;
 
@@ -86,8 +88,16 @@ namespace cminus::type{
 
 		virtual void check_access_(const class_ *scope, access_type access, std::shared_ptr<memory::reference> target) const;
 
+		logic::runtime &runtime_;
 		std::size_t size_ = sizeof(void *);
+
+		std::size_t static_size_ = 0u;
+		std::size_t static_address_ = 0u;
+
 		std::unordered_map<std::string, base_type_info> base_types_;
 		std::unordered_map<std::string, std::shared_ptr<memory::reference>> non_static_entries_;
+
+		std::list<std::string> declared_names_;
+		std::unordered_map<std::string, std::list<std::shared_ptr<declaration::object>>> declarations_;
 	};
 }

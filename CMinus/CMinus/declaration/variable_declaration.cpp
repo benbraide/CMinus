@@ -32,6 +32,10 @@ cminus::declaration::variable::variable(const logic::attributes::collection &att
 
 cminus::declaration::variable::~variable() = default;
 
+std::size_t cminus::declaration::variable::get_static_size() const{
+	return (attributes_.has("Static", true) ? type_->get_size() : 0u);
+}
+
 void cminus::declaration::variable::evaluate(logic::runtime &runtime, std::shared_ptr<node::object> initialization, bool no_construct) const{
 	//[Deprecated("Message")] --> Registered as 'after look-up'
 	//void print();
@@ -73,15 +77,27 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::variable::evalua
 	if (name_.empty())
 		throw logic::exception("Cannot evaluate an unnamed variable", 0u, 0u);
 
-	if (static_value_ != nullptr)//Static entry found
+	if (!attributes_.has("Static", true))
+		return std::make_shared<memory::placeholder_reference>(relative_offset, type_, attributes_);
+
+	if (static_value_ != nullptr)//Use previously evaluated static value
 		return nullptr;
 
-	if (attributes_.has("Static", true)){
-		evaluate(runtime, nullptr);
-		return nullptr;
-	}
+	std::shared_ptr<memory::reference> reference;
+	if (attributes_.has("Ref", true))
+		reference = std::make_shared<memory::ref_reference>(runtime, type_, attributes_, nullptr);
+	else if (relative_offset != 0u)
+		reference = std::make_shared<memory::lval_reference>(runtime, relative_offset, type_, attributes_, nullptr);
+	else if ((reference = std::make_shared<memory::lval_reference>(runtime, type_, attributes_, nullptr)) == nullptr || reference->get_address() == 0u)
+		throw memory::exception(memory::error_code::allocation_failure, 0u);
 
-	return std::make_shared<memory::placeholder_reference>(relative_offset, type_, attributes_);
+	if (reference == nullptr)
+		throw memory::exception(memory::error_code::allocation_failure, 0u);
+
+	runtime.current_storage->add(runtime, name_, reference);
+	static_value_ = reference;
+
+	return nullptr;
 }
 
 void cminus::declaration::variable::print(logic::runtime &runtime) const{
@@ -119,6 +135,9 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::variable::alloca
 	if (attributes_.has("Ref", true))
 		reference = std::make_shared<memory::ref_reference>(runtime, type_, attributes_, nullptr);
 	else if ((reference = std::make_shared<memory::lval_reference>(runtime, type_, attributes_, nullptr)) == nullptr || reference->get_address() == 0u)
+		throw memory::exception(memory::error_code::allocation_failure, 0u);
+
+	if (reference == nullptr)
 		throw memory::exception(memory::error_code::allocation_failure, 0u);
 
 	return reference;

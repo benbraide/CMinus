@@ -155,12 +155,6 @@ std::shared_ptr<cminus::memory::reference> cminus::logic::storage::global::get_m
 }
 
 const char *cminus::logic::storage::global::get_string_data(logic::runtime &runtime, std::shared_ptr<memory::reference> object) const{
-	/*auto string_type = dynamic_cast<type::string *>(object->get_type().get());
-	if (string_type == nullptr)
-		return nullptr;
-
-	auto data = string_type->find(runtime, search_options{ string_type, object, "data_", false });*/
-
 	auto data = get_member_reference(runtime, object, "data_");
 	if (auto data_block = runtime.memory_object.get_block(data->read_scalar<unsigned __int64>(runtime)); data_block != nullptr)
 		return reinterpret_cast<const char *>(data_block->get_data());

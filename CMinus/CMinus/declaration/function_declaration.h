@@ -11,6 +11,10 @@ namespace cminus::declaration{
 
 		virtual ~function();
 
+		virtual const std::string &get_name() const override;
+
+		virtual std::size_t get_static_size() const override;
+
 		virtual bool is_exact(logic::runtime &runtime, const function_base &tmpl) const override;
 
 		virtual type::object::score_result_type get_rank(logic::runtime &runtime, const std::vector<std::shared_ptr<memory::reference>> &args) const override;

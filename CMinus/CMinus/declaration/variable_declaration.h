@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../logic/runtime.h"
+#include "declaration_object.h"
 
 namespace cminus::declaration{
-	class variable{
+	class variable : public object{
 	public:
 		using attribute_list_type = logic::attributes::collection::list_type;
 		using optimised_attribute_list_type = logic::attributes::collection::optimised_list_type;
@@ -28,6 +28,10 @@ namespace cminus::declaration{
 
 		virtual ~variable();
 
+		virtual const std::string &get_name() const override;
+
+		virtual std::size_t get_static_size() const override;
+
 		virtual void evaluate(logic::runtime &runtime, std::shared_ptr<node::object> initialization, bool no_construct = false) const;
 
 		virtual std::shared_ptr<memory::reference> evaluate_class_member(logic::runtime &runtime, std::size_t relative_offset) const;
@@ -39,8 +43,6 @@ namespace cminus::declaration{
 		virtual logic::attributes::collection &get_attributes();
 
 		virtual std::shared_ptr<type::object> get_type() const;
-
-		virtual const std::string &get_name() const;
 
 		virtual std::shared_ptr<node::object> get_initialization() const;
 

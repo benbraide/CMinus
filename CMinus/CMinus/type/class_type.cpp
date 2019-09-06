@@ -5,7 +5,7 @@
 #include "pointer_type.h"
 
 cminus::type::class_::class_(logic::runtime &runtime, const std::string &name, logic::storage::object *parent)
-	: with_storage(name, parent), size_(sizeof(void *)){
+	: with_storage(name, parent), runtime_(runtime), size_(sizeof(void *)){
 	memory::reference::attribute_list_type attributes{
 		runtime.global_storage->find_attribute("Private", false),
 		runtime.global_storage->find_attribute("ReadOnly", false)
@@ -14,7 +14,16 @@ cminus::type::class_::class_(logic::runtime &runtime, const std::string &name, l
 	entries_["this"] = std::make_shared<memory::placeholder_reference>(0u, std::make_shared<raw_pointer>(this), attributes);
 }
 
-cminus::type::class_::~class_() = default;
+cminus::type::class_::~class_(){
+	destroy_entries_();
+	try{
+		if (static_address_ != 0u){
+			runtime_.memory_object.deallocate_block(static_address_);
+			static_address_ = 0u;
+		}
+	}
+	catch (...){}
+}
 
 void cminus::type::class_::construct(logic::runtime &runtime, std::shared_ptr<memory::reference> target, std::shared_ptr<node::object> initialization) const{
 	auto constructor = find(runtime, search_options{ this, target, get_naming_value(), false });
@@ -173,7 +182,7 @@ std::shared_ptr<cminus::memory::reference> cminus::type::class_::find_operator(l
 	return nullptr;
 }
 
-bool cminus::type::class_::add_base(logic::runtime &runtime, access_type access, std::shared_ptr<type::object> value){
+bool cminus::type::class_::add_base(access_type access, std::shared_ptr<type::object> value){
 	if (value.get() == this || is_ancestor(*value))
 		return false;
 
@@ -185,24 +194,51 @@ bool cminus::type::class_::add_base(logic::runtime &runtime, access_type access,
 	return true;
 }
 
-bool cminus::type::class_::add_declaration(logic::runtime &runtime, std::shared_ptr<declaration::variable> value){
+bool cminus::type::class_::add_declaration(std::shared_ptr<declaration::object> value){
 	auto &name = value->get_name();
 	if (name.empty())
 		return false;
 
-	if (entries_.find(name) != entries_.end())
-		return false;
-
-	logic::storage::runtime_storage_guard guard(runtime, std::make_shared<logic::storage::proxy>(*this));
-	if (auto non_static_member = value->evaluate_class_member(runtime, size_); non_static_member != nullptr){//Declaration is non-static
-		entries_[name] = non_static_member;
-		non_static_entries_[name] = non_static_member;
-
-		if (non_static_member->find_attribute("Ref", true) == nullptr)
-			size_ += non_static_member->get_type()->get_size();
+	if (auto it = declarations_.find(name); it == declarations_.end()){
+		declared_names_.push_back(name);
+		declarations_[name].push_back(value);
+		static_size_ += value->get_static_size();
 	}
+	else if (dynamic_cast<declaration::function *>(it->second.begin()->get()) != nullptr && dynamic_cast<declaration::function *>(value.get()) != nullptr)
+		it->second.push_back(value);
+	else//Duplicate entry
+		throw logic::storage::exception(logic::storage::error_code::duplicate_entry);
 
 	return true;
+}
+
+void cminus::type::class_::build(){
+	if (0u < static_size_){//Allocate memory for static objects
+		if (auto block = runtime_.memory_object.allocate_block(static_size_, memory::block::attribute_none); block == nullptr || (static_address_ = block->get_address()) == 0u)
+			throw memory::exception(memory::error_code::allocation_failure, 0u);
+	}
+	
+	auto static_address = static_address_;
+	logic::storage::runtime_storage_guard guard(runtime_, std::make_shared<logic::storage::proxy>(*this));
+
+	for (auto declared_name : declared_names_){
+		auto entry = declarations_.find(declared_name);
+		for (auto declaration : entry->second){
+			if (auto variable_declaration = dynamic_cast<declaration::variable *>(declaration.get()); variable_declaration != nullptr){
+				if (auto non_static_member = variable_declaration->evaluate_class_member(runtime_, size_); non_static_member != nullptr){//Declaration is non-static
+					entries_[variable_declaration->get_name()] = non_static_member;
+					non_static_entries_[variable_declaration->get_name()] = non_static_member;
+
+					if (non_static_member->find_attribute("Ref", true) == nullptr)
+						size_ += non_static_member->get_type()->get_size();
+				}
+			}
+			else if (auto function_declaration = dynamic_cast<declaration::function *>(declaration.get()); function_declaration != nullptr)
+				add_function(runtime_, std::dynamic_pointer_cast<declaration::function>(declaration), static_address);
+		}
+
+		static_address += (*entry->second.begin())->get_static_size();
+	}
 }
 
 cminus::type::class_::relationship_type cminus::type::class_::get_relationship(const type::object &target) const{

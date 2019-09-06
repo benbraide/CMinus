@@ -31,7 +31,7 @@ namespace cminus::logic::storage{
 
 		virtual void add(logic::runtime &runtime, const std::string &name, std::shared_ptr<memory::reference> entry) override;
 
-		virtual void add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry) override;
+		virtual void add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry, std::size_t group_address = 0u) override;
 
 		virtual void remove(const std::string &name) override;
 

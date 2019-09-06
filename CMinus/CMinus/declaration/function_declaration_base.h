@@ -27,7 +27,7 @@ namespace cminus::declaration{
 		virtual std::shared_ptr<memory::reference> call(logic::runtime &runtime, std::shared_ptr<memory::reference> context, const std::vector<std::shared_ptr<memory::reference>> &args) const = 0;
 	};
 
-	class function_base : public logic::naming::single{
+	class function_base : public object, public logic::naming::single{
 	public:
 		using attribute_list_type = logic::attributes::collection::list_type;
 		using optimised_attribute_list_type = logic::attributes::collection::optimised_list_type;

@@ -41,7 +41,7 @@ void cminus::logic::storage::object::add(logic::runtime &runtime, const std::str
 		throw exception(error_code::duplicate_entry);
 }
 
-void cminus::logic::storage::object::add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry){
+void cminus::logic::storage::object::add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry, std::size_t group_address){
 	if (!validate_(*entry))
 		throw logic::exception("Cannot add function of unrelated storage", 0u, 0u);
 
@@ -50,7 +50,12 @@ void cminus::logic::storage::object::add_function(logic::runtime &runtime, std::
 		throw logic::exception("Cannot add an unnamed function", 0u, 0u);
 
 	if (auto group_it = function_groups_.find(name); group_it == function_groups_.end()){//New entry
-		auto block = runtime.memory_object.allocate_block(sizeof(void *), memory::block::attribute_executable);
+		std::shared_ptr<memory::block> block;
+		if (group_address == 0u)
+			block = runtime.memory_object.allocate_block(sizeof(void *), memory::block::attribute_executable);
+		else
+			block = runtime.memory_object.find_block(group_address);
+
 		if (block == nullptr || block->get_address() == 0u)
 			throw memory::exception(memory::error_code::allocation_failure, 0u);
 
@@ -59,7 +64,8 @@ void cminus::logic::storage::object::add_function(logic::runtime &runtime, std::
 			throw memory::exception(memory::error_code::allocation_failure, 0u);
 
 		block->write_scalar<declaration::function_group_base *>(0u, group.get());
-		block->set_attributes(block->get_attributes() | memory::block::attribute_write_protected);
+		if (group_address == 0u)
+			block->set_attributes(block->get_attributes() | memory::block::attribute_write_protected);
 
 		group->add(entry);
 		function_groups_[name] = function_group_info{ block->get_address(), group };
@@ -205,8 +211,8 @@ void cminus::logic::storage::proxy::add(logic::runtime &runtime, const std::stri
 	target_.add(runtime, name, entry);
 }
 
-void cminus::logic::storage::proxy::add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry){
-	target_.add_function(runtime, entry);
+void cminus::logic::storage::proxy::add_function(logic::runtime &runtime, std::shared_ptr<declaration::function_base> entry, std::size_t group_address){
+	target_.add_function(runtime, entry, group_address);
 }
 
 void cminus::logic::storage::proxy::remove(const std::string &name){
