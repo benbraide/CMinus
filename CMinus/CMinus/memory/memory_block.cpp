@@ -143,6 +143,10 @@ cminus::memory::free_block::free_block() = default;
 cminus::memory::free_block::free_block(std::size_t address, std::size_t size)
 	: protected_block(address, size){}
 
+std::size_t cminus::memory::free_block::get_address() const{
+	return 0u;
+}
+
 cminus::memory::free_block::~free_block() = default;
 
 cminus::memory::offset_block::offset_block(std::shared_ptr<block> target, std::size_t offset)

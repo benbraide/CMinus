@@ -1,7 +1,6 @@
 #pragma once
 
 #include <list>
-#include <atomic>
 #include <shared_mutex>
 #include <unordered_map>
 
@@ -10,15 +9,9 @@
 namespace cminus::memory{
 	class object{
 	public:
-		std::size_t lock();
-
-		std::size_t unlock();
-
-		bool is_locked() const;
-
 		std::shared_ptr<block> protect_next_block(std::size_t size);
 
-		std::shared_ptr<block> allocate_block(std::size_t size, unsigned int attributes, std::size_t min_free_size = 0u);
+		std::shared_ptr<block> allocate_block(std::size_t size, unsigned int attributes);
 
 		std::shared_ptr<block> reallocate_block(std::size_t address, std::size_t size);
 
@@ -86,7 +79,7 @@ namespace cminus::memory{
 	private:
 		std::shared_ptr<block> protect_next_block_(std::size_t size);
 
-		std::shared_ptr<block> allocate_block_(std::size_t size, unsigned int attributes, std::size_t min_free_size);
+		std::shared_ptr<block> allocate_block_(std::size_t size, unsigned int attributes);
 
 		std::shared_ptr<block> reallocate_block_(std::size_t address, std::size_t size);
 
@@ -112,11 +105,11 @@ namespace cminus::memory{
 
 		std::size_t set_(std::size_t destination_address, std::byte value, std::size_t size);
 
-		std::shared_ptr<block> get_block_(std::size_t address) const;
+		std::shared_ptr<block> get_block_(std::size_t address, std::list<std::shared_ptr<block>>::const_iterator *out_it) const;
 
-		std::shared_ptr<block> get_next_block_(std::size_t address) const;
+		std::shared_ptr<block> get_next_block_(std::size_t address, std::list<std::shared_ptr<block>>::const_iterator *out_it) const;
 
-		std::shared_ptr<block> find_block_(std::size_t address, std::list<std::shared_ptr<block>>::const_iterator *out_it = nullptr) const;
+		std::shared_ptr<block> find_block_(std::size_t address, std::list<std::shared_ptr<block>>::const_iterator *out_it) const;
 
 		template <typename target_type>
 		bool can_read_scalar_(std::size_t address) const{
@@ -126,8 +119,6 @@ namespace cminus::memory{
 
 		std::list<std::shared_ptr<block>> blocks_;
 		std::size_t next_address_ = 1u;
-
-		std::atomic<std::size_t> lock_count_ = 0u;
 		mutable std::shared_mutex lock_;
 	};
 }

@@ -261,68 +261,6 @@ void cminus::declaration::string::destructor::evaluate_body_(logic::runtime &run
 	}
 }
 
-cminus::declaration::string::index::index(logic::runtime &runtime, bool read_only, logic::naming::parent *parent)
-	: function("[]", parent){
-	auto ref = runtime.global_storage->find_attribute("Ref", false);
-	if (read_only){
-		auto read_only_attr = runtime.global_storage->find_attribute("ReadOnly", false);
-		return_declaration_ = std::make_shared<variable>(
-			attribute_list_type{ ref, read_only_attr },										//Attributes
-			runtime.global_storage->get_primitve_type(type::primitive::id_type::char_),		//Type
-			"",																				//Name
-			nullptr																			//Initialization
-		);
-
-		attributes_.add(runtime.global_storage->find_attribute("ReadOnlyContext", false));
-	}
-	else{//Not read-only
-		return_declaration_ = std::make_shared<variable>(
-			attribute_list_type{ ref },														//Attributes
-			runtime.global_storage->get_primitve_type(type::primitive::id_type::char_),		//Type
-			"",																				//Name
-			nullptr																			//Initialization
-		);
-	}
-
-	params_.push_back(std::make_shared<variable>(
-		attribute_list_type{},															//Attributes
-		runtime.global_storage->get_primitve_type(type::primitive::id_type::uint64_),	//Type
-		"position",																		//Name
-		nullptr																			//Initialization
-	));
-
-	min_arg_count_ = 1u;
-	max_arg_count_ = 1u;
-
-}
-
-cminus::declaration::string::index::~index() = default;
-
-bool cminus::declaration::string::index::is_defined() const{
-	return true;
-}
-
-bool cminus::declaration::string::index::is_operator() const{
-	return true;
-}
-
-void cminus::declaration::string::index::evaluate_body_(logic::runtime &runtime) const{
-	auto position_value = runtime.current_storage->find(runtime, "position", true)->read_scalar<unsigned __int64>(runtime);
-	auto data_address = runtime.current_storage->find(runtime, "data_", true)->read_scalar<unsigned __int64>(runtime);
-
-	auto result = std::make_shared<memory::lval_reference>(
-		runtime,
-		(data_address + position_value),
-		runtime.global_storage->get_primitve_type(type::primitive::id_type::char_),
-		nullptr
-	);
-
-	if (result != nullptr)
-		runtime.current_storage->raise_interrupt(logic::storage::specialized::interrupt_type::return_, result);
-	else
-		throw memory::exception(memory::error_code::allocation_failure, 0u);
-}
-
 cminus::declaration::string::empty::empty(logic::runtime &runtime, logic::naming::parent *parent)
 	: function("empty", parent){
 	return_declaration_ = std::make_shared<variable>(

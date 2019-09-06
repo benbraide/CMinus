@@ -227,6 +227,8 @@ namespace cminus::memory{
 
 		virtual ~free_block();
 
+		virtual std::size_t get_address() const override;
+
 	protected:
 		friend class object;
 	};
