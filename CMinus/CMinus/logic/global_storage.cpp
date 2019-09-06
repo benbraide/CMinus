@@ -42,7 +42,7 @@ void cminus::logic::storage::global::init(logic::runtime &runtime){
 	for (auto id = type::primitive::id_type::nullptr_; id < type::primitive::id_type::string; id = static_cast<type::primitive::id_type>(static_cast<int>(id) + 1))
 		primitive_types_[id] = std::make_shared<type::primitive>(id);
 
-	for (auto id = node::named_constant::constant_type::false_; id <= node::named_constant::constant_type::true_; id = static_cast<node::named_constant::constant_type>(static_cast<int>(id) + 1)){
+	for (auto id = node::named_constant::constant_type::false_; id < node::named_constant::constant_type::nullptr_; id = static_cast<node::named_constant::constant_type>(static_cast<int>(id) + 1)){
 		named_constants_[id] = std::make_shared<memory::scalar_reference<node::named_constant::constant_type>>(
 			primitive_types_[type::primitive::id_type::bool_],
 			id

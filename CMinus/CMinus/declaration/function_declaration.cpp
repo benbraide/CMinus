@@ -307,7 +307,7 @@ void cminus::declaration::function::copy_args_(logic::runtime &runtime, const st
 
 		if (current_declaration->get_name().empty()){
 			auto reference = current_declaration->allocate_memory(runtime);
-			if (reference == nullptr || reference->get_address() == 0u)
+			if (reference == nullptr)
 				throw memory::exception(memory::error_code::allocation_failure, 0u);
 
 			current_declaration->initialize_memory(runtime, reference, std::make_shared<node::memory_reference>(nullptr, *arg_it));
@@ -336,7 +336,7 @@ void cminus::declaration::function::copy_args_(logic::runtime &runtime, const st
 
 		if (current_declaration->get_name().empty()){
 			auto reference = current_declaration->allocate_memory(runtime);
-			if (reference == nullptr || reference->get_address() == 0u)
+			if (reference == nullptr)
 				throw memory::exception(memory::error_code::allocation_failure, 0u);
 
 			current_declaration->initialize_memory(runtime, reference, nullptr);
@@ -373,7 +373,7 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::function::copy_r
 		throw logic::exception("A void function must return a value", 0u, 0u);
 
 	auto reference = return_declaration_->allocate_memory(runtime);
-	if (reference == nullptr || reference->get_address() == 0u)
+	if (reference == nullptr)
 		throw memory::exception(memory::error_code::allocation_failure, 0u);
 
 	return_declaration_->initialize_memory(runtime, reference, std::make_shared<node::memory_reference>(nullptr, value));

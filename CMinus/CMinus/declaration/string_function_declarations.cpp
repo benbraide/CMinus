@@ -18,7 +18,10 @@ bool cminus::declaration::string::constructor::supports_return_statement() const
 void cminus::declaration::string::constructor::print_return_(logic::runtime &runtime) const{}
 
 cminus::declaration::string::default_constructor::default_constructor(logic::naming::parent *parent)
-	: constructor(parent){}
+	: constructor(parent){
+	min_arg_count_ = 0u;
+	max_arg_count_ = 0u;
+}
 
 cminus::declaration::string::default_constructor::~default_constructor() = default;
 
@@ -234,7 +237,10 @@ void cminus::declaration::string::fill_constructor::evaluate_body_(logic::runtim
 }
 
 cminus::declaration::string::destructor::destructor(logic::naming::parent *parent)
-	: function("~string", parent){}
+	: function("~string", parent){
+	min_arg_count_ = 0u;
+	max_arg_count_ = 0u;
+}
 
 cminus::declaration::string::destructor::~destructor() = default;
 
@@ -269,6 +275,8 @@ cminus::declaration::string::empty::empty(logic::runtime &runtime, logic::naming
 	);
 
 	attributes_.add(runtime.global_storage->find_attribute("ReadOnlyContext", false));
+	min_arg_count_ = 0u;
+	max_arg_count_ = 0u;
 }
 
 cminus::declaration::string::empty::~empty() = default;
@@ -294,6 +302,8 @@ cminus::declaration::string::size::size(logic::runtime &runtime, logic::naming::
 	);
 
 	attributes_.add(runtime.global_storage->find_attribute("ReadOnlyContext", false));
+	min_arg_count_ = 0u;
+	max_arg_count_ = 0u;
 }
 
 cminus::declaration::string::size::~size() = default;
@@ -330,6 +340,9 @@ cminus::declaration::string::data::data(logic::runtime &runtime, bool read_only,
 			nullptr																			//Initialization
 		);
 	}
+
+	min_arg_count_ = 0u;
+	max_arg_count_ = 0u;
 }
 
 cminus::declaration::string::data::~data() = default;
@@ -371,6 +384,9 @@ cminus::declaration::string::at::at(logic::runtime &runtime, bool read_only, log
 		"position",																		//Name
 		nullptr																			//Initialization
 	));
+
+	min_arg_count_ = 1u;
+	max_arg_count_ = 1u;
 }
 
 cminus::declaration::string::at::~at() = default;

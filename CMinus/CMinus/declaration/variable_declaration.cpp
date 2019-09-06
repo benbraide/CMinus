@@ -58,7 +58,7 @@ void cminus::declaration::variable::evaluate(logic::runtime &runtime, std::share
 
 	auto reference = static_value_;
 	if (reference == nullptr){//No static entry found
-		if ((reference = allocate_memory(runtime)) != nullptr && reference->get_address() != 0u)
+		if ((reference = allocate_memory(runtime)) != nullptr)
 			initialize_memory(runtime, reference, initialization);
 		else
 			throw memory::exception(memory::error_code::allocation_failure, 0u);
@@ -118,10 +118,7 @@ std::shared_ptr<cminus::memory::reference> cminus::declaration::variable::alloca
 	std::shared_ptr<memory::reference> reference;
 	if (attributes_.has("Ref", true))
 		reference = std::make_shared<memory::ref_reference>(runtime, type_, attributes_, nullptr);
-	else//Not a reference
-		reference = std::make_shared<memory::lval_reference>(runtime, type_, attributes_, nullptr);
-
-	if (reference == nullptr || reference->get_address() == 0u)
+	else if ((reference = std::make_shared<memory::lval_reference>(runtime, type_, attributes_, nullptr)) == nullptr || reference->get_address() == 0u)
 		throw memory::exception(memory::error_code::allocation_failure, 0u);
 
 	return reference;
